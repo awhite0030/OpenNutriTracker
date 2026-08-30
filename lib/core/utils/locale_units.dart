@@ -67,6 +67,7 @@ class LocaleUnitDefaults {
 
 /// Countries whose national food composition database the app carries.
 const _blsCountries = {'DE', 'AT', 'CH'};
+const _tbcaCountries = {'BR'};
 
 /// Which backend food sources onboarding starts with, by locale.
 ///
@@ -81,13 +82,15 @@ const _blsCountries = {'DE', 'AT', 'CH'};
 Map<String, bool> defaultFoodSourceToggles(String localeName) {
   final country = countryCodeFromLocale(localeName);
   final usesBls = country != null && _blsCountries.contains(country);
+  final usesTbca = country != null && _tbcaCountries.contains(country);
   return <String, bool>{
     for (final source in SPConst.settingsSelectableFoodSources)
       source: switch (source) {
         SPConst.blsSourceCode => usesBls,
+        SPConst.tbcaSourceCode => usesTbca,
         // US branded products are the one set that is regionally wrong,
         // not merely foreign.
-        'fdc_branded' => !usesBls,
+        'fdc_branded' => !usesBls && !usesTbca,
         _ => true,
       },
   };

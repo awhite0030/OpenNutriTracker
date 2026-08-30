@@ -69,6 +69,9 @@ class SPConst {
   /// food_source.code of the Bundeslebensmittelschlüssel.
   static const blsSourceCode = 'bls';
 
+  /// food_source.code of the Tabela Brasileira de Composição de Alimentos.
+  static const tbcaSourceCode = 'tbca';
+
   /// BLS food-group letters (first character of the BLS code) that denote
   /// beverages: N = alkoholfreie Getränke, P = alkoholische Getränke.
   /// Used to default drinks to millilitre entry in the app.
@@ -98,15 +101,16 @@ class SPConst {
     'tbca': 'TBCA',
   };
 
-  /// Sources offered in Settings → Food databases. INDB and TBCA exist in
-  /// the schema but carry no data yet, so they are not selectable until
-  /// their imports land — add them here once they do.
+  /// Sources offered in Settings → Food databases. INDB exists in
+  /// the schema but carries no data yet, so it is not selectable until
+  /// its import lands — add it here once it does.
   static const settingsSelectableFoodSources = [
     'fdc_foundation',
     'fdc_sr_legacy',
     'fdc_survey',
     'fdc_branded',
     'bls',
+    'tbca',
   ];
 
   /// Public website per backend source: the "learn more" link in Settings →
