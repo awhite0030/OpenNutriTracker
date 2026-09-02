@@ -1215,5 +1215,8 @@
   "healthSyncDisclosureContinueAction": "Dalej",
   "healthSyncUnavailableLabel": "Dane zdrowotne nie są dostępne na tym urządzeniu. Import treningów wymaga Health Connect na Androidzie lub Apple Health na iOS.",
   "sourcesEnergyCompensationTitle": "Zaliczanie kalorii z treningu",
-  "sourcesEnergyCompensationDescription": "Zaimportowane treningi są zaliczane z mniejszą energią, niż raportuje urządzenie. Ludzie kompensują wysiłek, spalając mniej kalorii przez resztę dnia — średnio około 28%, a przy wyższej zawartości tkanki tłuszczowej więcej. Sugerowana wartość pochodzi z tych badań i możesz ją zmienić w Ustawieniach → Synchronizacja zdrowia. Sama energia pochodzi z aplikacji lub urządzenia, które zarejestrowało trening, i nie jest obliczana wzorem MET w aplikacji."
+  "sourcesEnergyCompensationDescription": "Zaimportowane treningi są zaliczane z mniejszą energią, niż raportuje urządzenie. Ludzie kompensują wysiłek, spalając mniej kalorii przez resztę dnia — średnio około 28%, a przy wyższej zawartości tkanki tłuszczowej więcej. Sugerowana wartość pochodzi z tych badań i możesz ją zmienić w Ustawieniach → Synchronizacja zdrowia. Sama energia pochodzi z aplikacji lub urządzenia, które zarejestrowało trening, i nie jest obliczana wzorem MET w aplikacji.",
+  "quickSelectHalfServing": "0.5×",
+  "quickSelectOneServing": "1×",
+  "quickSelectTwoServings": "2×"
 }
