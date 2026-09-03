@@ -41,11 +41,6 @@ class _AddMealScreenState extends State<AddMealScreen> {
   late FoodBloc _foodBloc;
   late RecentMealBloc _recentMealBloc;
 
-  // Single smart search: one field, one results list, and source-filter chips.
-  // Opens on Recent (fast re-logging); typing searches Products by default,
-  // with Food / Recent a chip away.
-  _SearchSource _source = _SearchSource.recent;
-
   @override
   void initState() {
     _productsBloc = locator<ProductsBloc>();
@@ -134,8 +129,6 @@ class _AddMealScreenState extends State<AddMealScreen> {
                 onBarcodePressed: _onBarcodeIconPressed,
               ),
               const SizedBox(height: Dimens.spacing12),
-              _buildSourceChips(context, palette),
-              const SizedBox(height: Dimens.spacing12),
               // Rebuild on every keystroke so the empty-state logic can tell
               // "no results for this query" apart from "a newer query is
               // still debouncing/searching" — the latter shows a spinner.
@@ -165,27 +158,14 @@ class _AddMealScreenState extends State<AddMealScreen> {
     _recentMealBloc.add(const LoadRecentMealEvent(searchString: ""));
   }
 
-  /// Resolves the source to search for a query: an empty query always returns
-  /// to Recent; a non-empty query searches Products by default, unless the user
-  /// has explicitly chosen Food. Keeps the chip selection and the results in sync.
-  _SearchSource _resolveSource(String trimmed) {
-    if (trimmed.isEmpty) return _SearchSource.recent;
-    // Typing searches every source at once (All); an explicit Products / Food
-    // choice narrows that merged list.
-    return _source == _SearchSource.recent ? _SearchSource.all : _source;
-  }
-
-  bool _searchesProducts(_SearchSource s) =>
-      s == _SearchSource.all || s == _SearchSource.products;
-  bool _searchesFood(_SearchSource s) =>
-      s == _SearchSource.all || s == _SearchSource.food;
-
   void _onSearchSubmit(String inputText) {
     final trimmed = inputText.trim();
-    final source = _resolveSource(trimmed);
-    if (source != _source) setState(() => _source = source);
-    // A scannable barcode jumps straight to the scanner (product sources only).
-    if (_searchesProducts(source) && isValidBarcodeCheckDigit(trimmed)) {
+    if (trimmed.isEmpty) {
+      _recentMealBloc.add(const LoadRecentMealEvent(searchString: ""));
+      return;
+    }
+    // A scannable barcode jumps straight to the scanner.
+    if (isValidBarcodeCheckDigit(trimmed)) {
       Navigator.of(context).pushNamed(
         NavigationOptions.scannerRoute,
         arguments: ScannerScreenArguments(
@@ -196,73 +176,19 @@ class _AddMealScreenState extends State<AddMealScreen> {
       );
       return;
     }
-    if (_searchesProducts(source)) {
-      _productsBloc.add(LoadProductsEvent(searchString: inputText));
-    }
-    if (_searchesFood(source)) {
-      _foodBloc.add(LoadFoodEvent(searchString: inputText));
-    }
-    if (source == _SearchSource.recent) {
-      _recentMealBloc.add(LoadRecentMealEvent(searchString: inputText));
-    }
+    _productsBloc.add(LoadProductsEvent(searchString: inputText));
+    _foodBloc.add(LoadFoodEvent(searchString: inputText));
   }
 
-  /// Debounced search-as-you-type. Recent filters local intake history; the
-  /// remote sources debounce via their own *InputChanged events. "All" searches
-  /// products and food together into one merged list.
+  /// Debounced search-as-you-type.
   void _onSearchChanged(String inputText) {
     final trimmed = inputText.trim();
-    final source = _resolveSource(trimmed);
-    if (source != _source) setState(() => _source = source);
-    if (_searchesProducts(source)) {
-      _productsBloc.add(SearchInputChangedEvent(searchString: inputText));
+    if (trimmed.isEmpty) {
+      _recentMealBloc.add(const LoadRecentMealEvent(searchString: ""));
+      return;
     }
-    if (_searchesFood(source)) {
-      _foodBloc.add(SearchFoodInputChangedEvent(searchString: inputText));
-    }
-    if (source == _SearchSource.recent) {
-      _recentMealBloc.add(LoadRecentMealEvent(searchString: inputText));
-    }
-  }
-
-  void _selectSource(_SearchSource source) {
-    setState(() => _source = source);
-    final query = _searchStringListener.value;
-    if (_searchesProducts(source)) {
-      _productsBloc.add(LoadProductsEvent(searchString: query));
-    }
-    if (_searchesFood(source)) {
-      _foodBloc.add(LoadFoodEvent(searchString: query));
-    }
-    if (source == _SearchSource.recent) {
-      _recentMealBloc.add(LoadRecentMealEvent(searchString: query));
-    }
-  }
-
-  Widget _buildSourceChips(BuildContext context, AppPalette palette) {
-    Widget chip(_SearchSource source, String label) => Padding(
-          padding: const EdgeInsets.only(right: Dimens.spacing8),
-          child: ChoiceChip(
-            label: Text(label),
-            selected: _source == source,
-            showCheckmark: false,
-            onSelected: (_) => _selectSource(source),
-          ),
-        );
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            chip(_SearchSource.recent, S.of(context).recentlyAddedLabel),
-            chip(_SearchSource.all, S.of(context).allItemsLabel),
-            chip(_SearchSource.products, S.of(context).searchProductsPage),
-            chip(_SearchSource.food, S.of(context).searchFoodPage),
-          ],
-        ),
-      ),
-    );
+    _productsBloc.add(SearchInputChangedEvent(searchString: inputText));
+    _foodBloc.add(SearchFoodInputChangedEvent(searchString: inputText));
   }
 
   Widget _resultsHeader(BuildContext context, AppPalette palette) => Container(
@@ -314,189 +240,139 @@ class _AddMealScreenState extends State<AddMealScreen> {
   );
 
   Widget _buildResults(BuildContext context, AppPalette palette, String query) {
-    switch (_source) {
-      case _SearchSource.all:
-        // One merged list across product sources; each card already shows its
-        // own brand/source, so provenance stays clear.
-        return Column(
-          children: [
-            _resultsHeader(context, palette),
-            Expanded(
-              child: BlocBuilder<ProductsBloc, ProductsState>(
-                bloc: _productsBloc,
-                builder: (context, ps) {
-                  return BlocBuilder<FoodBloc, FoodState>(
-                    bloc: _foodBloc,
-                    builder: (context, fs) {
-                      // Wait for BOTH sources (OFF and the Supabase backend)
-                      // before rendering the merged list — showing whichever
-                      // lands first would make results pop in and shift when
-                      // the second source arrives. A failed source counts as
-                      // answered, so one outage doesn't block the other's
-                      // results.
-                      if (_productsPending(ps, query) ||
-                          _foodPending(fs, query)) {
-                        return _pendingSpinner;
-                      }
-                      final products =
-                          ps is ProductsLoadedState ? ps.products : const <MealEntity>[];
-                      final foods =
-                          fs is FoodLoadedState ? fs.food : const <MealEntity>[];
-                      final merged = mergeAndRankMeals(products, foods, query);
-                      if (merged.isEmpty) {
-                        if (ps is ProductsInitial && fs is FoodInitial) {
-                          return const DefaultsResultsWidget();
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return BlocBuilder<RecentMealBloc, RecentMealState>(
+        bloc: _recentMealBloc,
+        builder: (context, state) {
+          if (state is RecentMealInitial) {
+            _recentMealBloc.add(const LoadRecentMealEvent(searchString: ""));
+            return const SizedBox();
+          } else if (state is RecentMealLoadingState) {
+            return const Padding(
+              padding: EdgeInsets.only(top: 32),
+              child: CircularProgressIndicator(),
+            );
+          } else if (state is RecentMealLoadedState) {
+            return state.recentMeals.isNotEmpty
+                ? ListView.builder(
+                    itemCount: state.recentMeals.length,
+                    itemBuilder: (context, index) {
+                      return MealItemCard(
+                        day: _day,
+                        mealEntity: state.recentMeals[index],
+                        addMealType: _mealType,
+                        usesImperialUnits: state.usesImperialUnits,
+                      );
+                    },
+                  )
+                : const NoResultsWidget();
+          } else if (state is RecentMealFailedState) {
+            return ErrorDialog(
+              errorText: S.of(context).noMealsRecentlyAddedLabel,
+              onRefreshPressed: _onRecentMealsRefreshButtonPressed,
+            );
+          }
+          return const SizedBox();
+        },
+      );
+    }
+
+    return Column(
+      children: [
+        _resultsHeader(context, palette),
+        Expanded(
+          child: BlocBuilder<ProductsBloc, ProductsState>(
+            bloc: _productsBloc,
+            builder: (context, ps) {
+              return BlocBuilder<FoodBloc, FoodState>(
+                bloc: _foodBloc,
+                builder: (context, fs) {
+                  if (_productsPending(ps, query) || _foodPending(fs, query)) {
+                    return _pendingSpinner;
+                  }
+
+                  if (ps is ProductsFailedState && fs is FoodFailedState) {
+                    return ErrorDialog(
+                      errorText: S.of(context).errorFetchingProductData,
+                      onRefreshPressed: () {
+                        _onProductsRefreshButtonPressed();
+                        _onFoodRefreshButtonPressed();
+                      },
+                    );
+                  }
+
+                  final products =
+                      ps is ProductsLoadedState ? ps.products : const <MealEntity>[];
+                  final foods =
+                      fs is FoodLoadedState ? fs.food : const <MealEntity>[];
+                  final merged = mergeAndRankMeals(products, foods, query);
+
+                  if (merged.isEmpty) {
+                    if (ps is ProductsInitial && fs is FoodInitial) {
+                      return const DefaultsResultsWidget();
+                    }
+                    return const NoResultsWidget();
+                  }
+
+                  final imperial = ps is ProductsLoadedState
+                      ? ps.usesImperialUnits
+                      : (fs is FoodLoadedState ? fs.usesImperialUnits : false);
+
+                  // Append error tile if one source failed but the other succeeded
+                  final partialFailure = (ps is ProductsFailedState || fs is FoodFailedState) &&
+                      !(ps is ProductsFailedState && fs is FoodFailedState);
+                  final remoteEmpty = (ps is ProductsLoadedState && ps.remoteSourceEmpty) ||
+                      (fs is FoodLoadedState && fs.remoteSourceEmpty);
+                  final extraItemCount = (partialFailure ? 1 : 0) + (remoteEmpty && !partialFailure ? 1 : 0);
+
+                  return ListView.builder(
+                    itemCount: merged.length + extraItemCount,
+                    itemBuilder: (context, index) {
+                      if (index == merged.length) {
+                        if (partialFailure) {
+                          return Padding(
+                            padding: const EdgeInsets.all(Dimens.spacing16),
+                            child: Column(
+                              children: [
+                                Text(
+                                  S.of(context).errorFetchingProductData,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                                const SizedBox(height: Dimens.spacing8),
+                                OutlinedButton.icon(
+                                  onPressed: () {
+                                    if (ps is ProductsFailedState) _onProductsRefreshButtonPressed();
+                                    if (fs is FoodFailedState) _onFoodRefreshButtonPressed();
+                                  },
+                                  icon: const Icon(Icons.refresh_rounded),
+                                  label: Text(S.of(context).retryLabel),
+                                ),
+                              ],
+                            ),
+                          );
+                        } else if (remoteEmpty) {
+                           return const NoResultsWidget();
                         }
-                        return const NoResultsWidget();
                       }
-                      final imperial = ps is ProductsLoadedState
-                          ? ps.usesImperialUnits
-                          : (fs is FoodLoadedState ? fs.usesImperialUnits : false);
-                      return ListView.builder(
-                        itemCount: merged.length,
-                        itemBuilder: (context, index) => MealItemCard(
-                          day: _day,
-                          mealEntity: merged[index],
-                          addMealType: _mealType,
-                          usesImperialUnits: imperial,
-                        ),
+                      return MealItemCard(
+                        day: _day,
+                        mealEntity: merged[index],
+                        addMealType: _mealType,
+                        usesImperialUnits: imperial,
                       );
                     },
                   );
                 },
-              ),
-            ),
-          ],
-        );
-      case _SearchSource.products:
-        return Column(
-          children: [
-            _resultsHeader(context, palette),
-            BlocBuilder<ProductsBloc, ProductsState>(
-              bloc: _productsBloc,
-              builder: (context, state) {
-                if (state is ProductsInitial) {
-                  return _productsPending(state, query)
-                      ? _pendingSpinner
-                      : const DefaultsResultsWidget();
-                } else if (state is ProductsLoadingState) {
-                  return _pendingSpinner;
-                } else if (state is ProductsLoadedState) {
-                  if (state.products.isEmpty) {
-                    return _productsPending(state, query)
-                        ? _pendingSpinner
-                        : const NoResultsWidget();
-                  }
-                  return Flexible(
-                    child: ListView.builder(
-                      itemCount:
-                          state.products.length + (state.remoteSourceEmpty ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == state.products.length) {
-                          return const NoResultsWidget();
-                        }
-                        return MealItemCard(
-                          day: _day,
-                          mealEntity: state.products[index],
-                          addMealType: _mealType,
-                          usesImperialUnits: state.usesImperialUnits,
-                        );
-                      },
-                    ),
-                  );
-                } else if (state is ProductsFailedState) {
-                  return ErrorDialog(
-                    errorText: S.of(context).errorFetchingProductData,
-                    onRefreshPressed: _onProductsRefreshButtonPressed,
-                  );
-                }
-                return const SizedBox();
-              },
-            ),
-          ],
-        );
-      case _SearchSource.food:
-        return Column(
-          children: [
-            _resultsHeader(context, palette),
-            BlocBuilder<FoodBloc, FoodState>(
-              bloc: _foodBloc,
-              builder: (context, state) {
-                if (state is FoodInitial) {
-                  return _foodPending(state, query)
-                      ? _pendingSpinner
-                      : const DefaultsResultsWidget();
-                } else if (state is FoodLoadingState) {
-                  return _pendingSpinner;
-                } else if (state is FoodLoadedState) {
-                  if (state.food.isEmpty) {
-                    return _foodPending(state, query)
-                        ? _pendingSpinner
-                        : const NoResultsWidget();
-                  }
-                  return Flexible(
-                    child: ListView.builder(
-                      itemCount: state.food.length + (state.remoteSourceEmpty ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == state.food.length) {
-                          return const NoResultsWidget();
-                        }
-                        return MealItemCard(
-                          day: _day,
-                          mealEntity: state.food[index],
-                          addMealType: _mealType,
-                          usesImperialUnits: state.usesImperialUnits,
-                        );
-                      },
-                    ),
-                  );
-                } else if (state is FoodFailedState) {
-                  return ErrorDialog(
-                    errorText: S.of(context).errorFetchingProductData,
-                    onRefreshPressed: _onFoodRefreshButtonPressed,
-                  );
-                }
-                return const SizedBox();
-              },
-            ),
-          ],
-        );
-      case _SearchSource.recent:
-        return BlocBuilder<RecentMealBloc, RecentMealState>(
-          bloc: _recentMealBloc,
-          builder: (context, state) {
-            if (state is RecentMealInitial) {
-              _recentMealBloc.add(const LoadRecentMealEvent(searchString: ""));
-              return const SizedBox();
-            } else if (state is RecentMealLoadingState) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 32),
-                child: CircularProgressIndicator(),
               );
-            } else if (state is RecentMealLoadedState) {
-              return state.recentMeals.isNotEmpty
-                  ? ListView.builder(
-                      itemCount: state.recentMeals.length,
-                      itemBuilder: (context, index) {
-                        return MealItemCard(
-                          day: _day,
-                          mealEntity: state.recentMeals[index],
-                          addMealType: _mealType,
-                          usesImperialUnits: state.usesImperialUnits,
-                        );
-                      },
-                    )
-                  : const NoResultsWidget();
-            } else if (state is RecentMealFailedState) {
-              return ErrorDialog(
-                errorText: S.of(context).noMealsRecentlyAddedLabel,
-                onRefreshPressed: _onRecentMealsRefreshButtonPressed,
-              );
-            }
-            return const SizedBox();
-          },
-        );
-    }
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   void _onBarcodeIconPressed() {
@@ -573,5 +449,3 @@ class AddMealScreenArguments {
 
   AddMealScreenArguments(this.mealType, this.day);
 }
-
-enum _SearchSource { recent, all, products, food }

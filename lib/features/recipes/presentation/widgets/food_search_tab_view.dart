@@ -16,6 +16,7 @@ import 'package:opennutritracker/features/add_meal/presentation/bloc/search_debo
 import 'package:opennutritracker/features/add_meal/presentation/widgets/default_results_widget.dart';
 import 'package:opennutritracker/features/add_meal/presentation/widgets/meal_search_bar.dart';
 import 'package:opennutritracker/features/add_meal/presentation/widgets/no_results_widget.dart';
+import 'package:opennutritracker/features/add_meal/util/meal_relevance_ranker.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 
 /// Reusable 3-tab food search (Products / Food / Recently) that delegates the
@@ -40,31 +41,36 @@ class FoodSearchTabView extends StatefulWidget {
 }
 
 class _FoodSearchTabViewState extends State<FoodSearchTabView>
-    with SingleTickerProviderStateMixin {
+    {
   final ValueNotifier<String> _searchStringListener = ValueNotifier('');
 
   late ProductsBloc _productsBloc;
   late FoodBloc _foodBloc;
   late RecentMealBloc _recentMealBloc;
-  late TabController _tabController;
-
   @override
   void initState() {
     super.initState();
     _productsBloc = locator<ProductsBloc>();
     _foodBloc = locator<FoodBloc>();
     _recentMealBloc = locator<RecentMealBloc>();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      _onSearchSubmit(_searchStringListener.value);
-    });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _searchStringListener.dispose();
     super.dispose();
   }
+
+  static const _pendingSpinner = Center(
+    child: Padding(
+      padding: EdgeInsets.only(top: 32),
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: CircularProgressIndicator(),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -79,24 +85,10 @@ class _FoodSearchTabViewState extends State<FoodSearchTabView>
             onBarcodePressed: widget.onBarcodePressed,
           ),
           const SizedBox(height: 16),
-          TabBar(
-            tabs: [
-              Tab(text: S.of(context).searchProductsPage),
-              Tab(text: S.of(context).searchFoodPage),
-              Tab(text: S.of(context).recentlyAddedLabel),
-            ],
-            controller: _tabController,
-            indicatorSize: TabBarIndicatorSize.tab,
-          ),
-          const SizedBox(height: 16),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildProductsTab(context),
-                _buildFoodTab(context),
-                _buildRecentTab(context),
-              ],
+            child: ValueListenableBuilder<String>(
+              valueListenable: _searchStringListener,
+              builder: (context, query, _) => _buildResults(context, query),
             ),
           ),
         ],
@@ -104,175 +96,159 @@ class _FoodSearchTabViewState extends State<FoodSearchTabView>
     );
   }
 
-  static const _pendingSpinner = Center(
-    child: Padding(
-      padding: EdgeInsets.only(top: 32),
-      child: SizedBox(
-        width: 36,
-        height: 36,
-        child: CircularProgressIndicator(),
-      ),
-    ),
-  );
-
-  Widget _buildProductsTab(BuildContext context) {
-    // Rebuild on keystrokes so an empty list can tell "no results for this
-    // query" apart from "the search for it is still debouncing/in flight"
-    // (loaded-state query lags behind the field) — the latter spins.
-    return ValueListenableBuilder<String>(
-      valueListenable: _searchStringListener,
-      builder: (context, query, _) => BlocBuilder<ProductsBloc, ProductsState>(
-        bloc: _productsBloc,
+  Widget _buildResults(BuildContext context, String query) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return BlocBuilder<RecentMealBloc, RecentMealState>(
+        bloc: _recentMealBloc,
         builder: (context, state) {
-        if (state is ProductsInitial) {
-          return query.trim().length >= minQueryLength
-              ? _pendingSpinner
-              : const DefaultsResultsWidget();
-        }
-        if (state is ProductsLoadingState) {
-          return _pendingSpinner;
-        }
-        if (state is ProductsLoadedState) {
-          if (state.products.isEmpty) {
-            return query.trim().length >= minQueryLength &&
-                    state.query != query
-                ? _pendingSpinner
-                : const NoResultsWidget();
+          if (state is RecentMealInitial) {
+            _recentMealBloc.add(const LoadRecentMealEvent(searchString: ''));
+            return const SizedBox.shrink();
           }
-          return ListView.builder(
-            itemCount:
-                state.products.length + (state.remoteSourceEmpty ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == state.products.length) {
-                return const NoResultsWidget();
-              }
-              return _PickableMealCard(
-                meal: state.products[index],
-                onTap: widget.onMealSelected,
-              );
-            },
-          );
-        }
-        if (state is ProductsFailedState) {
-          return ErrorDialog(
-            errorText: S.of(context).errorFetchingProductData,
-            onRefreshPressed: () =>
-                _productsBloc.add(const RefreshProductsEvent()),
-          );
-        }
-        return const SizedBox.shrink();
-        },
-      ),
-    );
-  }
-
-  Widget _buildFoodTab(BuildContext context) {
-    return ValueListenableBuilder<String>(
-      valueListenable: _searchStringListener,
-      builder: (context, query, _) => BlocBuilder<FoodBloc, FoodState>(
-        bloc: _foodBloc,
-        builder: (context, state) {
-        if (state is FoodInitial) {
-          return query.trim().length >= minQueryLength
-              ? _pendingSpinner
-              : const DefaultsResultsWidget();
-        }
-        if (state is FoodLoadingState) {
-          return _pendingSpinner;
-        }
-        if (state is FoodLoadedState) {
-          if (state.food.isEmpty) {
-            return query.trim().length >= minQueryLength &&
-                    state.query != query
-                ? _pendingSpinner
-                : const NoResultsWidget();
+          if (state is RecentMealLoadingState) {
+            return _pendingSpinner;
           }
-          return ListView.builder(
-            itemCount: state.food.length + (state.remoteSourceEmpty ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == state.food.length) return const NoResultsWidget();
-              return _PickableMealCard(
-                meal: state.food[index],
+          if (state is RecentMealLoadedState) {
+            if (state.recentMeals.isEmpty) return const NoResultsWidget();
+            return ListView.builder(
+              itemCount: state.recentMeals.length,
+              itemBuilder: (context, index) => _PickableMealCard(
+                meal: state.recentMeals[index],
                 onTap: widget.onMealSelected,
-              );
-            },
-          );
-        }
-        if (state is FoodFailedState) {
-          return ErrorDialog(
-            errorText: S.of(context).errorFetchingProductData,
-            onRefreshPressed: () => _foodBloc.add(const RefreshFoodEvent()),
-          );
-        }
-        return const SizedBox.shrink();
-        },
-      ),
-    );
-  }
-
-  Widget _buildRecentTab(BuildContext context) {
-    return BlocBuilder<RecentMealBloc, RecentMealState>(
-      bloc: _recentMealBloc,
-      builder: (context, state) {
-        if (state is RecentMealInitial) {
-          _recentMealBloc.add(const LoadRecentMealEvent(searchString: ''));
-          return const SizedBox.shrink();
-        }
-        if (state is RecentMealLoadingState) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.only(top: 32),
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: CircularProgressIndicator(),
               ),
-            ),
-          );
-        }
-        if (state is RecentMealLoadedState) {
-          if (state.recentMeals.isEmpty) return const NoResultsWidget();
-          return ListView.builder(
-            itemCount: state.recentMeals.length,
-            itemBuilder: (context, index) => _PickableMealCard(
-              meal: state.recentMeals[index],
-              onTap: widget.onMealSelected,
-            ),
-          );
-        }
-        if (state is RecentMealFailedState) {
-          return ErrorDialog(
-            errorText: S.of(context).noMealsRecentlyAddedLabel,
-            onRefreshPressed: () => _recentMealBloc.add(
-              const LoadRecentMealEvent(searchString: ''),
-            ),
-          );
-        }
-        return const SizedBox.shrink();
+            );
+          }
+          if (state is RecentMealFailedState) {
+            return ErrorDialog(
+              errorText: S.of(context).noMealsRecentlyAddedLabel,
+              onRefreshPressed: () => _recentMealBloc.add(
+                const LoadRecentMealEvent(searchString: ''),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      );
+    }
+
+    return BlocBuilder<ProductsBloc, ProductsState>(
+      bloc: _productsBloc,
+      builder: (context, ps) {
+        return BlocBuilder<FoodBloc, FoodState>(
+          bloc: _foodBloc,
+          builder: (context, fs) {
+            if (_productsPending(ps, query) || _foodPending(fs, query)) {
+              return _pendingSpinner;
+            }
+
+            if (ps is ProductsFailedState && fs is FoodFailedState) {
+              return ErrorDialog(
+                errorText: S.of(context).errorFetchingProductData,
+                onRefreshPressed: () {
+                  _productsBloc.add(const RefreshProductsEvent());
+                  _foodBloc.add(const RefreshFoodEvent());
+                },
+              );
+            }
+
+            final products =
+                ps is ProductsLoadedState ? ps.products : const <MealEntity>[];
+            final foods = fs is FoodLoadedState ? fs.food : const <MealEntity>[];
+            final merged = mergeAndRankMeals(products, foods, query);
+
+            if (merged.isEmpty) {
+              if (ps is ProductsInitial && fs is FoodInitial) {
+                return const DefaultsResultsWidget();
+              }
+              return const NoResultsWidget();
+            }
+
+            final partialFailure = (ps is ProductsFailedState || fs is FoodFailedState) &&
+                !(ps is ProductsFailedState && fs is FoodFailedState);
+            final remoteEmpty = (ps is ProductsLoadedState && ps.remoteSourceEmpty) ||
+                (fs is FoodLoadedState && fs.remoteSourceEmpty);
+            final extraItemCount = (partialFailure ? 1 : 0) + (remoteEmpty && !partialFailure ? 1 : 0);
+
+            return ListView.builder(
+              itemCount: merged.length + extraItemCount,
+              itemBuilder: (context, index) {
+                if (index == merged.length) {
+                  if (partialFailure) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            S.of(context).errorFetchingProductData,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              if (ps is ProductsFailedState) _productsBloc.add(const RefreshProductsEvent());
+                              if (fs is FoodFailedState) _foodBloc.add(const RefreshFoodEvent());
+                            },
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: Text(S.of(context).retryLabel),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else if (remoteEmpty) {
+                     return const NoResultsWidget();
+                  }
+                }
+                return _PickableMealCard(
+                  meal: merged[index],
+                  onTap: widget.onMealSelected,
+                );
+              },
+            );
+          },
+        );
       },
     );
   }
 
-  void _onSearchSubmit(String inputText) {
-    switch (_tabController.index) {
-      case 0:
-        _productsBloc.add(LoadProductsEvent(searchString: inputText));
-      case 1:
-        _foodBloc.add(LoadFoodEvent(searchString: inputText));
-      case 2:
-        _recentMealBloc.add(LoadRecentMealEvent(searchString: inputText));
-    }
+  static bool _productsPending(ProductsState state, String query) {
+    if (state is ProductsLoadingState) return true;
+    if (query.trim().length < minQueryLength) return false;
+    if (state is ProductsInitial) return true;
+    if (state is ProductsLoadedState) return state.query != query;
+    return false;
   }
 
-  /// Debounced search-as-you-type for the ingredient picker. Recent-added
-  /// (tab 2) stays submit-only — local-history filter, nothing to debounce.
-  void _onSearchChanged(String inputText) {
-    switch (_tabController.index) {
-      case 0:
-        _productsBloc.add(SearchInputChangedEvent(searchString: inputText));
-      case 1:
-        _foodBloc.add(SearchFoodInputChangedEvent(searchString: inputText));
+  static bool _foodPending(FoodState state, String query) {
+    if (state is FoodLoadingState) return true;
+    if (query.trim().length < minQueryLength) return false;
+    if (state is FoodInitial) return true;
+    if (state is FoodLoadedState) return state.query != query;
+    return false;
+  }
+
+  void _onSearchSubmit(String inputText) {
+    final trimmed = inputText.trim();
+    if (trimmed.isEmpty) {
+      _recentMealBloc.add(const LoadRecentMealEvent(searchString: ''));
+      return;
     }
+    _productsBloc.add(LoadProductsEvent(searchString: inputText));
+    _foodBloc.add(LoadFoodEvent(searchString: inputText));
+  }
+
+  /// Debounced search-as-you-type.
+  void _onSearchChanged(String inputText) {
+    final trimmed = inputText.trim();
+    if (trimmed.isEmpty) {
+      _recentMealBloc.add(const LoadRecentMealEvent(searchString: ''));
+      return;
+    }
+    _productsBloc.add(SearchInputChangedEvent(searchString: inputText));
+    _foodBloc.add(SearchFoodInputChangedEvent(searchString: inputText));
   }
 }
 
