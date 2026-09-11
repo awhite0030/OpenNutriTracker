@@ -71,17 +71,11 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
 
   void _selectAllQuantityText() {
     final text = widget.quantityTextController.text;
-    widget.quantityTextController.selection = TextSelection(
-      baseOffset: 0,
-      extentOffset: text.length,
-    );
+    widget.quantityTextController.selection = TextSelection(baseOffset: 0, extentOffset: text.length);
   }
 
   void _onQuantityChanged() {
-    widget.onQuantityOrUnitChanged(
-      widget.quantityTextController.text,
-      widget.selectedUnit,
-    );
+    widget.onQuantityOrUnitChanged(widget.quantityTextController.text, widget.selectedUnit);
   }
 
   Widget _buildQuickSelectChip(
@@ -91,9 +85,7 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
     String unit,
     String semanticsIdentifier,
   ) {
-    final bool isSelected =
-        widget.quantityTextController.text == quantity &&
-        widget.selectedUnit == unit;
+    final bool isSelected = widget.quantityTextController.text == quantity && widget.selectedUnit == unit;
 
     return Semantics(
       identifier: semanticsIdentifier,
@@ -146,18 +138,10 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
                               controller: widget.quantityTextController,
                               focusNode: _quantityFocusNode,
                               onTap: _selectAllQuantityText,
-                              keyboardType: TextInputType.numberWithOptions(
-                                decimal: true,
-                              ),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'^\d+([.,]\d{0,2})?$'),
-                                ),
-                              ],
+                              keyboardType: TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+([.,]\d{0,2})?$'))],
                               decoration: InputDecoration(
-                                border: const OutlineInputBorder(
-                                  borderRadius: Dimens.borderRadiusM,
-                                ),
+                                border: const OutlineInputBorder(borderRadius: Dimens.borderRadiusM),
                                 labelText: S.of(context).quantityLabel,
                               ),
                             ),
@@ -170,31 +154,21 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
                               initialValue: widget.selectedUnit,
                               key: ValueKey(widget.selectedUnit),
                               decoration: InputDecoration(
-                                border: const OutlineInputBorder(
-                                  borderRadius: Dimens.borderRadiusM,
-                                ),
+                                border: const OutlineInputBorder(borderRadius: Dimens.borderRadiusM),
                                 labelText: S.of(context).unitLabel,
                               ),
                               items: <DropdownMenuItem<String>>[
                                 // #629: a serving the app cannot scale
                                 // is a no-op dressed as a unit.
-                                if (widget.product.scalableServingQuantity != null)
-                                  _getServingDropdownItem(context),
-                                if (widget.product.isSolid ||
-                                    !widget.product.isLiquid &&
-                                        !widget.product.isSolid)
+                                if (widget.product.scalableServingQuantity != null) _getServingDropdownItem(context),
+                                if (widget.product.isSolid || !widget.product.isLiquid && !widget.product.isSolid)
                                   ..._getSolidUnitDropdownItems(context),
-                                if (widget.product.isLiquid ||
-                                    !widget.product.isLiquid &&
-                                        !widget.product.isSolid)
+                                if (widget.product.isLiquid || !widget.product.isLiquid && !widget.product.isSolid)
                                   ..._getLiquidUnitDropdownItems(context),
                                 ..._getOtherDropdownItems(context),
                               ],
                               onChanged: (value) {
-                                widget.onQuantityOrUnitChanged(
-                                  widget.quantityTextController.text,
-                                  value,
-                                );
+                                widget.onQuantityOrUnitChanged(widget.quantityTextController.text, value);
                               },
                             ),
                           ),
@@ -230,8 +204,7 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
                                   'quick-select-2x',
                                 ),
                               ],
-                              if (widget.product.isSolid ||
-                                  (!widget.product.isLiquid && !widget.product.isSolid))
+                              if (widget.product.isSolid || (!widget.product.isLiquid && !widget.product.isSolid))
                                 _buildQuickSelectChip(
                                   context,
                                   '100 ${S.of(context).gramUnit}',
@@ -255,12 +228,8 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
                                   }
                                 : null,
                             style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: Dimens.spacing16,
-                              ),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: Dimens.borderRadiusM,
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: Dimens.spacing16),
+                              shape: const RoundedRectangleBorder(borderRadius: Dimens.borderRadiusM),
                             ),
                             icon: const Icon(Icons.add_rounded),
                             label: Text(S.of(context).addLabel),
@@ -270,10 +239,9 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
                       productMissingRequiredInfo
                           ? Text(
                               S.of(context).missingProductInfo,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error),
                             )
                           : const SizedBox(),
                     ],
@@ -301,32 +269,21 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
 
   Future<void> onAddButtonPressed(BuildContext context) async {
     // Validate quantity (#209, #210)
-    final quantityText = widget.quantityTextController.text.replaceAll(
-      ',',
-      '.',
-    );
+    final quantityText = widget.quantityTextController.text.replaceAll(',', '.');
     final quantity = double.tryParse(quantityText);
 
     if (quantity == null || quantity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${S.of(context).quantityLabel} must be greater than 0',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${S.of(context).quantityLabel} must be greater than 0')));
       return;
     }
 
     // Reasonable maximum limit per meal (#210)
     if (quantity > 10000) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${S.of(context).quantityLabel} seems unrealistically high',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${S.of(context).quantityLabel} seems unrealistically high')));
       return;
     }
 
@@ -356,12 +313,8 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
     locator<CalendarDayBloc>().add(const RefreshCalendarDayEvent());
 
     // Show snackbar and return to dashboard
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(S.of(context).infoAddedIntakeLabel)));
-    Navigator.of(
-      context,
-    ).popUntil(namedRouteOrFirst(NavigationOptions.mainRoute));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.of(context).infoAddedIntakeLabel)));
+    Navigator.of(context).popUntil(namedRouteOrFirst(NavigationOptions.mainRoute));
   }
 
   // #212: Check if this meal was already added today for the same meal type
@@ -371,9 +324,7 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
 
     switch (widget.intakeTypeEntity) {
       case IntakeTypeEntity.breakfast:
-        todayIntakes = await getIntakeUsecase.getBreakfastIntakeByDay(
-          widget.day,
-        );
+        todayIntakes = await getIntakeUsecase.getBreakfastIntakeByDay(widget.day);
         break;
       case IntakeTypeEntity.lunch:
         todayIntakes = await getIntakeUsecase.getLunchIntakeByDay(widget.day);
@@ -389,10 +340,8 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
     // Check if meal with same code or name already exists
     return todayIntakes.any(
       (intake) =>
-          (widget.product.code != null &&
-              intake.meal.code == widget.product.code) ||
-          (widget.product.name != null &&
-              intake.meal.name == widget.product.name),
+          (widget.product.code != null && intake.meal.code == widget.product.code) ||
+          (widget.product.name != null && intake.meal.name == widget.product.name),
     );
   }
 
@@ -405,14 +354,8 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
           title: Text(S.of(context).warningLabel),
           content: Text(S.of(context).duplicateMealDialogContent),
           actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(S.of(context).dialogCancelLabel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(S.of(context).addLabel),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(S.of(context).dialogCancelLabel)),
+            TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text(S.of(context).addLabel)),
           ],
         );
       },
@@ -432,56 +375,32 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
         : '${S.of(context).servingLabel} (${widget.product.servingQuantity} ${widget.product.servingUnit})';
     return DropdownMenuItem(
       value: UnitDropdownItem.serving.toString(),
-      child: Text(
-        servingText,
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
-      ),
+      child: Text(servingText, overflow: TextOverflow.ellipsis, maxLines: 1),
     );
   }
 
-  List<DropdownMenuItem<String>> _getSolidUnitDropdownItems(
-    BuildContext context,
-  ) {
+  List<DropdownMenuItem<String>> _getSolidUnitDropdownItems(BuildContext context) {
     return [
       DropdownMenuItem(
         value: UnitDropdownItem.g.toString(),
-        child: Text(
-          S.of(context).gramUnit,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
+        child: Text(S.of(context).gramUnit, overflow: TextOverflow.ellipsis, maxLines: 1),
       ),
       DropdownMenuItem(
         value: UnitDropdownItem.oz.toString(),
-        child: Text(
-          S.of(context).ozUnit,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
+        child: Text(S.of(context).ozUnit, overflow: TextOverflow.ellipsis, maxLines: 1),
       ),
     ];
   }
 
-  List<DropdownMenuItem<String>> _getLiquidUnitDropdownItems(
-    BuildContext context,
-  ) {
+  List<DropdownMenuItem<String>> _getLiquidUnitDropdownItems(BuildContext context) {
     return [
       DropdownMenuItem(
         value: UnitDropdownItem.ml.toString(),
-        child: Text(
-          S.of(context).milliliterUnit,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
+        child: Text(S.of(context).milliliterUnit, overflow: TextOverflow.ellipsis, maxLines: 1),
       ),
       DropdownMenuItem(
         value: UnitDropdownItem.flOz.toString(),
-        child: Text(
-          S.of(context).flOzUnit,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
+        child: Text(S.of(context).flOzUnit, overflow: TextOverflow.ellipsis, maxLines: 1),
       ),
     ];
   }

@@ -38,12 +38,7 @@ void main() {
     );
   }
 
-  MealEntity createMeal({
-    double? servingQuantity,
-    String? servingUnit,
-    String? servingSize,
-    String? mealUnit,
-  }) {
+  MealEntity createMeal({double? servingQuantity, String? servingUnit, String? servingSize, String? mealUnit}) {
     return MealEntity(
       code: 'test',
       name: 'Test product',
@@ -73,10 +68,22 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(meal, '1', UnitDropdownItem.serving.toString()));
       await tester.pumpAndSettle();
 
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-0.5x'), findsOneWidget);
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-1x'), findsOneWidget);
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-2x'), findsOneWidget);
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-100g'), findsOneWidget); // Assuming metric and solid
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-0.5x'),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-1x'),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-2x'),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-100g'),
+        findsOneWidget,
+      ); // Assuming metric and solid
     });
 
     testWidgets('Does not show 0.5x, 1x, 2x chips when scalableServingQuantity is null', (tester) async {
@@ -85,10 +92,22 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(meal, '100', UnitDropdownItem.g.toString()));
       await tester.pumpAndSettle();
 
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-0.5x'), findsNothing);
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-1x'), findsNothing);
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-2x'), findsNothing);
-      expect(find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-100g'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-0.5x'),
+        findsNothing,
+      );
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-1x'),
+        findsNothing,
+      );
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-2x'),
+        findsNothing,
+      );
+      expect(
+        find.byWidgetPredicate((w) => w is Semantics && w.properties.identifier == 'quick-select-100g'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Tapping 0.5x chip updates the controller', (tester) async {
@@ -117,8 +136,8 @@ void main() {
             mealDetailBloc: bloc,
             selectedUnit: UnitDropdownItem.serving.toString(),
             onQuantityOrUnitChanged: (q, u) {
-                updatedQ = q;
-                updatedU = u;
+              updatedQ = q;
+              updatedU = u;
             },
           ),
         ),
