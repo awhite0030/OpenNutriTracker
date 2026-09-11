@@ -84,6 +84,31 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
     );
   }
 
+  Widget _buildQuickSelectChip(
+    BuildContext context,
+    String label,
+    String quantity,
+    String unit,
+    String semanticsIdentifier,
+  ) {
+    final bool isSelected =
+        widget.quantityTextController.text == quantity &&
+        widget.selectedUnit == unit;
+
+    return Semantics(
+      identifier: semanticsIdentifier,
+      child: ActionChip(
+        label: Text(label),
+        backgroundColor: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
+        onPressed: () {
+          widget.quantityTextController.text = quantity;
+          widget.onQuantityOrUnitChanged(quantity, unit);
+          FocusScope.of(context).unfocus();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final productMissingRequiredInfo = _hasRequiredProductInfoMissing();
@@ -182,18 +207,37 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
                           child: Wrap(
                             spacing: Dimens.spacing8,
                             children: [
-                              // Quick-quantity presets — one tap to a common
-                              // serving size instead of typing.
-                              for (final preset in const [50, 100, 150, 200, 250])
-                                ActionChip(
-                                  label: Text('$preset'),
-                                  onPressed: () {
-                                    widget.quantityTextController.text = '$preset';
-                                    widget.onQuantityOrUnitChanged(
-                                      '$preset',
-                                      widget.selectedUnit,
-                                    );
-                                  },
+                              if (widget.product.scalableServingQuantity != null) ...[
+                                _buildQuickSelectChip(
+                                  context,
+                                  '0.5×',
+                                  '0.5',
+                                  UnitDropdownItem.serving.toString(),
+                                  'quick-select-0.5x',
+                                ),
+                                _buildQuickSelectChip(
+                                  context,
+                                  '1×',
+                                  '1',
+                                  UnitDropdownItem.serving.toString(),
+                                  'quick-select-1x',
+                                ),
+                                _buildQuickSelectChip(
+                                  context,
+                                  '2×',
+                                  '2',
+                                  UnitDropdownItem.serving.toString(),
+                                  'quick-select-2x',
+                                ),
+                              ],
+                              if (widget.product.isSolid ||
+                                  (!widget.product.isLiquid && !widget.product.isSolid))
+                                _buildQuickSelectChip(
+                                  context,
+                                  '100 ${S.of(context).gramUnit}',
+                                  '100',
+                                  UnitDropdownItem.g.toString(),
+                                  'quick-select-100g',
                                 ),
                             ],
                           ),
