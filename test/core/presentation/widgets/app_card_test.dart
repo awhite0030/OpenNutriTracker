@@ -10,7 +10,7 @@ Widget _wrap(Widget child) => MaterialApp(
 void main() {
   group('AppCard', () {
     testWidgets(
-        'clipping Material spans the whole card, not the padded content box '
+        'Material spans the whole card, not the padded content box '
         '(regression: padding on the Container shrank the Material while the '
         'clip kept the full corner radius, so the arc curved in over the '
         'content and sliced the first glyph of text in a card corner — the '
@@ -28,19 +28,19 @@ void main() {
       ));
 
       final cardSize = tester.getSize(find.byType(AppCard));
-      final clipMaterial = find.descendant(
+      final materialWidget = find.descendant(
         of: find.byType(AppCard),
         matching: find.byWidgetPredicate(
-          (w) => w is Material && w.clipBehavior == Clip.antiAlias,
+          (w) => w is Material && w.clipBehavior == Clip.none,
         ),
       );
 
-      expect(clipMaterial, findsOneWidget);
+      expect(materialWidget, findsOneWidget);
       // The Material fills the card short of its hairline border. If it were
       // inside the padding instead it would measure the content box (100x40)
       // rather than 132x72, and the corner arc would eat into the child.
       expect(
-        tester.getSize(clipMaterial),
+        tester.getSize(materialWidget),
         Size(cardSize.width - 2 * Dimens.hairline,
             cardSize.height - 2 * Dimens.hairline),
       );
