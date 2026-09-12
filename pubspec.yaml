@@ -89,6 +89,7 @@ dependencies:
   # Health Connect (Android) / Apple Health (iOS) workout import. Every call
   # sits behind HealthService so the plugin never loads under `flutter test`.
   health: ^13.3.2
+  home_widget: ^0.9.4
 
 dev_dependencies:
   flutter_test:
