@@ -56,8 +56,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
 
   @override
   void didChangeDependencies() {
-    final args =
-        ModalRoute.of(context)?.settings.arguments as AddMealScreenArguments;
+    final args = ModalRoute.of(context)?.settings.arguments as AddMealScreenArguments;
     _mealType = args.mealType;
     _day = args.day;
     super.didChangeDependencies();
@@ -83,10 +82,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
         actions: [
           Semantics(
             identifier: 'add-meal-quick-add',
-            child: TextButton(
-              onPressed: _onQuickAddPressed,
-              child: Text(S.of(context).quickAddCardLabel),
-            ),
+            child: TextButton(onPressed: _onQuickAddPressed, child: Text(S.of(context).quickAddCardLabel)),
           ),
           BlocBuilder<AddMealBloc, AddMealState>(
             bloc: locator<AddMealBloc>()..add(InitializeAddMealEvent()),
@@ -98,8 +94,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
                     Semantics(
                       identifier: 'add-meal-bulk-add',
                       child: IconButton(
-                        onPressed: () =>
-                            _onBulkAddPressed(state.usesImperialUnits),
+                        onPressed: () => _onBulkAddPressed(state.usesImperialUnits),
                         icon: const Icon(Icons.playlist_add),
                         tooltip: S.of(context).bulkAddTitle,
                       ),
@@ -107,8 +102,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
                     Semantics(
                       identifier: 'add-meal-custom-add',
                       child: IconButton(
-                        onPressed: () =>
-                            _onCustomAddButtonPressed(state.usesImperialUnits),
+                        onPressed: () => _onCustomAddButtonPressed(state.usesImperialUnits),
                         icon: const Icon(Icons.add_circle_outline),
                       ),
                     ),
@@ -142,8 +136,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
               Expanded(
                 child: ValueListenableBuilder<String>(
                   valueListenable: _searchStringListener,
-                  builder: (context, query, _) =>
-                      _buildResults(context, palette, query),
+                  builder: (context, query, _) => _buildResults(context, palette, query),
                 ),
               ),
             ],
@@ -175,10 +168,8 @@ class _AddMealScreenState extends State<AddMealScreen> {
     return _source == _SearchSource.recent ? _SearchSource.all : _source;
   }
 
-  bool _searchesProducts(_SearchSource s) =>
-      s == _SearchSource.all || s == _SearchSource.products;
-  bool _searchesFood(_SearchSource s) =>
-      s == _SearchSource.all || s == _SearchSource.food;
+  bool _searchesProducts(_SearchSource s) => s == _SearchSource.all || s == _SearchSource.products;
+  bool _searchesFood(_SearchSource s) => s == _SearchSource.all || s == _SearchSource.food;
 
   void _onSearchSubmit(String inputText) {
     final trimmed = inputText.trim();
@@ -188,11 +179,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
     if (_searchesProducts(source) && isValidBarcodeCheckDigit(trimmed)) {
       Navigator.of(context).pushNamed(
         NavigationOptions.scannerRoute,
-        arguments: ScannerScreenArguments(
-          _day,
-          _mealType.getIntakeType(),
-          initialBarcode: trimmed,
-        ),
+        arguments: ScannerScreenArguments(_day, _mealType.getIntakeType(), initialBarcode: trimmed),
       );
       return;
     }
@@ -241,14 +228,14 @@ class _AddMealScreenState extends State<AddMealScreen> {
 
   Widget _buildSourceChips(BuildContext context, AppPalette palette) {
     Widget chip(_SearchSource source, String label) => Padding(
-          padding: const EdgeInsets.only(right: Dimens.spacing8),
-          child: ChoiceChip(
-            label: Text(label),
-            selected: _source == source,
-            showCheckmark: false,
-            onSelected: (_) => _selectSource(source),
-          ),
-        );
+      padding: const EdgeInsets.only(right: Dimens.spacing8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: _source == source,
+        showCheckmark: false,
+        onSelected: (_) => _selectSource(source),
+      ),
+    );
     return Align(
       alignment: Alignment.centerLeft,
       child: SingleChildScrollView(
@@ -266,16 +253,13 @@ class _AddMealScreenState extends State<AddMealScreen> {
   }
 
   Widget _resultsHeader(BuildContext context, AppPalette palette) => Container(
-        padding: const EdgeInsets.symmetric(vertical: Dimens.spacing4),
-        alignment: Alignment.centerLeft,
-        child: Text(
-          S.of(context).searchResultsLabel,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: palette.textMuted,
-              ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: Dimens.spacing4),
+    alignment: Alignment.centerLeft,
+    child: Text(
+      S.of(context).searchResultsLabel,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: palette.textMuted),
+    ),
+  );
 
   /// True while the results carried by [state] lag behind [query]: the
   /// search for the current input is still debouncing or in flight. Empty
@@ -305,11 +289,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
     alignment: Alignment.topCenter,
     child: Padding(
       padding: EdgeInsets.only(top: 32),
-      child: SizedBox(
-        width: 36,
-        height: 36,
-        child: CircularProgressIndicator(),
-      ),
+      child: SizedBox(width: 36, height: 36, child: CircularProgressIndicator()),
     ),
   );
 
@@ -334,20 +314,20 @@ class _AddMealScreenState extends State<AddMealScreen> {
                       // the second source arrives. A failed source counts as
                       // answered, so one outage doesn't block the other's
                       // results.
-                      if (_productsPending(ps, query) ||
-                          _foodPending(fs, query)) {
+                      if (_productsPending(ps, query) || _foodPending(fs, query)) {
                         return _pendingSpinner;
                       }
-                      final products =
-                          ps is ProductsLoadedState ? ps.products : const <MealEntity>[];
-                      final foods =
-                          fs is FoodLoadedState ? fs.food : const <MealEntity>[];
+                      final products = ps is ProductsLoadedState ? ps.products : const <MealEntity>[];
+                      final foods = fs is FoodLoadedState ? fs.food : const <MealEntity>[];
                       final merged = mergeAndRankMeals(products, foods, query);
                       if (merged.isEmpty) {
                         if (ps is ProductsInitial && fs is FoodInitial) {
                           return const DefaultsResultsWidget();
                         }
-                        return const NoResultsWidget();
+                        return NoResultsWidget(
+                          onBarcodePressed: _onBarcodeIconPressed,
+                          onCustomFoodPressed: () => _onCustomAddButtonPressed(false),
+                        );
                       }
                       final imperial = ps is ProductsLoadedState
                           ? ps.usesImperialUnits
@@ -376,24 +356,27 @@ class _AddMealScreenState extends State<AddMealScreen> {
               bloc: _productsBloc,
               builder: (context, state) {
                 if (state is ProductsInitial) {
-                  return _productsPending(state, query)
-                      ? _pendingSpinner
-                      : const DefaultsResultsWidget();
+                  return _productsPending(state, query) ? _pendingSpinner : const DefaultsResultsWidget();
                 } else if (state is ProductsLoadingState) {
                   return _pendingSpinner;
                 } else if (state is ProductsLoadedState) {
                   if (state.products.isEmpty) {
                     return _productsPending(state, query)
                         ? _pendingSpinner
-                        : const NoResultsWidget();
+                        : NoResultsWidget(
+                            onBarcodePressed: _onBarcodeIconPressed,
+                            onCustomFoodPressed: () => _onCustomAddButtonPressed(state.usesImperialUnits),
+                          );
                   }
                   return Flexible(
                     child: ListView.builder(
-                      itemCount:
-                          state.products.length + (state.remoteSourceEmpty ? 1 : 0),
+                      itemCount: state.products.length + (state.remoteSourceEmpty ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == state.products.length) {
-                          return const NoResultsWidget();
+                          return NoResultsWidget(
+                            onBarcodePressed: _onBarcodeIconPressed,
+                            onCustomFoodPressed: () => _onCustomAddButtonPressed(state.usesImperialUnits),
+                          );
                         }
                         return MealItemCard(
                           day: _day,
@@ -423,23 +406,27 @@ class _AddMealScreenState extends State<AddMealScreen> {
               bloc: _foodBloc,
               builder: (context, state) {
                 if (state is FoodInitial) {
-                  return _foodPending(state, query)
-                      ? _pendingSpinner
-                      : const DefaultsResultsWidget();
+                  return _foodPending(state, query) ? _pendingSpinner : const DefaultsResultsWidget();
                 } else if (state is FoodLoadingState) {
                   return _pendingSpinner;
                 } else if (state is FoodLoadedState) {
                   if (state.food.isEmpty) {
                     return _foodPending(state, query)
                         ? _pendingSpinner
-                        : const NoResultsWidget();
+                        : NoResultsWidget(
+                            onBarcodePressed: _onBarcodeIconPressed,
+                            onCustomFoodPressed: () => _onCustomAddButtonPressed(state.usesImperialUnits),
+                          );
                   }
                   return Flexible(
                     child: ListView.builder(
                       itemCount: state.food.length + (state.remoteSourceEmpty ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == state.food.length) {
-                          return const NoResultsWidget();
+                          return NoResultsWidget(
+                            onBarcodePressed: _onBarcodeIconPressed,
+                            onCustomFoodPressed: () => _onCustomAddButtonPressed(state.usesImperialUnits),
+                          );
                         }
                         return MealItemCard(
                           day: _day,
@@ -469,10 +456,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
               _recentMealBloc.add(const LoadRecentMealEvent(searchString: ""));
               return const SizedBox();
             } else if (state is RecentMealLoadingState) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 32),
-                child: CircularProgressIndicator(),
-              );
+              return const Padding(padding: EdgeInsets.only(top: 32), child: CircularProgressIndicator());
             } else if (state is RecentMealLoadedState) {
               return state.recentMeals.isNotEmpty
                   ? ListView.builder(
@@ -486,7 +470,10 @@ class _AddMealScreenState extends State<AddMealScreen> {
                         );
                       },
                     )
-                  : const NoResultsWidget();
+                  : NoResultsWidget(
+                      onBarcodePressed: _onBarcodeIconPressed,
+                      onCustomFoodPressed: () => _onCustomAddButtonPressed(state.usesImperialUnits),
+                    );
             } else if (state is RecentMealFailedState) {
               return ErrorDialog(
                 errorText: S.of(context).noMealsRecentlyAddedLabel,
@@ -500,20 +487,15 @@ class _AddMealScreenState extends State<AddMealScreen> {
   }
 
   void _onBarcodeIconPressed() {
-    Navigator.of(context).pushNamed(
-      NavigationOptions.scannerRoute,
-      arguments: ScannerScreenArguments(_day, _mealType.getIntakeType()),
-    );
+    Navigator.of(
+      context,
+    ).pushNamed(NavigationOptions.scannerRoute, arguments: ScannerScreenArguments(_day, _mealType.getIntakeType()));
   }
 
   void _onBulkAddPressed(bool usesImperialUnits) {
     Navigator.of(context).pushNamed(
       NavigationOptions.bulkAddRoute,
-      arguments: BulkAddScreenArguments(
-        _mealType.getIntakeType(),
-        _day,
-        usesImperialUnits,
-      ),
+      arguments: BulkAddScreenArguments(_mealType.getIntakeType(), _day, usesImperialUnits),
     );
   }
 
@@ -522,10 +504,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (sheetContext) => QuickAddBottomSheet(
-        intakeType: _mealType.getIntakeType(),
-        day: _day,
-      ),
+      builder: (sheetContext) => QuickAddBottomSheet(intakeType: _mealType.getIntakeType(), day: _day),
     );
   }
 
@@ -557,12 +536,7 @@ class _AddMealScreenState extends State<AddMealScreen> {
   void _openEditMealScreen(bool usesImperialUnits) {
     Navigator.of(context).pushNamed(
       NavigationOptions.editMealRoute,
-      arguments: EditMealScreenArguments(
-        _day,
-        MealEntity.empty(),
-        _mealType.getIntakeType(),
-        usesImperialUnits,
-      ),
+      arguments: EditMealScreenArguments(_day, MealEntity.empty(), _mealType.getIntakeType(), usesImperialUnits),
     );
   }
 }
