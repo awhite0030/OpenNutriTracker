@@ -217,9 +217,9 @@ void main() {
     );
 
     // Leaving the field again must not re-open the dialog for the same value.
-    await tester.tap(find.byType(TextFormField).first);
+    await tester.tap(find.byType(TextFormField).first, warnIfMissed: false);
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(TextFormField).at(2));
+    await tester.tap(find.byType(TextFormField).at(2), warnIfMissed: false);
     await tester.pumpAndSettle();
 
     expect(find.text(l10nEn.onboardingImplausibleTitle), findsNothing);
