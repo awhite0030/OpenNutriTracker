@@ -93,6 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool? _aiConfigured;
   String? _aiEndpoint;
   bool _aiEnabled = false;
+
   /// Null when the stored name is unrecognised — see #753.
   AiProvider? _aiProvider;
 
@@ -180,419 +181,344 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // shrink-wrapped, unscrollable list of fixed children *is* a
           // Column, with a viewport in the way.
           final children = <Widget>[
-              _categoryHeader(
-                context,
-                palette,
-                S.of(context).settingsCategoryUnits,
-              ),
-              _SettingsGroup(
-                palette: palette,
-                tiles: [
-                  _SettingsTile(
-                    identifier: 'settings-food-units',
-                    palette: palette,
-                    icon: Icons.kitchen_rounded,
-                    title: S.of(context).settingsFoodUnitsLabel,
-                    subtitle: state.usesImperialFoodUnits
-                        ? S.of(context).settingsFoodUnitsImperial
-                        : S.of(context).settingsFoodUnitsMetric,
-                    onTap: () => _showFoodUnitsDialog(
-                      context,
-                      state.usesImperialFoodUnits,
-                    ),
+            _categoryHeader(context, palette, S.of(context).settingsCategoryUnits),
+            _SettingsGroup(
+              palette: palette,
+              tiles: [
+                _SettingsTile(
+                  identifier: 'settings-food-units',
+                  palette: palette,
+                  icon: Icons.kitchen_rounded,
+                  title: S.of(context).settingsFoodUnitsLabel,
+                  subtitle: state.usesImperialFoodUnits
+                      ? S.of(context).settingsFoodUnitsImperial
+                      : S.of(context).settingsFoodUnitsMetric,
+                  onTap: () => _showFoodUnitsDialog(context, state.usesImperialFoodUnits),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-height-units',
+                  palette: palette,
+                  icon: Icons.height_rounded,
+                  title: S.of(context).settingsHeightUnitsLabel,
+                  subtitle: state.usesImperialHeightUnits
+                      ? S.of(context).settingsHeightUnitsImperial
+                      : S.of(context).settingsHeightUnitsMetric,
+                  onTap: () => _showHeightUnitsDialog(context, state.usesImperialHeightUnits),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-body-weight-unit',
+                  palette: palette,
+                  icon: Icons.monitor_weight_rounded,
+                  title: S.of(context).settingsBodyWeightUnitLabel,
+                  subtitle: state.bodyWeightUnit.getLabel(context),
+                  onTap: () => _showBodyWeightUnitDialog(context, state.bodyWeightUnit),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-energy-unit',
+                  palette: palette,
+                  icon: Icons.local_fire_department_rounded,
+                  title: S.of(context).settingsEnergyUnitLabel,
+                  subtitle: state.usesKilojoules ? S.of(context).energyUnitKjLabel : S.of(context).energyUnitKcalLabel,
+                  onTap: () => _showEnergyUnitDialog(context, state.usesKilojoules),
+                ),
+              ],
+            ),
+            const SizedBox(height: Dimens.spacing20),
+            _categoryHeader(context, palette, S.of(context).settingsCategoryGoals),
+            _SettingsGroup(
+              palette: palette,
+              tiles: [
+                // The old Calculations dialog had grown into a wall of
+                // sliders covering daily kcal, macros, per-meal split,
+                // ten nutrient goals, and the diary day boundary. Each
+                // is now its own focused entry so people can find the
+                // setting they want and only see the controls for it.
+                _SettingsTile(
+                  identifier: 'settings-kcal-goal-info',
+                  palette: palette,
+                  icon: Icons.functions_rounded,
+                  title: S.of(context).settingsKcalGoalInfoLabel,
+                  showChevron: true,
+                  onTap: () =>
+                      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const KcalGoalInfoScreen())),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-kcal-adjustment',
+                  palette: palette,
+                  icon: Icons.calculate_rounded,
+                  title: S.of(context).settingsKcalAdjustmentLabel,
+                  onTap: () => _showKcalAdjustmentDialog(context),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-macro-split',
+                  palette: palette,
+                  icon: Icons.pie_chart_rounded,
+                  title: S.of(context).settingsMacroSplitLabel,
+                  onTap: () => _showMacroSplitDialog(context),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-per-meal-share',
+                  palette: palette,
+                  icon: Icons.restaurant_menu_rounded,
+                  title: S.of(context).settingsPerMealKcalShareLabel,
+                  onTap: () => _showPerMealKcalShareDialog(context),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-nutrient-goals',
+                  palette: palette,
+                  icon: Icons.spa_rounded,
+                  title: S.of(context).settingsNutrientGoalsLabel,
+                  showChevron: true,
+                  onTap: () => _openNutrientGoalsScreen(context),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-day-boundary',
+                  palette: palette,
+                  icon: Icons.schedule_rounded,
+                  title: S.of(context).settingsDayStartLabel,
+                  onTap: () => _showDayBoundaryDialog(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: Dimens.spacing20),
+            _categoryHeader(context, palette, S.of(context).settingsCategoryDisplay),
+            _SettingsGroup(
+              palette: palette,
+              tiles: [
+                _SettingsSwitchTile(
+                  palette: palette,
+                  icon: Icons.directions_run_rounded,
+                  title: S.of(context).settingsShowActivityTracking,
+                  value: state.showActivityTracking,
+                  onChanged: (bool value) {
+                    _settingsBloc.setShowActivityTracking(value);
+                    _settingsBloc.add(LoadSettingsEvent());
+                    _homeBloc.add(LoadItemsEvent());
+                    // DiaryBloc is a lazy singleton so its loaded state
+                    // survives navigation. Without an explicit reload here
+                    // the diary keeps the stale flag and the per-day
+                    // Activity section stays visible after toggling off.
+                    _diaryBloc.add(const LoadDiaryYearEvent());
+                  },
+                ),
+                _SettingsSwitchTile(
+                  palette: palette,
+                  icon: Icons.bar_chart_rounded,
+                  title: S.of(context).settingsShowMealMacros,
+                  value: state.showMealMacros,
+                  onChanged: (bool value) {
+                    _settingsBloc.setShowMealMacros(value);
+                    _settingsBloc.add(LoadSettingsEvent());
+                    _homeBloc.add(LoadItemsEvent());
+                  },
+                ),
+                _SettingsSwitchTile(
+                  palette: palette,
+                  icon: Icons.science_rounded,
+                  title: S.of(context).settingsShowMicronutrientsLabel,
+                  value: state.showMicronutrients,
+                  onChanged: (bool value) {
+                    _settingsBloc.setShowMicronutrients(value);
+                    _settingsBloc.add(LoadSettingsEvent());
+                  },
+                ),
+                // #160 follow-up: lets the user pick which nutrients show
+                // on the diary's daily nutrient panel. Lives next to the
+                // meal-detail micronutrient toggle above; both shape what
+                // the user sees from the same underlying nutrient data.
+                _SettingsTile(
+                  identifier: 'settings-nutrient-visibility',
+                  palette: palette,
+                  icon: Icons.tune_rounded,
+                  title: S.of(context).settingsNutrientsLabel,
+                  subtitle: S.of(context).settingsNutrientsSubtitle,
+                  onTap: () => _openNutrientVisibilityScreen(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: Dimens.spacing20),
+            _categoryHeader(context, palette, S.of(context).settingsCategoryAppearance),
+            _SettingsGroup(
+              palette: palette,
+              tiles: [
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.brightness_medium_rounded,
+                  title: S.of(context).settingsThemeLabel,
+                  onTap: () => _showThemeDialog(context, state.appTheme),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-accent-colour',
+                  palette: palette,
+                  icon: Icons.palette_rounded,
+                  title: S.of(context).settingsAccentColourTitle,
+                  subtitle: _accentSubtitle(
+                    context,
+                    useMaterialYou: state.useMaterialYou,
+                    accentColor: state.accentColor,
                   ),
-                  _SettingsTile(
-                    identifier: 'settings-height-units',
-                    palette: palette,
-                    icon: Icons.height_rounded,
-                    title: S.of(context).settingsHeightUnitsLabel,
-                    subtitle: state.usesImperialHeightUnits
-                        ? S.of(context).settingsHeightUnitsImperial
-                        : S.of(context).settingsHeightUnitsMetric,
-                    onTap: () => _showHeightUnitsDialog(
-                      context,
-                      state.usesImperialHeightUnits,
-                    ),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-body-weight-unit',
-                    palette: palette,
-                    icon: Icons.monitor_weight_rounded,
-                    title: S.of(context).settingsBodyWeightUnitLabel,
-                    subtitle: state.bodyWeightUnit.getLabel(context),
-                    onTap: () => _showBodyWeightUnitDialog(
-                      context,
-                      state.bodyWeightUnit,
-                    ),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-energy-unit',
-                    palette: palette,
-                    icon: Icons.local_fire_department_rounded,
-                    title: S.of(context).settingsEnergyUnitLabel,
-                    subtitle: state.usesKilojoules
-                        ? S.of(context).energyUnitKjLabel
-                        : S.of(context).energyUnitKcalLabel,
-                    onTap: () =>
-                        _showEnergyUnitDialog(context, state.usesKilojoules),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Dimens.spacing20),
-              _categoryHeader(
-                context,
-                palette,
-                S.of(context).settingsCategoryGoals,
-              ),
-              _SettingsGroup(
-                palette: palette,
-                tiles: [
-                  // The old Calculations dialog had grown into a wall of
-                  // sliders covering daily kcal, macros, per-meal split,
-                  // ten nutrient goals, and the diary day boundary. Each
-                  // is now its own focused entry so people can find the
-                  // setting they want and only see the controls for it.
-                  _SettingsTile(
-                    identifier: 'settings-kcal-goal-info',
-                    palette: palette,
-                    icon: Icons.functions_rounded,
-                    title: S.of(context).settingsKcalGoalInfoLabel,
-                    showChevron: true,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const KcalGoalInfoScreen(),
-                      ),
-                    ),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-kcal-adjustment',
-                    palette: palette,
-                    icon: Icons.calculate_rounded,
-                    title: S.of(context).settingsKcalAdjustmentLabel,
-                    onTap: () => _showKcalAdjustmentDialog(context),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-macro-split',
-                    palette: palette,
-                    icon: Icons.pie_chart_rounded,
-                    title: S.of(context).settingsMacroSplitLabel,
-                    onTap: () => _showMacroSplitDialog(context),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-per-meal-share',
-                    palette: palette,
-                    icon: Icons.restaurant_menu_rounded,
-                    title: S.of(context).settingsPerMealKcalShareLabel,
-                    onTap: () => _showPerMealKcalShareDialog(context),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-nutrient-goals',
-                    palette: palette,
-                    icon: Icons.spa_rounded,
-                    title: S.of(context).settingsNutrientGoalsLabel,
-                    showChevron: true,
-                    onTap: () => _openNutrientGoalsScreen(context),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-day-boundary',
-                    palette: palette,
-                    icon: Icons.schedule_rounded,
-                    title: S.of(context).settingsDayStartLabel,
-                    onTap: () => _showDayBoundaryDialog(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Dimens.spacing20),
-              _categoryHeader(
-                context,
-                palette,
-                S.of(context).settingsCategoryDisplay,
-              ),
-              _SettingsGroup(
-                palette: palette,
-                tiles: [
-                  _SettingsSwitchTile(
-                    palette: palette,
-                    icon: Icons.directions_run_rounded,
-                    title: S.of(context).settingsShowActivityTracking,
-                    value: state.showActivityTracking,
-                    onChanged: (bool value) {
-                      _settingsBloc.setShowActivityTracking(value);
-                      _settingsBloc.add(LoadSettingsEvent());
-                      _homeBloc.add(LoadItemsEvent());
-                      // DiaryBloc is a lazy singleton so its loaded state
-                      // survives navigation. Without an explicit reload here
-                      // the diary keeps the stale flag and the per-day
-                      // Activity section stays visible after toggling off.
-                      _diaryBloc.add(const LoadDiaryYearEvent());
-                    },
-                  ),
-                  _SettingsSwitchTile(
-                    palette: palette,
-                    icon: Icons.bar_chart_rounded,
-                    title: S.of(context).settingsShowMealMacros,
-                    value: state.showMealMacros,
-                    onChanged: (bool value) {
-                      _settingsBloc.setShowMealMacros(value);
-                      _settingsBloc.add(LoadSettingsEvent());
-                      _homeBloc.add(LoadItemsEvent());
-                    },
-                  ),
-                  _SettingsSwitchTile(
-                    palette: palette,
-                    icon: Icons.science_rounded,
-                    title: S.of(context).settingsShowMicronutrientsLabel,
-                    value: state.showMicronutrients,
-                    onChanged: (bool value) {
-                      _settingsBloc.setShowMicronutrients(value);
-                      _settingsBloc.add(LoadSettingsEvent());
-                    },
-                  ),
-                  // #160 follow-up: lets the user pick which nutrients show
-                  // on the diary's daily nutrient panel. Lives next to the
-                  // meal-detail micronutrient toggle above; both shape what
-                  // the user sees from the same underlying nutrient data.
-                  _SettingsTile(
-                    identifier: 'settings-nutrient-visibility',
-                    palette: palette,
-                    icon: Icons.tune_rounded,
-                    title: S.of(context).settingsNutrientsLabel,
-                    subtitle: S.of(context).settingsNutrientsSubtitle,
-                    onTap: () => _openNutrientVisibilityScreen(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Dimens.spacing20),
-              _categoryHeader(
-                context,
-                palette,
-                S.of(context).settingsCategoryAppearance,
-              ),
-              _SettingsGroup(
-                palette: palette,
-                tiles: [
-                  _SettingsTile(
-                    palette: palette,
-                    icon: Icons.brightness_medium_rounded,
-                    title: S.of(context).settingsThemeLabel,
-                    onTap: () => _showThemeDialog(context, state.appTheme),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-accent-colour',
-                    palette: palette,
-                    icon: Icons.palette_rounded,
-                    title: S.of(context).settingsAccentColourTitle,
-                    subtitle: _accentSubtitle(
-                      context,
-                      useMaterialYou: state.useMaterialYou,
-                      accentColor: state.accentColor,
-                    ),
-                    trailing: _AccentTrailingSwatch(
-                      useMaterialYou: state.useMaterialYou,
-                      accentColor: state.accentColor,
-                    ),
-                    onTap: () => Navigator.of(
-                      context,
-                    ).pushNamed(NavigationOptions.accentColourRoute),
-                  ),
+                  trailing: _AccentTrailingSwatch(useMaterialYou: state.useMaterialYou, accentColor: state.accentColor),
+                  onTap: () => Navigator.of(context).pushNamed(NavigationOptions.accentColourRoute),
+                ),
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.language_rounded,
+                  title: S.of(context).settingsLanguageLabel,
+                  subtitle: _localeDisplayName(state.selectedLocale) ?? S.of(context).settingsThemeSystemDefaultLabel,
+                  onTap: () => _showLanguageDialog(context, state.selectedLocale),
+                ),
+              ],
+            ),
+            const SizedBox(height: Dimens.spacing20),
+            _categoryHeader(context, palette, S.of(context).settingsNotificationsLabel),
+            _SettingsGroup(
+              palette: palette,
+              tiles: [
+                _SettingsSwitchTile(
+                  palette: palette,
+                  icon: Icons.notifications_rounded,
+                  title: S.of(context).settingsNotificationsLabel,
+                  subtitle: state.notificationsEnabled
+                      ? S
+                            .of(context)
+                            .settingsNotificationsTimeLabel(
+                              _formatNotificationTime(state.notificationHour, state.notificationMinute),
+                            )
+                      : null,
+                  value: state.notificationsEnabled,
+                  onChanged: (bool value) => _onNotificationToggled(context, value, state),
+                ),
+                if (state.notificationsEnabled)
                   _SettingsTile(
                     palette: palette,
-                    icon: Icons.language_rounded,
-                    title: S.of(context).settingsLanguageLabel,
-                    subtitle:
-                        _localeDisplayName(state.selectedLocale) ??
-                        S.of(context).settingsThemeSystemDefaultLabel,
-                    onTap: () =>
-                        _showLanguageDialog(context, state.selectedLocale),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Dimens.spacing20),
-              _categoryHeader(
-                context,
-                palette,
-                S.of(context).settingsNotificationsLabel,
-              ),
-              _SettingsGroup(
-                palette: palette,
-                tiles: [
-                  _SettingsSwitchTile(
-                    palette: palette,
-                    icon: Icons.notifications_rounded,
-                    title: S.of(context).settingsNotificationsLabel,
-                    subtitle: state.notificationsEnabled
-                        ? S
-                              .of(context)
-                              .settingsNotificationsTimeLabel(
-                                _formatNotificationTime(
-                                  state.notificationHour,
-                                  state.notificationMinute,
-                                ),
-                              )
-                        : null,
-                    value: state.notificationsEnabled,
-                    onChanged: (bool value) =>
-                        _onNotificationToggled(context, value, state),
-                  ),
-                  if (state.notificationsEnabled)
-                    _SettingsTile(
-                      palette: palette,
-                      icon: Icons.access_time_rounded,
-                      title: S
-                          .of(context)
-                          .settingsNotificationsTimeLabel(
-                            _formatNotificationTime(
-                              state.notificationHour,
-                              state.notificationMinute,
-                            ),
-                          ),
-                      onTap: () => _pickNotificationTime(
-                        context,
-                        TimeOfDay(
-                          hour: state.notificationHour,
-                          minute: state.notificationMinute,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: Dimens.spacing20),
-              _categoryHeader(
-                context,
-                palette,
-                S.of(context).settingsCategoryData,
-              ),
-              _SettingsGroup(
-                palette: palette,
-                tiles: [
-                  _SettingsTile(
-                    identifier: 'settings-food-sources',
-                    palette: palette,
-                    icon: Icons.travel_explore_rounded,
-                    title: S.of(context).settingsFoodSourcesLabel,
-                    subtitle: S.of(context).settingsFoodSourcesSubtitle,
-                    onTap: () => _openFoodSourcesScreen(context),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-health-sync',
-                    palette: palette,
-                    icon: Icons.favorite_rounded,
-                    // The platform's own product name, so the row reads as
-                    // the thing users already know ("Health Connect"), not
-                    // as a generic feature label.
-                    title: healthPlatformName,
-                    subtitle: S.of(context).settingsHealthSyncSubtitle,
-                    showChevron: true,
-                    onTap: () => _openHealthSyncScreen(context),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-ai-assist',
-                    palette: palette,
-                    icon: Icons.auto_awesome_rounded,
-                    title: S.of(context).settingsAiAssistLabel,
-                    subtitle: _aiAssistSubtitle(context),
-                    badge: S.of(context).aiAssistExperimentalLabel,
-                    onTap: () => _openAiAssistDialog(context),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-import-custom-food',
-                    palette: palette,
-                    icon: Icons.restaurant_menu_rounded,
-                    title: S.of(context).importCustomFoodDataLabel,
-                    onTap: () => _showImportCustomFoodDataDialog(context),
-                  ),
-                  _SettingsTile(
-                    palette: palette,
-                    icon: Icons.import_export_rounded,
-                    title: S.of(context).exportImportAppDataLabel,
-                    onTap: () => _showExportImportDialog(context),
-                  ),
-                  _SettingsTile(
-                    palette: palette,
-                    icon: Icons.cached_rounded,
-                    title: S.of(context).clearOffCacheLabel,
-                    subtitle: S
+                    icon: Icons.access_time_rounded,
+                    title: S
                         .of(context)
-                        .clearOffCacheSubtitle(
-                          state.offCacheCount,
-                          _formatBytes(state.offCacheSizeBytes),
+                        .settingsNotificationsTimeLabel(
+                          _formatNotificationTime(state.notificationHour, state.notificationMinute),
                         ),
-                    enabled: state.offCacheCount > 0,
-                    onTap: () => _confirmClearOffCache(context),
-                  ),
-                  _SettingsTile(
-                    identifier: 'settings-delete-all-data',
-                    palette: palette,
-                    icon: Icons.delete_forever_rounded,
-                    iconColor: error,
-                    titleColor: error,
-                    title: S.of(context).settingsDeleteAllDataLabel,
-                    subtitle: S.of(context).settingsDeleteAllDataSubtitle,
-                    onTap: () => _confirmDeleteAllData(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Dimens.spacing20),
-              _categoryHeader(
-                context,
-                palette,
-                S.of(context).settingsCategoryAbout,
-              ),
-              _SettingsGroup(
-                palette: palette,
-                tiles: [
-                  _SettingsTile(
-                    palette: palette,
-                    icon: Icons.policy_rounded,
-                    title: S.of(context).settingsPrivacySettings,
-                    onTap: () => _showPrivacyDialog(
+                    onTap: () => _pickNotificationTime(
                       context,
-                      state.sendAnonymousData,
-                      isDemoData: state.isDemoData,
+                      TimeOfDay(hour: state.notificationHour, minute: state.notificationMinute),
                     ),
                   ),
-                  _SettingsTile(
-                    palette: palette,
-                    icon: Icons.description_rounded,
-                    title: S.of(context).settingsDisclaimerLabel,
-                    onTap: () => _showDisclaimerDialog(context),
-                  ),
-                  _SettingsTile(
-                    palette: palette,
-                    icon: Icons.menu_book_rounded,
-                    title: S.of(context).settingsSourcesLabel,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SourcesScreen()),
-                    ),
-                  ),
-                  _SettingsTile(
-                    palette: palette,
-                    icon: Icons.bug_report_rounded,
-                    title: S.of(context).settingsReportErrorLabel,
-                    onTap: () => _showReportErrorDialog(context),
-                  ),
-                  _SettingsTile(
-                    palette: palette,
-                    icon: Icons.error_outline_rounded,
-                    title: S.of(context).settingAboutLabel,
-                    onTap: () => _showAboutDialog(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Dimens.spacing24),
-              AppBannerVersion(versionNumber: state.versionNumber),
+              ],
+            ),
+            const SizedBox(height: Dimens.spacing20),
+            _categoryHeader(context, palette, S.of(context).settingsCategoryData),
+            _SettingsGroup(
+              palette: palette,
+              tiles: [
+                _SettingsTile(
+                  identifier: 'settings-food-sources',
+                  palette: palette,
+                  icon: Icons.travel_explore_rounded,
+                  title: S.of(context).settingsFoodSourcesLabel,
+                  subtitle: S.of(context).settingsFoodSourcesSubtitle,
+                  onTap: () => _openFoodSourcesScreen(context),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-health-sync',
+                  palette: palette,
+                  icon: Icons.favorite_rounded,
+                  // The platform's own product name, so the row reads as
+                  // the thing users already know ("Health Connect"), not
+                  // as a generic feature label.
+                  title: healthPlatformName,
+                  subtitle: S.of(context).settingsHealthSyncSubtitle,
+                  showChevron: true,
+                  onTap: () => _openHealthSyncScreen(context),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-ai-assist',
+                  palette: palette,
+                  icon: Icons.auto_awesome_rounded,
+                  title: S.of(context).settingsAiAssistLabel,
+                  subtitle: _aiAssistSubtitle(context),
+                  badge: S.of(context).aiAssistExperimentalLabel,
+                  onTap: () => _openAiAssistDialog(context),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-import-custom-food',
+                  palette: palette,
+                  icon: Icons.restaurant_menu_rounded,
+                  title: S.of(context).importCustomFoodDataLabel,
+                  onTap: () => _showImportCustomFoodDataDialog(context),
+                ),
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.import_export_rounded,
+                  title: S.of(context).exportImportAppDataLabel,
+                  onTap: () => _showExportImportDialog(context),
+                ),
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.cached_rounded,
+                  title: S.of(context).clearOffCacheLabel,
+                  subtitle: S
+                      .of(context)
+                      .clearOffCacheSubtitle(state.offCacheCount, _formatBytes(state.offCacheSizeBytes)),
+                  enabled: state.offCacheCount > 0,
+                  onTap: () => _confirmClearOffCache(context),
+                ),
+                _SettingsTile(
+                  identifier: 'settings-delete-all-data',
+                  palette: palette,
+                  icon: Icons.delete_forever_rounded,
+                  iconColor: error,
+                  titleColor: error,
+                  title: S.of(context).settingsDeleteAllDataLabel,
+                  subtitle: S.of(context).settingsDeleteAllDataSubtitle,
+                  onTap: () => _confirmDeleteAllData(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: Dimens.spacing20),
+            _categoryHeader(context, palette, S.of(context).settingsCategoryAbout),
+            _SettingsGroup(
+              palette: palette,
+              tiles: [
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.policy_rounded,
+                  title: S.of(context).settingsPrivacySettings,
+                  onTap: () => _showPrivacyDialog(context, state.sendAnonymousData, isDemoData: state.isDemoData),
+                ),
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.description_rounded,
+                  title: S.of(context).settingsDisclaimerLabel,
+                  onTap: () => _showDisclaimerDialog(context),
+                ),
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.menu_book_rounded,
+                  title: S.of(context).settingsSourcesLabel,
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourcesScreen())),
+                ),
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.bug_report_rounded,
+                  title: S.of(context).settingsReportErrorLabel,
+                  onTap: () => _showReportErrorDialog(context),
+                ),
+                _SettingsTile(
+                  palette: palette,
+                  icon: Icons.error_outline_rounded,
+                  title: S.of(context).settingAboutLabel,
+                  onTap: () => _showAboutDialog(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: Dimens.spacing24),
+            AppBannerVersion(versionNumber: state.versionNumber),
           ];
 
           if (widget.embedded) {
             return Column(mainAxisSize: MainAxisSize.min, children: children);
           }
           return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              Dimens.spacing16,
-              Dimens.spacing16,
-              Dimens.spacing16,
-              Dimens.spacing32,
-            ),
+            padding: const EdgeInsets.fromLTRB(Dimens.spacing16, Dimens.spacing16, Dimens.spacing16, Dimens.spacing32),
             children: children,
           );
         }
@@ -606,24 +532,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _categoryHeader(
-    BuildContext context,
-    AppPalette palette,
-    String label,
-  ) {
+  Widget _categoryHeader(BuildContext context, AppPalette palette, String label) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Dimens.spacing12,
-        Dimens.spacing4,
-        Dimens.spacing12,
-        Dimens.spacing8,
-      ),
+      padding: const EdgeInsets.fromLTRB(Dimens.spacing12, Dimens.spacing4, Dimens.spacing12, Dimens.spacing8),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: palette.textMuted,
-          fontWeight: FontWeight.w700,
-        ),
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(color: palette.textMuted, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -634,11 +548,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '$h:$m';
   }
 
-  Future<void> _onNotificationToggled(
-    BuildContext context,
-    bool enabled,
-    SettingsLoadedState state,
-  ) async {
+  Future<void> _onNotificationToggled(BuildContext context, bool enabled, SettingsLoadedState state) async {
     final l10n = S.of(context);
     final notificationService = locator<NotificationService>();
     await notificationService.initialize();
@@ -646,9 +556,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final granted = await notificationService.requestPermission();
       if (!granted) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.notificationsPermissionDeniedSnack)),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.notificationsPermissionDeniedSnack)));
         }
         return;
       }
@@ -667,10 +575,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _settingsBloc.add(LoadSettingsEvent());
   }
 
-  Future<void> _pickNotificationTime(
-    BuildContext context,
-    TimeOfDay current,
-  ) async {
+  Future<void> _pickNotificationTime(BuildContext context, TimeOfDay current) async {
     final l10n = S.of(context);
     final picked = await showTimePicker(context: context, initialTime: current);
     if (picked == null) return;
@@ -687,10 +592,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _settingsBloc.add(LoadSettingsEvent());
   }
 
-  void _showFoodUnitsDialog(
-    BuildContext context,
-    bool currentUsesImperial,
-  ) async {
+  void _showFoodUnitsDialog(BuildContext context, bool currentUsesImperial) async {
     bool selectedUsesImperial = currentUsesImperial;
     final shouldUpdate = await showDialog<bool?>(
       context: context,
@@ -699,43 +601,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           contentPadding: EdgeInsets.zero,
           title: Text(S.of(context).settingsFoodUnitsLabel),
           content: StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(void Function()) setState,
-                ) {
-                  return RadioGroup<bool>(
-                    groupValue: selectedUsesImperial,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedUsesImperial = value ?? false;
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RadioListTile<bool>(
-                          title: Text(S.of(context).settingsFoodUnitsMetric),
-                          value: false,
-                        ),
-                        RadioListTile<bool>(
-                          title: Text(S.of(context).settingsFoodUnitsImperial),
-                          value: true,
-                        ),
-                      ],
-                    ),
-                  );
+            builder: (BuildContext context, void Function(void Function()) setState) {
+              return RadioGroup<bool>(
+                groupValue: selectedUsesImperial,
+                onChanged: (value) {
+                  setState(() {
+                    selectedUsesImperial = value ?? false;
+                  });
                 },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<bool>(title: Text(S.of(context).settingsFoodUnitsMetric), value: false),
+                    RadioListTile<bool>(title: Text(S.of(context).settingsFoodUnitsImperial), value: true),
+                  ],
+                ),
+              );
+            },
           ),
           actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(S.of(context).dialogCancelLabel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(S.of(context).dialogOKLabel),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.of(context).dialogCancelLabel)),
+            TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text(S.of(context).dialogOKLabel)),
           ],
         );
       },
@@ -748,10 +634,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _showHeightUnitsDialog(
-    BuildContext context,
-    bool currentUsesImperial,
-  ) async {
+  void _showHeightUnitsDialog(BuildContext context, bool currentUsesImperial) async {
     bool selectedUsesImperial = currentUsesImperial;
     final shouldUpdate = await showDialog<bool?>(
       context: context,
@@ -760,45 +643,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           contentPadding: EdgeInsets.zero,
           title: Text(S.of(context).settingsHeightUnitsLabel),
           content: StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(void Function()) setState,
-                ) {
-                  return RadioGroup<bool>(
-                    groupValue: selectedUsesImperial,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedUsesImperial = value ?? false;
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RadioListTile<bool>(
-                          title: Text(S.of(context).settingsHeightUnitsMetric),
-                          value: false,
-                        ),
-                        RadioListTile<bool>(
-                          title: Text(
-                            S.of(context).settingsHeightUnitsImperial,
-                          ),
-                          value: true,
-                        ),
-                      ],
-                    ),
-                  );
+            builder: (BuildContext context, void Function(void Function()) setState) {
+              return RadioGroup<bool>(
+                groupValue: selectedUsesImperial,
+                onChanged: (value) {
+                  setState(() {
+                    selectedUsesImperial = value ?? false;
+                  });
                 },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<bool>(title: Text(S.of(context).settingsHeightUnitsMetric), value: false),
+                    RadioListTile<bool>(title: Text(S.of(context).settingsHeightUnitsImperial), value: true),
+                  ],
+                ),
+              );
+            },
           ),
           actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(S.of(context).dialogCancelLabel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(S.of(context).dialogOKLabel),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.of(context).dialogCancelLabel)),
+            TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text(S.of(context).dialogOKLabel)),
           ],
         );
       },
@@ -810,10 +675,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _showBodyWeightUnitDialog(
-    BuildContext context,
-    BodyWeightUnit currentUnit,
-  ) async {
+  void _showBodyWeightUnitDialog(BuildContext context, BodyWeightUnit currentUnit) async {
     BodyWeightUnit selectedUnit = currentUnit;
     final shouldUpdate = await showDialog<bool?>(
       context: context,
@@ -822,47 +684,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
           contentPadding: EdgeInsets.zero,
           title: Text(S.of(context).settingsBodyWeightUnitLabel),
           content: StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(void Function()) setState,
-                ) {
-                  return RadioGroup<BodyWeightUnit>(
-                    groupValue: selectedUnit,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedUnit = value ?? BodyWeightUnit.kg;
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RadioListTile<BodyWeightUnit>(
-                          title: Text(S.of(context).kgLabel),
-                          value: BodyWeightUnit.kg,
-                        ),
-                        RadioListTile<BodyWeightUnit>(
-                          title: Text(S.of(context).lbsLabel),
-                          value: BodyWeightUnit.lb,
-                        ),
-                        RadioListTile<BodyWeightUnit>(
-                          title: Text(S.of(context).stLabel),
-                          value: BodyWeightUnit.st,
-                        ),
-                      ],
-                    ),
-                  );
+            builder: (BuildContext context, void Function(void Function()) setState) {
+              return RadioGroup<BodyWeightUnit>(
+                groupValue: selectedUnit,
+                onChanged: (value) {
+                  setState(() {
+                    selectedUnit = value ?? BodyWeightUnit.kg;
+                  });
                 },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<BodyWeightUnit>(title: Text(S.of(context).kgLabel), value: BodyWeightUnit.kg),
+                    RadioListTile<BodyWeightUnit>(title: Text(S.of(context).lbsLabel), value: BodyWeightUnit.lb),
+                    RadioListTile<BodyWeightUnit>(title: Text(S.of(context).stLabel), value: BodyWeightUnit.st),
+                  ],
+                ),
+              );
+            },
           ),
           actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(S.of(context).dialogCancelLabel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(S.of(context).dialogOKLabel),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.of(context).dialogCancelLabel)),
+            TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text(S.of(context).dialogOKLabel)),
           ],
         );
       },
@@ -877,21 +720,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _profileBloc.add(LoadProfileEvent());
       _homeBloc.add(const LoadItemsEvent());
       final trendsState = _trendsBloc.state;
-      _trendsBloc.add(
-        LoadTrendsEvent(
-          rangeDays: trendsState is TrendsLoaded ? trendsState.rangeDays : 7,
-        ),
-      );
+      _trendsBloc.add(LoadTrendsEvent(rangeDays: trendsState is TrendsLoaded ? trendsState.rangeDays : 7));
     }
   }
 
   // #177: Pick between kilocalories (default) and kilojoules for the
   // energy display unit. Internal storage stays in kcal; this only
   // toggles how energy is rendered everywhere it appears.
-  void _showEnergyUnitDialog(
-    BuildContext context,
-    bool currentUsesKilojoules,
-  ) async {
+  void _showEnergyUnitDialog(BuildContext context, bool currentUsesKilojoules) async {
     bool selectedUsesKilojoules = currentUsesKilojoules;
     final shouldUpdate = await showDialog<bool?>(
       context: context,
@@ -900,43 +736,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           contentPadding: EdgeInsets.zero,
           title: Text(S.of(context).settingsEnergyUnitLabel),
           content: StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(void Function()) setState,
-                ) {
-                  return RadioGroup<bool>(
-                    groupValue: selectedUsesKilojoules,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedUsesKilojoules = value ?? false;
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RadioListTile<bool>(
-                          title: Text(S.of(context).energyUnitKcalLabel),
-                          value: false,
-                        ),
-                        RadioListTile<bool>(
-                          title: Text(S.of(context).energyUnitKjLabel),
-                          value: true,
-                        ),
-                      ],
-                    ),
-                  );
+            builder: (BuildContext context, void Function(void Function()) setState) {
+              return RadioGroup<bool>(
+                groupValue: selectedUsesKilojoules,
+                onChanged: (value) {
+                  setState(() {
+                    selectedUsesKilojoules = value ?? false;
+                  });
                 },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<bool>(title: Text(S.of(context).energyUnitKcalLabel), value: false),
+                    RadioListTile<bool>(title: Text(S.of(context).energyUnitKjLabel), value: true),
+                  ],
+                ),
+              );
+            },
           ),
           actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(S.of(context).dialogCancelLabel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(S.of(context).dialogOKLabel),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.of(context).dialogCancelLabel)),
+            TextButton(onPressed: () => Navigator.of(context).pop(true), child: Text(S.of(context).dialogOKLabel)),
           ],
         );
       },
@@ -945,10 +765,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _settingsBloc.setUsesKilojoules(selectedUsesKilojoules);
       _settingsBloc.add(LoadSettingsEvent());
       if (context.mounted) {
-        Provider.of<EnergyUnitProvider>(
-          context,
-          listen: false,
-        ).updateUsesKilojoules(selectedUsesKilojoules);
+        Provider.of<EnergyUnitProvider>(context, listen: false).updateUsesKilojoules(selectedUsesKilojoules);
       }
     }
   }
@@ -956,30 +773,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showKcalAdjustmentDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => KcalAdjustmentDialog(
-        settingsBloc: _settingsBloc,
-        profileBloc: _profileBloc,
-        homeBloc: _homeBloc,
-      ),
+      builder: (context) =>
+          KcalAdjustmentDialog(settingsBloc: _settingsBloc, profileBloc: _profileBloc, homeBloc: _homeBloc),
     );
   }
 
   void _showMacroSplitDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) =>
-          MacroSplitDialog(settingsBloc: _settingsBloc, homeBloc: _homeBloc),
+      builder: (context) => MacroSplitDialog(settingsBloc: _settingsBloc, homeBloc: _homeBloc),
     );
   }
 
   void _showPerMealKcalShareDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => PerMealKcalShareDialog(
-        settingsBloc: _settingsBloc,
-        homeBloc: _homeBloc,
-        calendarDayBloc: _calendarDayBloc,
-      ),
+      builder: (context) =>
+          PerMealKcalShareDialog(settingsBloc: _settingsBloc, homeBloc: _homeBloc, calendarDayBloc: _calendarDayBloc),
     );
   }
 
@@ -1000,11 +810,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _showDayBoundaryDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => DiaryDayBoundaryDialog(
-        settingsBloc: _settingsBloc,
-        homeBloc: _homeBloc,
-        calendarDayBloc: _calendarDayBloc,
-      ),
+      builder: (context) =>
+          DiaryDayBoundaryDialog(settingsBloc: _settingsBloc, homeBloc: _homeBloc, calendarDayBloc: _calendarDayBloc),
     );
   }
 
@@ -1013,16 +820,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showImportCustomFoodDataDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => ImportCustomFoodDataDialog(),
-    );
+    showDialog(context: context, builder: (context) => ImportCustomFoodDataDialog());
   }
 
   void _openNutrientVisibilityScreen(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const NutrientVisibilityScreen()),
-    );
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NutrientVisibilityScreen()));
   }
 
   Future<void> _refreshAiAssistState() async {
@@ -1051,11 +853,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   );
 
   Future<void> _openAiAssistDialog(BuildContext context) async {
-    await AiAssistDialog.show(
-      context,
-      _aiCredentials,
-      probeRunner: _aiProbeRunner,
-    );
+    await AiAssistDialog.show(context, _aiCredentials, probeRunner: _aiProbeRunner);
     // Unconditionally, not only when the dialog reports a change: the
     // subtitle is cheap to recompute and a stale one misdescribes what
     // leaves the device.
@@ -1063,9 +861,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _openFoodSourcesScreen(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const FoodSourcesScreen()));
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const FoodSourcesScreen()));
   }
 
   void _openHealthSyncScreen(BuildContext context) {
@@ -1082,14 +878,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(S.of(context).clearOffCacheConfirmTitle),
         content: Text(S.of(context).clearOffCacheConfirmContent),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(S.of(context).dialogCancelLabel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(S.of(context).dialogOKLabel),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(S.of(context).dialogCancelLabel)),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(S.of(context).dialogOKLabel)),
         ],
       ),
     );
@@ -1107,14 +897,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(l10n.settingsDeleteAllDataConfirmTitle),
         content: Text(l10n.settingsDeleteAllDataConfirmContent),
         actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(l10n.dialogCancelLabel)),
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.dialogCancelLabel),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(ctx).colorScheme.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.error),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(l10n.settingsDeleteAllDataConfirmAction),
           ),
@@ -1124,10 +909,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true) return;
     await locator<DeleteAllUserDataUsecase>().deleteAll();
     if (!mounted) return;
-    navigator.pushNamedAndRemoveUntil(
-      NavigationOptions.onboardingRoute,
-      (_) => false,
-    );
+    navigator.pushNamedAndRemoveUntil(NavigationOptions.onboardingRoute, (_) => false);
   }
 
   /// Format a byte count for display in the cache-clear tile subtitle.
@@ -1147,39 +929,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           contentPadding: EdgeInsets.zero,
           title: Text(S.of(context).settingsThemeLabel),
           content: StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(void Function()) setState,
-                ) {
-                  return RadioGroup(
-                    groupValue: selectedTheme,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedTheme = value as AppThemeEntity;
-                      });
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RadioListTile(
-                          title: Text(
-                            S.of(context).settingsThemeSystemDefaultLabel,
-                          ),
-                          value: AppThemeEntity.system,
-                        ),
-                        RadioListTile(
-                          title: Text(S.of(context).settingsThemeLightLabel),
-                          value: AppThemeEntity.light,
-                        ),
-                        RadioListTile(
-                          title: Text(S.of(context).settingsThemeDarkLabel),
-                          value: AppThemeEntity.dark,
-                        ),
-                      ],
-                    ),
-                  );
+            builder: (BuildContext context, void Function(void Function()) setState) {
+              return RadioGroup(
+                groupValue: selectedTheme,
+                onChanged: (value) {
+                  setState(() {
+                    selectedTheme = value as AppThemeEntity;
+                  });
                 },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile(
+                      title: Text(S.of(context).settingsThemeSystemDefaultLabel),
+                      value: AppThemeEntity.system,
+                    ),
+                    RadioListTile(title: Text(S.of(context).settingsThemeLightLabel), value: AppThemeEntity.light),
+                    RadioListTile(title: Text(S.of(context).settingsThemeDarkLabel), value: AppThemeEntity.dark),
+                  ],
+                ),
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -1192,14 +962,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () async {
                 _settingsBloc.setAppTheme(selectedTheme);
                 _settingsBloc.add(LoadSettingsEvent());
-                setState(() {
-                  // Update Theme
-                  Provider.of<ThemeModeProvider>(
-                    context,
-                    listen: false,
-                  ).updateTheme(selectedTheme);
-                });
+
+                // Pop the dialog before applying the theme to the entire app,
+                // preventing a descendant assertion when changing to/from Light mode.
                 Navigator.of(context).pop();
+
+                // Update Theme
+                Provider.of<ThemeModeProvider>(context, listen: false).updateTheme(selectedTheme);
               },
               child: Text(S.of(context).dialogOKLabel),
             ),
@@ -1235,40 +1004,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
           contentPadding: EdgeInsets.zero,
           title: Text(S.of(context).settingsLanguageLabel),
           content: StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(void Function()) setState,
-                ) {
-                  return RadioGroup<String>(
-                    groupValue: selectedCode,
-                    onChanged: (v) =>
-                        setState(() => selectedCode = v as String),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RadioListTile<String>(
-                          title: Text(
-                            S.of(context).settingsThemeSystemDefaultLabel,
-                          ),
-                          value: _systemLocale,
-                        ),
-                        ..._supportedLocales.entries.map(
-                          (e) => RadioListTile<String>(
-                            title: Text(e.value),
-                            value: e.key,
-                          ),
-                        ),
-                      ],
+            builder: (BuildContext context, void Function(void Function()) setState) {
+              return RadioGroup<String>(
+                groupValue: selectedCode,
+                onChanged: (v) => setState(() => selectedCode = v as String),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<String>(
+                      title: Text(S.of(context).settingsThemeSystemDefaultLabel),
+                      value: _systemLocale,
                     ),
-                  );
-                },
+                    ..._supportedLocales.entries.map((e) => RadioListTile<String>(title: Text(e.value), value: e.key)),
+                  ],
+                ),
+              );
+            },
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(S.of(context).dialogCancelLabel),
-            ),
+            TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.of(context).dialogCancelLabel)),
             TextButton(
               onPressed: () {
                 final locale = selectedCode.isEmpty ? null : selectedCode;
@@ -1330,27 +1084,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _reportError(BuildContext context) async {
-    final reportUri = Uri.parse(
-      "mailto:${AppConst.reportErrorEmail}?subject=Report_Error",
-    );
+    final reportUri = Uri.parse("mailto:${AppConst.reportErrorEmail}?subject=Report_Error");
 
     if (await canLaunchUrl(reportUri)) {
       launchUrl(reportUri);
     } else {
       // Cannot open email app, show error snackbar
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).errorOpeningEmail)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.of(context).errorOpeningEmail)));
       }
     }
   }
 
-  void _showPrivacyDialog(
-    BuildContext context,
-    bool hasAcceptedAnonymousData, {
-    required bool isDemoData,
-  }) async {
+  void _showPrivacyDialog(BuildContext context, bool hasAcceptedAnonymousData, {required bool isDemoData}) async {
     // Crash reporting is not meaningful on synthetic demo data and would
     // still attach release diagnostics to a session that holds no real
     // user profile — keep the control off and locked while isDemoData.
@@ -1361,37 +1107,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return AlertDialog(
           title: Text(S.of(context).settingsPrivacySettings),
           content: StatefulBuilder(
-            builder:
-                (
-                  BuildContext context,
-                  void Function(void Function()) setState,
-                ) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(S.of(context).sendCrashReports),
-                        value: switchActive,
-                        onChanged: isDemoData
-                            ? null
-                            : (bool value) {
-                                setState(() {
-                                  switchActive = value;
-                                });
-                              },
-                      ),
-                      if (isDemoData) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          S.of(context).settingsDemoPrivacyNote,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ],
-                  );
-                },
+            builder: (BuildContext context, void Function(void Function()) setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(S.of(context).sendCrashReports),
+                    value: switchActive,
+                    onChanged: isDemoData
+                        ? null
+                        : (bool value) {
+                            setState(() {
+                              switchActive = value;
+                            });
+                          },
+                  ),
+                  if (isDemoData) ...[
+                    const SizedBox(height: 8),
+                    Text(S.of(context).settingsDemoPrivacyNote, style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ],
+              );
+            },
           ),
           actions: [
             TextButton(
@@ -1469,9 +1208,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _launchPrivacyPolicyUrl(BuildContext context) async {
-    final privacyPolicyUri = Uri.parse(
-      URLConst.privacyPolicyFor(Localizations.localeOf(context).languageCode),
-    );
+    final privacyPolicyUri = Uri.parse(URLConst.privacyPolicyFor(Localizations.localeOf(context).languageCode));
     _launchUrl(context, privacyPolicyUri);
   }
 
@@ -1481,19 +1218,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } else {
       // Cannot open browser app, show error snackbar
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).errorOpeningBrowser)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.of(context).errorOpeningBrowser)));
       }
     }
   }
 }
 
-String _accentSubtitle(
-  BuildContext context, {
-  required bool useMaterialYou,
-  required int? accentColor,
-}) {
+String _accentSubtitle(BuildContext context, {required bool useMaterialYou, required int? accentColor}) {
   final isAndroid = Theme.of(context).platform == TargetPlatform.android;
   if (isAndroid && useMaterialYou) {
     return S.of(context).settingsAccentSubtitleMaterialYou;
@@ -1508,10 +1239,7 @@ class _AccentTrailingSwatch extends StatelessWidget {
   final bool useMaterialYou;
   final int? accentColor;
 
-  const _AccentTrailingSwatch({
-    required this.useMaterialYou,
-    required this.accentColor,
-  });
+  const _AccentTrailingSwatch({required this.useMaterialYou, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
@@ -1535,9 +1263,7 @@ class _AccentTrailingSwatch extends StatelessWidget {
         ),
       );
     }
-    final color = accentColor != null
-        ? Color(accentColor!)
-        : const Color(0xFF43A047); // default green disc preview
+    final color = accentColor != null ? Color(accentColor!) : const Color(0xFF43A047); // default green disc preview
     return Container(
       width: 24,
       height: 24,
@@ -1613,18 +1339,11 @@ class _SettingsTile extends StatelessWidget {
   /// and re-deriving it at a second site was the obvious way to get it subtly
   /// wrong. The typography stays here, so a settings row still looks like a
   /// settings row.
-  Widget _titleWithBadge(
-    BuildContext context,
-    TextTheme text,
-    AppPalette palette,
-  ) => BadgedTitle(
+  Widget _titleWithBadge(BuildContext context, TextTheme text, AppPalette palette) => BadgedTitle(
     title: title,
     badge: badge,
     palette: palette,
-    style: text.titleMedium?.copyWith(
-      fontWeight: FontWeight.w700,
-      color: titleColor,
-    ),
+    style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: titleColor),
   );
 
   @override
@@ -1636,17 +1355,8 @@ class _SettingsTile extends StatelessWidget {
       enabled: enabled,
       leading: _SettingsIconChip(palette: palette, icon: icon, color: tint),
       title: _titleWithBadge(context, text, palette),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: text.bodyMedium?.copyWith(color: palette.textMuted),
-            )
-          : null,
-      trailing:
-          trailing ??
-          (showChevron
-              ? Icon(Icons.chevron_right_rounded, color: accent)
-              : null),
+      subtitle: subtitle != null ? Text(subtitle!, style: text.bodyMedium?.copyWith(color: palette.textMuted)) : null,
+      trailing: trailing ?? (showChevron ? Icon(Icons.chevron_right_rounded, color: accent) : null),
       onTap: onTap,
     );
     if (identifier == null) return tile;
@@ -1678,16 +1388,8 @@ class _SettingsSwitchTile extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     return SwitchListTile(
       secondary: _SettingsIconChip(palette: palette, icon: icon, color: accent),
-      title: Text(
-        title,
-        style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: text.bodyMedium?.copyWith(color: palette.textMuted),
-            )
-          : null,
+      title: Text(title, style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+      subtitle: subtitle != null ? Text(subtitle!, style: text.bodyMedium?.copyWith(color: palette.textMuted)) : null,
       value: value,
       onChanged: onChanged,
     );
@@ -1700,21 +1402,14 @@ class _SettingsIconChip extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _SettingsIconChip({
-    required this.palette,
-    required this.icon,
-    required this.color,
-  });
+  const _SettingsIconChip({required this.palette, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 40,
       height: 40,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: Dimens.borderRadiusS,
-      ),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: Dimens.borderRadiusS),
       child: Icon(icon, color: color, size: 22),
     );
   }
