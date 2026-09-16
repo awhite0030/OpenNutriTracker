@@ -217,6 +217,7 @@ void main() {
     );
 
     // Leaving the field again must not re-open the dialog for the same value.
+    await tester.ensureVisible(find.byType(TextFormField).first);
     await tester.tap(find.byType(TextFormField).first);
     await tester.pumpAndSettle();
     await tester.tap(find.byType(TextFormField).at(2));
@@ -387,7 +388,8 @@ void main() {
       await tester.pump();
       await tester.enterText(fields.at(2), '0');
       await tester.pump();
-      await tester.tap(find.byType(TextFormField).first);
+      await tester.ensureVisible(find.byType(TextFormField).first);
+    await tester.tap(find.byType(TextFormField).first);
       await tester.pumpAndSettle();
 
       expect(find.text(l10nEn.onboardingImplausibleTitle), findsOneWidget);
