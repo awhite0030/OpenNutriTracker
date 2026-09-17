@@ -1,0 +1,92 @@
+cat << 'PATCH' > meal_item_card4.patch
+--- lib/features/add_meal/presentation/widgets/meal_item_card.dart
++++ lib/features/add_meal/presentation/widgets/meal_item_card.dart
+@@ -14,6 +14,13 @@
+ import 'package:opennutritracker/features/add_meal/presentation/add_meal_type.dart';
+ import 'package:opennutritracker/features/add_meal/util/food_emoji_resolver.dart';
+ import 'package:opennutritracker/features/meal_detail/meal_detail_screen.dart';
++import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
++import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
++import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
++import 'package:opennutritracker/core/domain/usecase/add_intake_usecase.dart';
++import 'package:opennutritracker/core/domain/usecase/add_tracked_day_usecase.dart';
++import 'package:opennutritracker/core/domain/usecase/get_kcal_goal_usecase.dart';
++import 'package:opennutritracker/core/domain/usecase/get_macro_goal_usecase.dart';
++import 'package:opennutritracker/core/domain/entity/intake_entity.dart';
++import 'package:opennutritracker/core/utils/id_generator.dart';
++import 'package:opennutritracker/features/meal_detail/presentation/bloc/meal_detail_bloc.dart';
+ import 'package:opennutritracker/generated/l10n.dart';
+
+ class MealItemCard extends StatelessWidget {
+@@ -91,7 +98,7 @@
+                   shape: const RoundedRectangleBorder(borderRadius: Dimens.borderRadiusM),
+                 ),
+                 icon: const Icon(Icons.add_rounded, size: 24),
+-                onPressed: () => _onItemPressed(context),
++                onPressed: () => _onQuickAddPressed(context),
+               ),
+             ),
+           ],
+@@ -229,4 +236,60 @@
+       ),
+     );
+   }
++
++  Future<void> _onQuickAddPressed(BuildContext context) async {
++    // Default to 'serving' unit if defined, otherwise metric/imperial defaults.
++    String unit = UnitDropdownItem.serving.toString();
++    String amountText = '1';
++
++    if (mealEntity.scalableServingQuantity == null) {
++       unit = usesImperialUnits ? UnitDropdownItem.oz.toString() : UnitDropdownItem.g.toString();
++       amountText = usesImperialUnits ? '4' : '100'; // Match default quick-add weights
++    }
++
++    if (double.tryParse(amountText.replaceAll(',', '.')) == null) {
++      amountText = '1';
++    }
++    final quantity = double.parse(amountText.replaceAll(',', '.'));
++
++    final intakeEntity = IntakeEntity(
++      id: IdGenerator.getUniqueID(),
++      unit: unit,
++      amount: quantity,
++      type: addMealType.getIntakeType(),
++      meal: mealEntity,
++      dateTime: day,
++    );
++
++    await locator<AddIntakeUsecase>().addIntake(intakeEntity);
++
++    // Safely update TrackedDay
++    final addTrackedDay = locator<AddTrackedDayUsecase>();
++    final hasTrackedDay = await addTrackedDay.hasTrackedDay(day);
++    if (!hasTrackedDay) {
++      final kcalGoal = await locator<GetKcalGoalUsecase>().getKcalGoal();
++      final macroGoal = locator<GetMacroGoalUsecase>();
++      await addTrackedDay.addNewTrackedDay(
++        day,
++        kcalGoal,
++        await macroGoal.getCarbsGoal(kcalGoal),
++        await macroGoal.getFatsGoal(kcalGoal),
++        await macroGoal.getProteinsGoal(kcalGoal),
++      );
++    }
++    await addTrackedDay.addDayCaloriesTracked(day, intakeEntity.totalKcal);
++    await addTrackedDay.addDayMacrosTracked(
++      day,
++      carbsTracked: intakeEntity.totalCarbsGram,
++      fatTracked: intakeEntity.totalFatsGram,
++      proteinTracked: intakeEntity.totalProteinsGram,
++    );
++
++    locator<HomeBloc>().add(const LoadItemsEvent());
++    locator<DiaryBloc>().add(const LoadDiaryYearEvent());
++    locator<CalendarDayBloc>().add(const RefreshCalendarDayEvent());
++
++    if (!context.mounted) return;
++    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.of(context).infoAddedIntakeLabel)));
++  }
+ }
+PATCH
+patch -p0 < meal_item_card4.patch
