@@ -101,12 +101,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeDependencies() {
-    _bodyPages = [
-      const HomePage(),
-      const DiaryPage(),
-      const TrendsPage(),
-      const ProfilePage(),
-    ];
+    _bodyPages = [const HomePage(), const DiaryPage(), const TrendsPage(), const ProfilePage()];
     _appbarPages = [
       const HomeAppbar(),
       MainAppbar(title: S.of(context).diaryLabel, iconData: Icons.book),
@@ -126,10 +121,7 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
         children: [
           if (_isDemoData) const DemoModeBanner(),
           Expanded(
-            child: IndexedStack(
-              index: _selectedPageIndex,
-              children: _bodyPages,
-            ),
+            child: IndexedStack(index: _selectedPageIndex, children: _bodyPages),
           ),
         ],
       ),
@@ -211,6 +203,8 @@ class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
       builder: (BuildContext context) {
         return AddItemBottomSheet(
           day: DateTime.now(),
@@ -247,9 +241,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = index == selectedIndex;
-    final color = selected
-        ? Theme.of(context).colorScheme.primary
-        : palette.textMuted;
+    final color = selected ? Theme.of(context).colorScheme.primary : palette.textMuted;
     return Expanded(
       child: Semantics(
         identifier: id,
@@ -263,12 +255,7 @@ class _NavItem extends StatelessWidget {
               children: [
                 Icon(selected ? selectedIcon : icon, color: color, size: 26),
                 const SizedBox(height: 3),
-                Text(
-                  label,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: color),
-                ),
+                Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color)),
               ],
             ),
           ),
