@@ -1,34 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opennutritracker/core/domain/entity/config_entity.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
 import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
 import 'package:opennutritracker/features/settings/presentation/bloc/settings_bloc.dart';
-import 'package:opennutritracker/features/settings/presentation/widgets/macro_split_dialog.dart';
+import 'package:opennutritracker/features/settings/presentation/widgets/per_meal_kcal_share_dialog.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 import '../../../../helpers/test_l10n.dart';
 
 class _FakeSettingsBloc extends Fake implements SettingsBloc {
-  double? savedCarbs;
-  double? savedProtein;
-  double? savedFat;
+  Map<String, int>? savedShares;
 
   @override
-  Future<double?> getUserCarbGoalPct() async => 0.6;
-
-  @override
-  Future<double?> getUserProteinGoalPct() async => 0.15;
-
-  @override
-  Future<double?> getUserFatGoalPct() async => 0.25;
-
-  @override
-  Future<void> setMacroGoals(double carbGoalPct, double proteinGoalPct, double fatGoalPct) async {
-    savedCarbs = carbGoalPct;
-    savedProtein = proteinGoalPct;
-    savedFat = fatGoalPct;
+  Future<Map<String, int>> getMealKcalSharesPct() async {
+    return {
+      ConfigEntity.mealKeyBreakfast: 30,
+      ConfigEntity.mealKeyLunch: 40,
+      ConfigEntity.mealKeyDinner: 20,
+      ConfigEntity.mealKeySnack: 10,
+    };
   }
 
   @override
-  Future<void> updateTrackedDay(DateTime day) async {}
+  Future<void> setMealKcalSharesPct(Map<String, int> pct) async {
+    savedShares = pct;
+  }
 
   @override
   void add(SettingsEvent event) {}
@@ -37,6 +33,11 @@ class _FakeSettingsBloc extends Fake implements SettingsBloc {
 class _FakeHomeBloc extends Fake implements HomeBloc {
   @override
   void add(HomeEvent event) {}
+}
+
+class _FakeCalendarDayBloc extends Fake implements CalendarDayBloc {
+  @override
+  void add(CalendarDayEvent event) {}
 }
 
 Widget _wrap(Widget child) {
@@ -48,9 +49,10 @@ Widget _wrap(Widget child) {
 }
 
 void main() {
-  testWidgets('typing a value changes the total and disables OK if not 100', (tester) async {
+  testWidgets('typing a value applies it on submit and disables OK if not 100', (tester) async {
     final settingsBloc = _FakeSettingsBloc();
     final homeBloc = _FakeHomeBloc();
+    final calendarDayBloc = _FakeCalendarDayBloc();
 
     await tester.pumpWidget(
       _wrap(
@@ -59,7 +61,11 @@ void main() {
             return ElevatedButton(
               onPressed: () => showDialog<void>(
                 context: context,
-                builder: (_) => MacroSplitDialog(settingsBloc: settingsBloc, homeBloc: homeBloc),
+                builder: (_) => PerMealKcalShareDialog(
+                  settingsBloc: settingsBloc,
+                  homeBloc: homeBloc,
+                  calendarDayBloc: calendarDayBloc,
+                ),
               ),
               child: const Text('Open'),
             );
@@ -79,30 +85,32 @@ void main() {
     // Enter value that does not sum to 100
     final fields = find.byType(TextField);
     await tester.enterText(fields.first, '50');
-    // We now require submit/save for state to process if not saved earlier, or trigger it manually
+    // We now require submit for the state to update
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
-    // Now total is 50 + 15 + 25 = 90, which is != 100, so OK should be disabled
+    // Now total is 50 + 40 + 20 + 10 = 120, which is != 100, so OK should be disabled
     expect(tester.widget<TextButton>(okButton).onPressed, isNull);
 
     // Entering a valid combination that sums to 100
-    await tester.enterText(fields.at(1), '25');
+    await tester.enterText(fields.at(1), '20');
     await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pumpAndSettle();
+    await tester.pumpAndSettle(); // 50 + 20 + 20 + 10 = 100
     expect(tester.widget<TextButton>(okButton).onPressed, isNotNull);
 
     await tester.tap(okButton);
     await tester.pumpAndSettle();
 
-    expect(settingsBloc.savedCarbs, 50);
-    expect(settingsBloc.savedProtein, 25);
-    expect(settingsBloc.savedFat, 25);
+    expect(settingsBloc.savedShares?[ConfigEntity.mealKeyBreakfast], 50);
+    expect(settingsBloc.savedShares?[ConfigEntity.mealKeyLunch], 20);
+    expect(settingsBloc.savedShares?[ConfigEntity.mealKeyDinner], 20);
+    expect(settingsBloc.savedShares?[ConfigEntity.mealKeySnack], 10);
   });
 
-  testWidgets('ignores invalid typed macro values but preserves last valid value', (tester) async {
+  testWidgets('ignores invalid typed values on submit but preserves last valid value', (tester) async {
     final settingsBloc = _FakeSettingsBloc();
     final homeBloc = _FakeHomeBloc();
+    final calendarDayBloc = _FakeCalendarDayBloc();
 
     await tester.pumpWidget(
       _wrap(
@@ -111,7 +119,11 @@ void main() {
             return ElevatedButton(
               onPressed: () => showDialog<void>(
                 context: context,
-                builder: (_) => MacroSplitDialog(settingsBloc: settingsBloc, homeBloc: homeBloc),
+                builder: (_) => PerMealKcalShareDialog(
+                  settingsBloc: settingsBloc,
+                  homeBloc: homeBloc,
+                  calendarDayBloc: calendarDayBloc,
+                ),
               ),
               child: const Text('Open'),
             );
@@ -125,34 +137,19 @@ void main() {
 
     final fields = find.byType(TextField);
     // Entering a value > max allowed
-    await tester.enterText(fields.first, '95');
+    await tester.enterText(fields.first, '105');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
     final okButton = find.widgetWithText(TextButton, l10nEn.dialogOKLabel);
-    expect(tester.widget<TextButton>(okButton).onPressed, isNotNull); // Uses previous value of 60
+    expect(tester.widget<TextButton>(okButton).onPressed, isNotNull); // Uses previous valid value of 30
 
     await tester.tap(okButton);
     await tester.pumpAndSettle();
 
-    expect(settingsBloc.savedCarbs, 60);
-    expect(settingsBloc.savedProtein, 15);
-    expect(settingsBloc.savedFat, 25);
-  });
-
-  test('roundMacroPercentsToHundred always sums to 100', () {
-    // Typical redistribute leftovers.
-    expect(roundMacroPercentsToHundred(50, 18.75, 31.25), (50, 19, 31));
-    expect(roundMacroPercentsToHundred(52.941, 25, 22.059), (53, 25, 22));
-
-    // Independent .round() on 55/22.5/22.5 is 55+23+23=101 (Dart half-away-
-    // from-zero); largest-remainder must still land on 100.
-    final halfUp = roundMacroPercentsToHundred(55, 22.5, 22.5);
-    expect(halfUp.$1 + halfUp.$2 + halfUp.$3, 100);
-    expect(halfUp, (55, 23, 22));
-
-    // Already-integers and the defaults.
-    expect(roundMacroPercentsToHundred(60, 15, 25), (60, 15, 25));
-    expect(roundMacroPercentsToHundred(0, 0, 0), (60, 15, 25));
+    expect(settingsBloc.savedShares?[ConfigEntity.mealKeyBreakfast], 30);
+    expect(settingsBloc.savedShares?[ConfigEntity.mealKeyLunch], 40);
+    expect(settingsBloc.savedShares?[ConfigEntity.mealKeyDinner], 20);
+    expect(settingsBloc.savedShares?[ConfigEntity.mealKeySnack], 10);
   });
 }
