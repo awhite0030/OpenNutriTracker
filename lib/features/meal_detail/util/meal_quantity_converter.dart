@@ -16,11 +16,7 @@ import 'package:opennutritracker/features/meal_detail/presentation/bloc/meal_det
 /// `addIntake`, and anything else calling `addIntake` has to arrive at the
 /// same number the same way. Logging the raw amount instead silently
 /// under-counts — 4 oz of steak would be stored as 4 g.
-double convertQuantityToBaseUnit(
-  double quantity,
-  String unit,
-  MealEntity meal,
-) {
+double convertQuantityToBaseUnit(double quantity, String unit, MealEntity meal) {
   // A named portion scales by its own weight. Falls through to the old
   // serving path when the food has no portion list — every meal that is not
   // a fresh backend search result — so nothing that worked before changes.
@@ -46,7 +42,7 @@ double convertQuantityToBaseUnit(
     // doing nothing — "1 serving" logged one gram. The extraction of this
     // helper and that fix crossed on separate branches, so the rule lives
     // here now rather than in the two call sites it was lifted out of.
-    final servingQuantity = meal.scalableServingQuantity;
+    final servingQuantity = meal.scalableServingQuantity ?? meal.servingQuantity;
     // A meal with no serving data can't be scaled — leave the amount alone
     // rather than guessing, matching UpdateKcalEvent.
     return servingQuantity != null ? quantity * servingQuantity : quantity;

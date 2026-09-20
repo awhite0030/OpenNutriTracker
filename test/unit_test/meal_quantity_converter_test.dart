@@ -82,4 +82,31 @@ void main() {
       expect(kcalForQuantity(100, 'g', meal()), isNull);
     });
   });
+
+  group('recipe scaling', () {
+    test('scales using servingQuantity if scalableServingQuantity is null (recipes)', () {
+      final recipeMeal = MealEntity(
+        code: 'recipe',
+        name: 'Recipe',
+        url: null,
+        mealQuantity: '1200.0',
+        mealUnit: 'g',
+        servingQuantity: 300.0,
+        servingUnit: 'g',
+        servingSize: '4 servings',
+        source: MealSourceEntity.recipe,
+        nutriments: MealNutrimentsEntity(
+          energyKcal100: null,
+          carbohydrates100: null,
+          fat100: null,
+          proteins100: null,
+          sugars100: null,
+          saturatedFat100: null,
+          fiber100: null,
+        ),
+      );
+
+      expect(convertQuantityToBaseUnit(2, 'serving', recipeMeal), 600);
+    });
+  });
 }
