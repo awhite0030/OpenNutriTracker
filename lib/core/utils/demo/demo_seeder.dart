@@ -138,18 +138,9 @@ Future<void> seedDemoData(DemoSeedOptions options) async {
     kcalUserAdjustment: config.userKcalAdjustment,
     caloriesTaperEnabled: user.caloriesTaperEnabled,
   );
-  final baseCarbsGoal = MacroCalc.getTotalCarbsGoal(
-    baseKcalGoal,
-    userCarbsGoal: config.userCarbGoalPct,
-  );
-  final baseFatGoal = MacroCalc.getTotalFatsGoal(
-    baseKcalGoal,
-    userFatsGoal: config.userFatGoalPct,
-  );
-  final baseProteinGoal = MacroCalc.getTotalProteinsGoal(
-    baseKcalGoal,
-    userProteinsGoal: config.userProteinGoalPct,
-  );
+  final baseCarbsGoal = MacroCalc.getTotalCarbsGoal(baseKcalGoal, userCarbsGoal: config.userCarbGoalPct);
+  final baseFatGoal = MacroCalc.getTotalFatsGoal(baseKcalGoal, userFatsGoal: config.userFatGoalPct);
+  final baseProteinGoal = MacroCalc.getTotalProteinsGoal(baseKcalGoal, userProteinsGoal: config.userProteinGoalPct);
 
   final intakeDBOs = <IntakeDBO>[];
   final activityDBOs = <UserActivityDBO>[];
@@ -157,26 +148,19 @@ Future<void> seedDemoData(DemoSeedOptions options) async {
   final waterIntakeDBOs = <WaterIntakeDBO>[];
 
   for (var daysAgo = options.daysOfHistory - 1; daysAgo >= 0; daysAgo--) {
-    final day = startOfToday.subtract(Duration(days: daysAgo));
+    final day = DateTime(startOfToday.year, startOfToday.month, startOfToday.day - daysAgo);
 
     // Activity on roughly half of all days, always including today so the
     // Home screen has something to show immediately after seeding.
     var activityBurnedKcal = 0.0;
     if (daysAgo == 0 || demoRng.nextDouble() < 0.5) {
-      final activity =
-          demoActivityPool[demoRng.nextInt(demoActivityPool.length)];
+      final activity = demoActivityPool[demoRng.nextInt(demoActivityPool.length)];
       final duration = 25.0 + demoRng.nextInt(40); // 25-64 min
       final burnedKcal = METCalc.getTotalBurnedKcal(user, activity, duration);
       activityBurnedKcal = burnedKcal;
       activityDBOs.add(
         UserActivityDBO.fromUserActivityEntity(
-          UserActivityEntity(
-            IdGenerator.getUniqueID(),
-            duration,
-            burnedKcal,
-            jitteredTime(day, 18),
-            activity,
-          ),
+          UserActivityEntity(IdGenerator.getUniqueID(), duration, burnedKcal, jitteredTime(day, 18), activity),
         ),
       );
     }
@@ -184,12 +168,9 @@ Future<void> seedDemoData(DemoSeedOptions options) async {
     // Mirrors ActivityDetailBloc._updateTrackedDay: burned activity kcal
     // raises the day's calorie (and proportional macro) headroom.
     final dayKcalGoal = baseKcalGoal + activityBurnedKcal;
-    final dayCarbsGoal =
-        baseCarbsGoal + MacroCalc.getTotalCarbsGoal(activityBurnedKcal);
-    final dayFatGoal =
-        baseFatGoal + MacroCalc.getTotalFatsGoal(activityBurnedKcal);
-    final dayProteinGoal =
-        baseProteinGoal + MacroCalc.getTotalProteinsGoal(activityBurnedKcal);
+    final dayCarbsGoal = baseCarbsGoal + MacroCalc.getTotalCarbsGoal(activityBurnedKcal);
+    final dayFatGoal = baseFatGoal + MacroCalc.getTotalFatsGoal(activityBurnedKcal);
+    final dayProteinGoal = baseProteinGoal + MacroCalc.getTotalProteinsGoal(activityBurnedKcal);
 
     // The most recent [guaranteedStreakDays] are always on-track,
     // guaranteeing a current streak of that length (Trends' "current"
@@ -205,17 +186,14 @@ Future<void> seedDemoData(DemoSeedOptions options) async {
     final isMissedDay =
         options.missedDayProbability > 0 &&
         (daysAgo == options.guaranteedStreakDays ||
-            (daysAgo > options.guaranteedStreakDays &&
-                demoRng.nextDouble() < options.missedDayProbability));
+            (daysAgo > options.guaranteedStreakDays && demoRng.nextDouble() < options.missedDayProbability));
     final double deficit;
     if (isMissedDay) {
       final overate = demoRng.nextBool();
       // Over by 550-1449 kcal (exceeds the >500-over "on track" limit) or
       // under by 1050-1549 kcal (exceeds the >=1000-under limit) — see
       // TrackedDayEntity._hasExceededMaxKcalDifferenceGoal.
-      deficit = overate
-          ? -(550.0 + demoRng.nextInt(900))
-          : (1050.0 + demoRng.nextInt(500));
+      deficit = overate ? -(550.0 + demoRng.nextInt(900)) : (1050.0 + demoRng.nextInt(500));
     } else {
       // 200-749 kcal under goal — comfortably inside the "on track" band
       // and consistent with this demo user's "lose weight" goal. Random
@@ -241,10 +219,7 @@ Future<void> seedDemoData(DemoSeedOptions options) async {
     final totalKcal = dayIntakes.fold(0.0, (sum, i) => sum + i.totalKcal);
     final totalCarbs = dayIntakes.fold(0.0, (sum, i) => sum + i.totalCarbsGram);
     final totalFat = dayIntakes.fold(0.0, (sum, i) => sum + i.totalFatsGram);
-    final totalProtein = dayIntakes.fold(
-      0.0,
-      (sum, i) => sum + i.totalProteinsGram,
-    );
+    final totalProtein = dayIntakes.fold(0.0, (sum, i) => sum + i.totalProteinsGram);
 
     trackedDayDBOs.add(
       TrackedDayDBO(
@@ -260,21 +235,17 @@ Future<void> seedDemoData(DemoSeedOptions options) async {
       ),
     );
 
-    waterIntakeDBOs.addAll(
-      buildDailyWater(day).map(WaterIntakeDBO.fromWaterIntakeEntity),
-    );
+    waterIntakeDBOs.addAll(buildDailyWater(day).map(WaterIntakeDBO.fromWaterIntakeEntity));
   }
 
   await locator<IntakeRepository>().addAllIntakeDBOs(intakeDBOs);
   await locator<UserActivityRepository>().addAllUserActivityDBOs(activityDBOs);
   await locator<TrackedDayRepository>().addAllTrackedDays(trackedDayDBOs);
   await locator<WaterIntakeRepository>().addAllEntries(waterIntakeDBOs);
-  await locator<WeightLogRepository>().addAllEntries(
-    _buildWeightLog(startOfToday, user.weightKG, options),
-  );
+  await locator<WeightLogRepository>().addAllEntries(buildWeightLogForTesting(startOfToday, user.weightKG, options));
 
   final fastingRepository = locator<FastingRepository>();
-  for (final session in _buildFastingSessions(now, options.daysOfHistory)) {
+  for (final session in buildFastingSessionsForTesting(now, options.daysOfHistory)) {
     await fastingRepository.addSession(session);
   }
 
@@ -335,13 +306,7 @@ Future<void> exitDemoMode() async {
     await UserImageStorage.delete(active.imagePath!);
   }
   await locator<UpdateProfileUsecase>().updateProfile(
-    ProfileEntity(
-      id: active.id,
-      name: '',
-      createdAt: active.createdAt,
-      boxSuffix: active.boxSuffix,
-      imagePath: null,
-    ),
+    ProfileEntity(id: active.id, name: '', createdAt: active.createdAt, boxSuffix: active.boxSuffix, imagePath: null),
   );
 }
 
@@ -376,9 +341,7 @@ Future<void> _setupActiveProfile() async {
 
   String? imagePath;
   try {
-    final bytes = (await rootBundle.load(
-      _profileAvatarAsset,
-    )).buffer.asUint8List();
+    final bytes = (await rootBundle.load(_profileAvatarAsset)).buffer.asUint8List();
     final tempDir = await getTemporaryDirectory();
     final tempFile = File('${tempDir.path}/demo_profile_avatar_source.jpg');
     try {
@@ -390,11 +353,7 @@ Future<void> _setupActiveProfile() async {
       );
       final credit = unsplashCreditForUrl(unsplashImageUrl(_profilePhotoId));
       if (credit != null) {
-        await UserImageStorage.writeCredit(
-          imagePath,
-          name: credit.name,
-          profileUrl: credit.profileUrl,
-        );
+        await UserImageStorage.writeCredit(imagePath, name: credit.name, profileUrl: credit.profileUrl);
       }
     } finally {
       if (await tempFile.exists()) {
@@ -422,25 +381,19 @@ Future<void> _setupActiveProfile() async {
 /// [DemoSeedOptions.startWeightKg] down to the user's current weight, with
 /// randomised jitter so the chart doesn't look like a perfectly straight
 /// or perfectly formulaic line.
-List<WeightLogDBO> _buildWeightLog(
-  DateTime startOfToday,
-  double currentWeightKg,
-  DemoSeedOptions options,
-) {
+List<WeightLogDBO> buildWeightLogForTesting(DateTime startOfToday, double currentWeightKg, DemoSeedOptions options) {
   final entries = <WeightLogDBO>[];
   final totalDays = options.daysOfHistory - 1;
 
   var daysAgo = totalDays;
   while (daysAgo > 0) {
     final progress = totalDays == 0 ? 1.0 : 1 - daysAgo / totalDays;
-    final trendWeight =
-        options.startWeightKg +
-        (currentWeightKg - options.startWeightKg) * progress;
+    final trendWeight = options.startWeightKg + (currentWeightKg - options.startWeightKg) * progress;
     final jitter = (demoRng.nextDouble() - 0.5) * 0.6; // +/- 0.3kg
     entries.add(
       WeightLogDBO.fromWeightLogEntity(
         WeightLogEntity(
-          date: startOfToday.subtract(Duration(days: daysAgo)),
+          date: DateTime(startOfToday.year, startOfToday.month, startOfToday.day - daysAgo),
           weightKg: double.parse((trendWeight + jitter).toStringAsFixed(1)),
         ),
       ),
@@ -449,11 +402,7 @@ List<WeightLogDBO> _buildWeightLog(
   }
   // Today's exact current weight, matching the profile — no jitter, so it
   // stays consistent with what the Home/Profile screens show elsewhere.
-  entries.add(
-    WeightLogDBO.fromWeightLogEntity(
-      WeightLogEntity(date: startOfToday, weightKg: currentWeightKg),
-    ),
-  );
+  entries.add(WeightLogDBO.fromWeightLogEntity(WeightLogEntity(date: startOfToday, weightKg: currentWeightKg)));
   return entries;
 }
 
@@ -461,14 +410,20 @@ List<WeightLogDBO> _buildWeightLog(
 /// mostly completed, occasionally broken early — plus one still in
 /// progress so the fasting timer has something live to show right after
 /// seeding.
-List<FastingSessionEntity> _buildFastingSessions(
-  DateTime now,
-  int daysOfHistory,
-) {
+List<FastingSessionEntity> buildFastingSessionsForTesting(DateTime now, int daysOfHistory) {
   final sessions = <FastingSessionEntity>[];
   var daysAgo = daysOfHistory - 1;
   while (daysAgo >= 3) {
-    final start = now.subtract(Duration(days: daysAgo, hours: 8));
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day - daysAgo,
+      now.hour - 8,
+      now.minute,
+      now.second,
+      now.millisecond,
+      now.microsecond,
+    );
     final targetMinutes = 14 * 60 + demoRng.nextInt(181); // 14-17h
     final brokeEarly = demoRng.nextDouble() < 0.08;
     sessions.add(
@@ -476,12 +431,8 @@ List<FastingSessionEntity> _buildFastingSessions(
         id: IdGenerator.getUniqueID(),
         startedAt: start,
         targetDurationMinutes: targetMinutes,
-        completedAt: brokeEarly
-            ? null
-            : start.add(Duration(minutes: targetMinutes + 5)),
-        cancelledAt: brokeEarly
-            ? start.add(Duration(hours: 3 + demoRng.nextInt(3)))
-            : null,
+        completedAt: brokeEarly ? null : start.add(Duration(minutes: targetMinutes + 5)),
+        cancelledAt: brokeEarly ? start.add(Duration(hours: 3 + demoRng.nextInt(3))) : null,
       ),
     );
     daysAgo -= 9 + demoRng.nextInt(6);

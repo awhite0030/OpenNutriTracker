@@ -40,7 +40,7 @@ class TrendsBloc extends Bloc<TrendsEvent, TrendsState> {
         final isAll = event.rangeDays == 0;
         final fetchDays = isAll ? 3650 : event.rangeDays;
         final days = await _getTrackedDayUsecase.getTrackedDaysByRange(
-          today.subtract(Duration(days: fetchDays - 1)),
+          DateTime(today.year, today.month, today.day - (fetchDays - 1)),
           endOfToday,
         );
         // The full weight history; the chart windows it for display. This
@@ -50,7 +50,7 @@ class TrendsBloc extends Bloc<TrendsEvent, TrendsState> {
         weight.sort((a, b) => a.date.compareTo(b.date));
         // The 7 days before this week, for a week-over-week consistency delta.
         final priorWeek = await _getTrackedDayUsecase.getTrackedDaysByRange(
-          today.subtract(const Duration(days: 13)),
+          DateTime(today.year, today.month, today.day - 13),
           DateTime(now.year, now.month, now.day - 7, 23, 59, 59),
         );
         final user = await _getUserUsecase.getUserData();
@@ -76,6 +76,7 @@ class TrendsBloc extends Bloc<TrendsEvent, TrendsState> {
           void consider(DateTime d) {
             if (earliest == null || d.isBefore(earliest!)) earliest = d;
           }
+
           for (final d in days) {
             consider(DateTime(d.day.year, d.day.month, d.day.day));
           }
@@ -90,20 +91,19 @@ class TrendsBloc extends Bloc<TrendsEvent, TrendsState> {
               : (today.difference(earliest!).inDays + 1).clamp(2, 3650);
         }
 
-        emit(TrendsLoaded(
-          rangeDays: event.rangeDays,
-          windowDays: windowDays,
-          days: days,
-          priorWeek: priorWeek,
-          weight: weight,
-          bodyWeightUnit: config.bodyWeightUnit,
-          targetWeightKg: user.targetWeightKg,
-          waterByDay: waterByDay,
-          waterGoalMl: config.effectiveDailyWaterGoalMl(
-            user.gender,
-            caloriesProfile: user.caloriesProfile,
+        emit(
+          TrendsLoaded(
+            rangeDays: event.rangeDays,
+            windowDays: windowDays,
+            days: days,
+            priorWeek: priorWeek,
+            weight: weight,
+            bodyWeightUnit: config.bodyWeightUnit,
+            targetWeightKg: user.targetWeightKg,
+            waterByDay: waterByDay,
+            waterGoalMl: config.effectiveDailyWaterGoalMl(user.gender, caloriesProfile: user.caloriesProfile),
           ),
-        ));
+        );
       } catch (e) {
         emit(TrendsFailed(e.toString()));
       }
