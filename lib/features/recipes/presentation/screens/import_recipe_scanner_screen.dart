@@ -23,8 +23,7 @@ class ImportRecipeScannerScreen extends StatefulWidget {
   const ImportRecipeScannerScreen({super.key});
 
   @override
-  State<ImportRecipeScannerScreen> createState() =>
-      _ImportRecipeScannerScreenState();
+  State<ImportRecipeScannerScreen> createState() => _ImportRecipeScannerScreenState();
 }
 
 class _ImportRecipeScannerScreenState extends State<ImportRecipeScannerScreen>
@@ -36,9 +35,7 @@ class _ImportRecipeScannerScreenState extends State<ImportRecipeScannerScreen>
   @override
   void initState() {
     super.initState();
-    _cameraController = MobileScannerController(
-      formats: const [BarcodeFormat.qrCode],
-    );
+    _cameraController = MobileScannerController(formats: const [BarcodeFormat.qrCode]);
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -68,9 +65,7 @@ class _ImportRecipeScannerScreenState extends State<ImportRecipeScannerScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments;
-    if (!_handledInitialCode &&
-        args is ImportRecipeScannerArguments &&
-        args.initialCode != null) {
+    if (!_handledInitialCode && args is ImportRecipeScannerArguments && args.initialCode != null) {
       _handledInitialCode = true;
       _isProcessing = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -93,10 +88,7 @@ class _ImportRecipeScannerScreenState extends State<ImportRecipeScannerScreen>
           buildPortraitLockAction(context),
         ],
       ),
-      body: MobileScanner(
-        controller: _cameraController,
-        onDetect: _onDetect,
-      ),
+      body: MobileScanner(controller: _cameraController, onDetect: _onDetect),
     );
   }
 
@@ -121,17 +113,11 @@ class _ImportRecipeScannerScreenState extends State<ImportRecipeScannerScreen>
         content: TextField(
           controller: controller,
           maxLines: 5,
-          decoration: InputDecoration(
-            hintText: S.of(ctx).pasteCodeHint,
-            border: const OutlineInputBorder(),
-          ),
+          decoration: InputDecoration(hintText: S.of(ctx).pasteCodeHint, border: const OutlineInputBorder()),
           autofocus: true,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(S.of(ctx).dialogCancelLabel),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(S.of(ctx).dialogCancelLabel)),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
             child: Text(S.of(ctx).importRecipeLabel),
@@ -156,21 +142,17 @@ class _ImportRecipeScannerScreenState extends State<ImportRecipeScannerScreen>
       if (!mounted) return;
       final confirmed = await _showConfirmDialog(payload);
       if (confirmed == true && mounted) {
-        await locator<SaveRecipeUseCase>().save(payload.toRecipeEntity());
+        await locator<SaveRecipeUseCase>().save(payload.toRecipeEntity(), totalWeightOverridden: true);
         locator<RecipesBloc>().add(const LoadRecipesEvent());
         if (mounted) {
           Navigator.of(context).pop();
           didPop = true;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).importRecipeSuccessLabel)),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.of(context).importRecipeSuccessLabel)));
         }
       }
     } on SharedRecipeParseException {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).importRecipeErrorLabel)),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(S.of(context).importRecipeErrorLabel)));
       }
     } finally {
       // Don't reset the flag on the success-and-pop path. Navigator.pop
@@ -190,18 +172,10 @@ class _ImportRecipeScannerScreenState extends State<ImportRecipeScannerScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(payload.name),
-        content: Text(
-          S.of(ctx).importRecipeConfirmContent(payload.ingredients.length),
-        ),
+        content: Text(S.of(ctx).importRecipeConfirmContent(payload.ingredients.length)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(S.of(ctx).dialogCancelLabel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(S.of(ctx).dialogOKLabel),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text(S.of(ctx).dialogCancelLabel)),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text(S.of(ctx).dialogOKLabel)),
         ],
       ),
     );
