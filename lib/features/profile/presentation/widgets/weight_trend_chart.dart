@@ -59,15 +59,10 @@ class WeightTrendChart extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     // windowDays days ending today (today sits at the right edge), matching
     // how the calorie/water charts window their range.
-    final windowStart = today.subtract(Duration(days: windowDays - 1));
+    final windowStart = DateTime(today.year, today.month, today.day - (windowDays - 1));
 
-    final inWindow =
-        entries
-            .where(
-              (e) => !e.date.isBefore(windowStart) && !e.date.isAfter(today),
-            )
-            .toList()
-          ..sort((a, b) => a.date.compareTo(b.date));
+    final inWindow = entries.where((e) => !e.date.isBefore(windowStart) && !e.date.isAfter(today)).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
 
     if (inWindow.length < 2) {
       return Padding(
@@ -79,9 +74,7 @@ class WeightTrendChart extends StatelessWidget {
             child: Text(
               S.of(context).weightHistoryChartEmptyState,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
         ),
@@ -92,7 +85,11 @@ class WeightTrendChart extends StatelessWidget {
       for (final entry in inWindow)
         FlSpot(
           // x = days since the window start, so today sits at x = windowDays.
-          entry.date.difference(windowStart).inDays.toDouble(),
+          DateTime.utc(
+            entry.date.year,
+            entry.date.month,
+            entry.date.day,
+          ).difference(DateTime.utc(windowStart.year, windowStart.month, windowStart.day)).inDays.toDouble(),
           _toChartY(entry.weightKg),
         ),
     ];
@@ -102,14 +99,15 @@ class WeightTrendChart extends StatelessWidget {
     // predating the window rather than lagging one window-length behind.
     final maSpots = <FlSpot>[
       if (movingAverageWindowDays != null)
-        for (final point
-            in WeightMovingAverage(windowDays: movingAverageWindowDays!)
-                .compute(entries)
-                .where((p) =>
-                    !p.date.isBefore(windowStart) &&
-                    !p.date.isAfter(today)))
+        for (final point in WeightMovingAverage(
+          windowDays: movingAverageWindowDays!,
+        ).compute(entries).where((p) => !p.date.isBefore(windowStart) && !p.date.isAfter(today)))
           FlSpot(
-            point.date.difference(windowStart).inDays.toDouble(),
+            DateTime.utc(
+              point.date.year,
+              point.date.month,
+              point.date.day,
+            ).difference(DateTime.utc(windowStart.year, windowStart.month, windowStart.day)).inDays.toDouble(),
             _toChartY(point.weightKg),
           ),
     ];
@@ -130,18 +128,12 @@ class WeightTrendChart extends StatelessWidget {
     // Only draw the dashed reference when the target sits within (or just
     // adjacent to) the auto y-range, so a far-off target doesn't autoscale
     // the chart away from the recorded weights.
-    final showTargetLine =
-        targetY != null &&
-        targetY >= (minY - yPadding) &&
-        targetY <= (maxY + yPadding);
+    final showTargetLine = targetY != null && targetY >= (minY - yPadding) && targetY <= (maxY + yPadding);
 
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final dateFormat = DateFormat.MMMd(localeTag);
     // ~5 evenly spaced date labels regardless of window length.
-    final labelInterval = (windowDays / 5)
-        .ceilToDouble()
-        .clamp(1.0, double.infinity)
-        .toDouble();
+    final labelInterval = (windowDays / 5).ceilToDouble().clamp(1.0, double.infinity).toDouble();
 
     return Padding(
       key: const Key('weightHistoryChart'),
@@ -157,20 +149,14 @@ class WeightTrendChart extends StatelessWidget {
             gridData: const FlGridData(show: false),
             borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
-              topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   reservedSize: 40,
                   getTitlesWidget: (value, meta) => Text(
-                    value.toStringAsFixed(
-                      bodyWeightUnit == BodyWeightUnit.st ? 1 : 0,
-                    ),
+                    value.toStringAsFixed(bodyWeightUnit == BodyWeightUnit.st ? 1 : 0),
                     style: theme.textTheme.labelSmall,
                   ),
                 ),
@@ -181,13 +167,10 @@ class WeightTrendChart extends StatelessWidget {
                   reservedSize: 28,
                   interval: labelInterval,
                   getTitlesWidget: (value, meta) {
-                    final day = windowStart.add(Duration(days: value.toInt()));
+                    final day = DateTime(windowStart.year, windowStart.month, windowStart.day + value.toInt());
                     return Padding(
                       padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        dateFormat.format(day),
-                        style: theme.textTheme.labelSmall,
-                      ),
+                      child: Text(dateFormat.format(day), style: theme.textTheme.labelSmall),
                     );
                   },
                 ),
@@ -214,11 +197,7 @@ class WeightTrendChart extends StatelessWidget {
                 dotData: FlDotData(
                   show: true,
                   getDotPainter: (spot, percent, bar, index) =>
-                      FlDotCirclePainter(
-                        radius: 3,
-                        color: lineColor,
-                        strokeWidth: 0,
-                      ),
+                      FlDotCirclePainter(radius: 3, color: lineColor, strokeWidth: 0),
                 ),
               ),
               // Moving-average overlay (#1119): dashed, no dots, thinner
