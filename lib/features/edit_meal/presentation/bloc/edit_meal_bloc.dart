@@ -46,19 +46,13 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
   final CustomMealDataSource _customMealDataSource; // #267
   final ConfigRepository _configRepository;
 
-  EditMealBloc(this._getConfigUsecase, this._customMealDataSource, this._configRepository)
-      : super(EditMealInitial()) {
+  EditMealBloc(this._getConfigUsecase, this._customMealDataSource, this._configRepository) : super(EditMealInitial()) {
     on<InitializeEditMealEvent>((event, emit) async {
       emit(EditMealLoadingState());
 
       final config = await _getConfigUsecase.getConfig();
-      final mode = CustomMealFormMode.fromString(
-        await _configRepository.getCustomMealFormMode(),
-      );
-      emit(EditMealLoadedState(
-        usesImperialUnits: config.usesImperialFoodUnits,
-        formMode: mode,
-      ));
+      final mode = CustomMealFormMode.fromString(await _configRepository.getCustomMealFormMode());
+      emit(EditMealLoadedState(usesImperialUnits: config.usesImperialFoodUnits, formMode: mode));
     });
   }
 
@@ -100,8 +94,7 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       return nutrimentValue != null ? nutrimentValue * factorTo100g : null;
     }
 
-    double? fromTextOrOld(String? text, double? oldValue) =>
-        multiplyIfNotNull(text?.toDoubleOrNull() ?? oldValue);
+    double? fromTextOrOld(String? text, double? oldValue) => multiplyIfNotNull(text?.toDoubleOrNull() ?? oldValue);
 
     final newMealNutriments = MealNutrimentsEntity(
       energyKcal100: multiplyIfNotNull(kcalText.toDoubleOrNull()),
@@ -146,9 +139,7 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       // #64 follow-up: a freshly-picked local photo wins over what was
       // on the old entity; a clear flag means the user removed the
       // photo and the slug should be wiped from the saved meal.
-      localImagePath: clearLocalImagePath
-          ? null
-          : (localImagePathOverride ?? oldMealEntity.localImagePath),
+      localImagePath: clearLocalImagePath ? null : (localImagePathOverride ?? oldMealEntity.localImagePath),
     );
   }
 
