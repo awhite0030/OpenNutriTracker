@@ -23,7 +23,7 @@ part 'edit_meal_event.dart';
 /// regression coverage on Simple-mode (#232).
 double factorTo100gFromBase(String baseQuantity) {
   final parsed = double.tryParse(baseQuantity);
-  return parsed != null ? (100 / parsed) : 1;
+  return parsed != null && parsed > 0 ? (100 / parsed) : 1;
 }
 
 /// Custom meal form view mode (#232). Persisted on ConfigDBO so the form
