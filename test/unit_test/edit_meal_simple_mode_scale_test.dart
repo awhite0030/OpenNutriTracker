@@ -41,5 +41,10 @@ void main() {
       expect(factorTo100gFromBase(''), 1.0);
       expect(factorTo100gFromBase('abc'), 1.0);
     });
+
+    test('a 0 base produces 1 to prevent division by zero / NaN', () {
+      expect(factorTo100gFromBase('0'), 1.0);
+      expect(factorTo100gFromBase('0.0'), 1.0);
+    });
   });
 }
