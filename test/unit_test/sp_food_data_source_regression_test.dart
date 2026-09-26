@@ -32,7 +32,6 @@ class _MockClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final req = request as http.Request;
     final urlStr = request.url.toString();
     List<Map<String, dynamic>> responseData = [];
 
@@ -74,9 +73,7 @@ void main() {
       locator.unregister<ConfigDataSource>();
     }
 
-    locator.registerSingleton<ConfigDataSource>(
-      ConfigDataSource(_TestHiveDBProvider(appConfigBox, profileConfigBox)),
-    );
+    locator.registerSingleton<ConfigDataSource>(ConfigDataSource(_TestHiveDBProvider(appConfigBox, profileConfigBox)));
   });
 
   tearDown(() async {
@@ -94,7 +91,7 @@ void main() {
           SPConst.translationDescription: 'Synthetic FDC Item $i',
           SPConst.translationSource: 'machine',
           SPConst.translationHasPortion: true,
-        }
+        },
     ];
 
     // Add 1 BLS row without a portion.
@@ -117,13 +114,11 @@ void main() {
           SPConst.foodName: 'Synthetic BLS Match',
           SPConst.servingSize: '100',
           SPConst.servingGramWeight: 100.0,
-        }
-      ]
+        },
+      ],
     });
 
-    locator.registerSingleton<SupabaseClient>(
-      SupabaseClient('http://backend.invalid', 'test-key', httpClient: client),
-    );
+    locator.registerSingleton<SupabaseClient>(SupabaseClient('http://backend.invalid', 'test-key', httpClient: client));
 
     // Mock locale to 'de' temporarily
     AppLocale.select('de');
