@@ -1,4 +1,3 @@
-
 import 'package:collection/collection.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
@@ -11,8 +10,7 @@ import 'package:opennutritracker/features/add_meal/data/dto/sp/sp_const.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_portion_entity.dart';
 import 'package:opennutritracker/features/add_meal/data/dto/sp/sp_food_dto.dart';
 import 'package:opennutritracker/features/add_meal/util/backend_title.dart';
-import 'package:opennutritracker/features/add_meal/util/resolver_relevance.dart'
-    show noPortionsPenalty;
+import 'package:opennutritracker/features/add_meal/util/resolver_relevance.dart' show noPortionsPenalty;
 import 'package:opennutritracker/features/add_meal/util/soft_text_score.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -58,9 +56,7 @@ class SpFoodDataSource {
   /// cached and shown as if they were in the new language. The locale is
   /// therefore captured once per attempt and the attempt is repeated when
   /// it no longer holds; a second change during the retry is left alone.
-  String? _foodLocale() => SPConst.translationLocaleOf(
-    SupportedLanguage.fromCode(AppLocale.localeName),
-  );
+  String? _foodLocale() => SPConst.translationLocaleOf(SupportedLanguage.fromCode(AppLocale.localeName));
 
   /// The twenty rows the app keeps of the backend's hundred for
   /// [searchString], cut by the resolver's rule (see
@@ -68,10 +64,7 @@ class SpFoodDataSource {
   /// are: the resolver's, and the cut reads each row's `has_portion`
   /// column; or the Food tab's — the default — and it does not (#1164,
   /// #1190; the cut's comment says why the two differ).
-  Future<List<SpFoodDTO>> fetchSearchWordResults(
-    String searchString, {
-    bool forResolution = false,
-  }) async {
+  Future<List<SpFoodDTO>> fetchSearchWordResults(String searchString, {bool forResolution = false}) async {
     try {
       return await withRetry(() async {
         log.fine('Fetching Supabase food results');
@@ -83,12 +76,7 @@ class SpFoodDataSource {
 
         for (var attempt = 0; ; attempt++) {
           final locale = _foodLocale();
-          final results = await _searchInLocale(
-            locale,
-            searchString,
-            enabledSources,
-            forResolution: forResolution,
-          );
+          final results = await _searchInLocale(locale, searchString, enabledSources, forResolution: forResolution);
           if (_foodLocale() == locale || attempt > 0) return results;
           log.fine('App language changed mid-search; repeating once');
         }
@@ -124,12 +112,7 @@ class SpFoodDataSource {
       }
     }
 
-    final results = await _searchEnglish(
-      supaBaseClient,
-      searchString,
-      enabledSources,
-      forResolution: forResolution,
-    );
+    final results = await _searchEnglish(supaBaseClient, searchString, enabledSources, forResolution: forResolution);
     log.fine('Successful response from Supabase');
     return results;
   }
@@ -157,18 +140,16 @@ class SpFoodDataSource {
     if (locale == null) return const {};
 
     try {
-      final rows = await _rpcRows(
-        locator<SupabaseClient>(),
-        SPConst.portionLabelsByFoodIdsFn,
-        {'ids': foodIds, 'loc': locale},
-      );
+      final rows = await _rpcRows(locator<SupabaseClient>(), SPConst.portionLabelsByFoodIdsFn, {
+        'ids': foodIds,
+        'loc': locale,
+      });
       // Labels in a language the app no longer reads are worse than none:
       // the caller falls back to the generic serving word (#966).
       if (_foodLocale() != locale) return const {};
       return {
         for (final row in rows)
-          if (row['food_id'] is int && row['label'] is String)
-            row['food_id'] as int: row['label'] as String,
+          if (row['food_id'] is int && row['label'] is String) row['food_id'] as int: row['label'] as String,
       };
     } catch (e) {
       log.fine('No portion labels for $locale: $e');
@@ -196,15 +177,11 @@ class SpFoodDataSource {
   /// Unlike the label lookup this runs for English too — the choice between a
   /// food's cup, slice and ounce is worth offering whether or not the words
   /// needed translating.
-  Future<Map<int, List<MealPortionEntity>>?> fetchPortions(
-    List<int> foodIds,
-  ) async {
+  Future<Map<int, List<MealPortionEntity>>?> fetchPortions(List<int> foodIds) async {
     // Nothing to ask about is not a failure: an empty page has no record to
     // penalise or to spare.
     if (foodIds.isEmpty) return const {};
-    final locale = SPConst.translationLocaleOf(
-      SupportedLanguage.fromCode(AppLocale.localeName),
-    );
+    final locale = SPConst.translationLocaleOf(SupportedLanguage.fromCode(AppLocale.localeName));
 
     try {
       final rows = await _rpcRows(
@@ -233,9 +210,7 @@ class SpFoodDataSource {
           label: label,
           gramWeight: weight,
           localized: row['localized'] == true,
-          englishLabel: englishLabel is String && englishLabel.isNotEmpty
-              ? englishLabel
-              : null,
+          englishLabel: englishLabel is String && englishLabel.isNotEmpty ? englishLabel : null,
         );
         byFood.putIfAbsent(id, () => []).add(portion);
       }
@@ -249,9 +224,7 @@ class SpFoodDataSource {
   Future<List<String>?> _enabledSources() async {
     final toggles = await locator<ConfigDataSource>().getFoodSourceToggles();
     if (toggles == null) return null;
-    final enabled = SPConst.foodSourceDisplayNames.keys
-        .where((code) => toggles[code] ?? true)
-        .toList();
+    final enabled = SPConst.foodSourceDisplayNames.keys.where((code) => toggles[code] ?? true).toList();
     if (enabled.length == SPConst.foodSourceDisplayNames.length) return null;
     return enabled;
   }
@@ -262,11 +235,7 @@ class SpFoodDataSource {
   /// `/rest/v1/rpc/<fn>` — which is the entire point of routing search this
   /// way — but it is typed `dynamic`, where `select()` handed back a typed
   /// list. One cast in one place rather than three.
-  Future<List<Map<String, dynamic>>> _rpcRows(
-    SupabaseClient client,
-    String fn,
-    Map<String, dynamic> params,
-  ) async {
+  Future<List<Map<String, dynamic>>> _rpcRows(SupabaseClient client, String fn, Map<String, dynamic> params) async {
     final response = await client.rpc(fn, params: params);
     // A set-returning function with no matches answers with an empty array,
     // never null; null would mean the function itself returned NULL, which
@@ -301,11 +270,7 @@ class SpFoodDataSource {
     // is rejected outright with a parse error (PGRST100), so relevance has
     // to be ranked client-side instead of via Postgres ORDER BY.
     final foods = response.map((food) => SpFoodDTO.fromJson(food)).toList();
-    return rankAndTruncateFoodsByName(
-      foods,
-      searchString,
-      forResolution: forResolution,
-    );
+    return rankAndTruncateFoodsByName(foods, searchString, forResolution: forResolution);
   }
 
   /// Two-step localized search: `food_summary` is a materialized view, so
@@ -319,43 +284,13 @@ class SpFoodDataSource {
     List<String>? enabledSources, {
     required bool forResolution,
   }) async {
-    final unrankedRows = await _rpcRows(
-      client,
-      SPConst.searchFoodTranslationFn,
-      {'term': searchString, 'loc': locale, 'max_rows': _candidatePoolSize},
-    );
+    final unrankedRows = await _rpcRows(client, SPConst.searchFoodTranslationFn, {
+      'term': searchString,
+      'loc': locale,
+      'max_rows': _candidatePoolSize,
+    });
 
     if (unrankedRows.isEmpty) return const [];
-
-    // PostgREST's `order` query parameter only accepts column references,
-    // not computed expressions — `.order(ts_rank(...))` is rejected outright
-    // with a parse error (PGRST100), so translated-text relevance has to be
-    // ranked client-side instead of via Postgres ORDER BY (same issue as
-    // _searchEnglish). Rank the whole candidate pool, then truncate — see
-    // _candidatePoolSize for why truncating first would be wrong.
-    final translationRows = rankAndTruncateTranslationRows(
-      [...unrankedRows],
-      searchString,
-      forResolution: forResolution,
-    );
-
-    final nameByFoodId = {
-      for (final row in translationRows)
-        row[SPConst.translationFoodId] as int:
-            row[SPConst.translationDescription] as String?,
-    };
-    final machineTranslatedFoodIds = {
-      for (final row in translationRows)
-        if (row[SPConst.translationSource] == SPConst.translationSourceMachine)
-          row[SPConst.translationFoodId] as int,
-    };
-    // nameByFoodId's key order mirrors translationRows (a LinkedHashMap
-    // keeps first-insertion order), which is now the client-computed
-    // relevance order — capture it here so the summary rows fetched below
-    // can be put back in that order.
-    final rankByFoodId = {
-      for (final (rank, foodId) in nameByFoodId.keys.indexed) foodId: rank,
-    };
 
     // The source filter is applied on the summary fetch rather than the
     // translation match: food_translation has no source column.
@@ -365,10 +300,38 @@ class SpFoodDataSource {
     // term*, so an `in.(...)` filter would put a fingerprint of what the
     // user typed straight back into the URL the gateway logs. Removing the
     // term while leaving its shadow behind would not be worth doing.
+    final unrankedFoodIds = unrankedRows.map((row) => row[SPConst.translationFoodId] as int).toList();
     final response = await _rpcRows(client, SPConst.foodSummaryByIdsFn, {
-      'ids': nameByFoodId.keys.toList(),
+      'ids': unrankedFoodIds,
       'sources': enabledSources,
     });
+    final validSummaryFoodIds = response.map((row) => row[SPConst.foodId] as int).toSet();
+
+    final filteredRows = unrankedRows
+        .where((row) => validSummaryFoodIds.contains(row[SPConst.translationFoodId] as int))
+        .toList();
+
+    // PostgREST's `order` query parameter only accepts column references,
+    // not computed expressions — `.order(ts_rank(...))` is rejected outright
+    // with a parse error (PGRST100), so translated-text relevance has to be
+    // ranked client-side instead of via Postgres ORDER BY (same issue as
+    // _searchEnglish). Rank the whole candidate pool, then truncate — see
+    // _candidatePoolSize for why truncating first would be wrong.
+    final translationRows = rankAndTruncateTranslationRows(filteredRows, searchString, forResolution: forResolution);
+
+    final nameByFoodId = {
+      for (final row in translationRows)
+        row[SPConst.translationFoodId] as int: row[SPConst.translationDescription] as String?,
+    };
+    final machineTranslatedFoodIds = {
+      for (final row in translationRows)
+        if (row[SPConst.translationSource] == SPConst.translationSourceMachine) row[SPConst.translationFoodId] as int,
+    };
+    // nameByFoodId's key order mirrors translationRows (a LinkedHashMap
+    // keeps first-insertion order), which is now the client-computed
+    // relevance order — capture it here so the summary rows fetched below
+    // can be put back in that order.
+    final rankByFoodId = {for (final (rank, foodId) in nameByFoodId.keys.indexed) foodId: rank};
 
     // A WHERE-IN fetch has no guaranteed relationship to its id list's
     // order, so re-sort onto the translation-relevance order captured above
@@ -376,15 +339,13 @@ class SpFoodDataSource {
     final foods = response.map((food) {
       final dto = SpFoodDTO.fromJson(food);
       dto.localizedName = nameByFoodId[dto.foodId];
-      dto.localizedNameIsMachineTranslated = machineTranslatedFoodIds.contains(
-        dto.foodId,
-      );
+      dto.localizedNameIsMachineTranslated = machineTranslatedFoodIds.contains(dto.foodId);
       return dto;
     }).toList();
     mergeSort(
       foods,
-      compare: (a, b) => (rankByFoodId[a.foodId] ?? rankByFoodId.length)
-          .compareTo(rankByFoodId[b.foodId] ?? rankByFoodId.length),
+      compare: (a, b) =>
+          (rankByFoodId[a.foodId] ?? rankByFoodId.length).compareTo(rankByFoodId[b.foodId] ?? rankByFoodId.length),
     );
     return foods;
   }
@@ -495,16 +456,13 @@ class SpFoodDataSource {
 /// user reads, and nothing the user could have scrolled to is lost by
 /// choosing them this way.
 @visibleForTesting
-List<SpFoodDTO> rankAndTruncateFoodsByName(
-  List<SpFoodDTO> foods,
-  String searchString, {
-  bool forResolution = false,
-}) => _rankAndTruncate(
-  foods,
-  searchString,
-  describe: (food) => food.name,
-  hasPortion: forResolution ? (food) => food.hasPortion : (_) => null,
-);
+List<SpFoodDTO> rankAndTruncateFoodsByName(List<SpFoodDTO> foods, String searchString, {bool forResolution = false}) =>
+    _rankAndTruncate(
+      foods,
+      searchString,
+      describe: (food) => food.name,
+      hasPortion: forResolution ? (food) => food.hasPortion : (_) => null,
+    );
 
 /// Same idea as [rankAndTruncateFoodsByName], but for raw `food_translation`
 /// rows — ranked by [SPConst.translationDescription] — before they're mapped
@@ -584,16 +542,17 @@ List<T> _rankAndTruncate<T>(
         portioned: hasPortion(item) == true ? 1 : 0,
       ),
   ];
-  mergeSort(decorated, compare: (a, b) {
-    final byScore = b.score.compareTo(a.score);
-    if (byScore != 0) return byScore;
-    final byLength = a.length.compareTo(b.length);
-    if (byLength != 0) return byLength;
-    return b.portioned.compareTo(a.portioned);
-  });
-  return [
-    for (final entry in decorated.take(SPConst.maxNumberOfItems)) entry.item,
-  ];
+  mergeSort(
+    decorated,
+    compare: (a, b) {
+      final byScore = b.score.compareTo(a.score);
+      if (byScore != 0) return byScore;
+      final byLength = a.length.compareTo(b.length);
+      if (byLength != 0) return byLength;
+      return b.portioned.compareTo(a.portioned);
+    },
+  );
+  return [for (final entry in decorated.take(SPConst.maxNumberOfItems)) entry.item];
 }
 
 /// [description] scored as its entity will be: the title, plus whichever
@@ -601,17 +560,9 @@ List<T> _rankAndTruncate<T>(
 /// less [noPortionsPenalty] when the backend says there is no portion,
 /// clamped as the resolver clamps. Null [hasPortion] costs nothing: the
 /// backend did not say.
-double _backendScore(
-  String? description,
-  Set<String> queryTokens,
-  bool? hasPortion,
-) {
+double _backendScore(String? description, Set<String> queryTokens, bool? hasPortion) {
   if (description == null) return 0.0;
-  final score = scoreText(
-    deriveTitle(description),
-    queryTokens,
-    qualifiers: deriveQualifiers(description),
-  );
+  final score = scoreText(deriveTitle(description), queryTokens, qualifiers: deriveQualifiers(description));
   if (hasPortion == false) return (score - noPortionsPenalty).clamp(0.0, 1.0);
   return score;
 }
