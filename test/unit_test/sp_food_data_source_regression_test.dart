@@ -32,7 +32,6 @@ class _MockClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final req = request as http.Request;
     final urlStr = request.url.toString();
     List<Map<String, dynamic>> responseData = [];
 
