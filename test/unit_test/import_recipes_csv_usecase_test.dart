@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opennutritracker/core/data/dbo/meal_dbo.dart';
+import 'package:opennutritracker/core/data/repository/intake_repository.dart';
 import 'package:opennutritracker/core/data/repository/recipe_repository.dart';
 import 'package:opennutritracker/core/domain/entity/recipe_entity.dart';
 import 'package:opennutritracker/core/domain/usecase/compute_recipe_nutrition_usecase.dart';
@@ -27,6 +29,17 @@ class _FakeRecipeRepository implements RecipeRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+}
+
+class _FakeIntakeRepository implements IntakeRepository {
+  @override
+  Future<void> remapRecipeOnIntakes({
+    required String recipeId,
+    required MealDBO updatedMeal,
+  }) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 base class _StubPlatformFile extends PlatformFile {
@@ -72,7 +85,7 @@ ImportRecipesCsvUsecase _buildUsecase(
   File pickedFile,
 ) {
   return ImportRecipesCsvUsecase(
-    SaveRecipeUseCase(repo, ComputeRecipeNutritionUseCase()),
+    SaveRecipeUseCase(repo, ComputeRecipeNutritionUseCase(), _FakeIntakeRepository()),
     pickFile: _pickerReturning(pickedFile),
   );
 }
@@ -149,7 +162,7 @@ void main() {
     test('returns null when the picker is cancelled', () async {
       final repo = _FakeRecipeRepository();
       final usecase = ImportRecipesCsvUsecase(
-        SaveRecipeUseCase(repo, ComputeRecipeNutritionUseCase()),
+        SaveRecipeUseCase(repo, ComputeRecipeNutritionUseCase(), _FakeIntakeRepository()),
         pickFile: () async => null,
       );
 

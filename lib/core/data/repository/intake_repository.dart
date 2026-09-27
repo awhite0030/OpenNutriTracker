@@ -91,4 +91,14 @@ class IntakeRepository {
             ))
         .toList();
   }
+
+  Future<void> remapRecipeOnIntakes({
+    required String recipeId,
+    required MealDBO updatedMeal,
+  }) async {
+    await _intakeDataSource.remapRecipeOnIntakes(
+      recipeId: recipeId,
+      updatedMeal: updatedMeal,
+    );
+  }
 }
