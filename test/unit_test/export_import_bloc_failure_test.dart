@@ -140,6 +140,7 @@ ExportImportBloc _bloc({
   final saveRecipeUseCase = SaveRecipeUseCase(
     recipeRepository,
     ComputeRecipeNutritionUseCase(),
+    intakeRepository,
   );
 
   return ExportImportBloc(

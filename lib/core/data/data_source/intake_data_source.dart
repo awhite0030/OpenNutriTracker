@@ -151,4 +151,30 @@ class IntakeDataSource {
     }
     return rewrites;
   }
+
+  /// Replace the denormalised [MealDBO] snapshot on every intake whose
+  /// meal source is recipe and whose `meal.code` matches [recipeId].
+  /// Used by the recipe-save flow so that updated recipe details appear
+  /// in the recently added list which relies on the intake snapshot.
+  Future<void> remapRecipeOnIntakes({
+    required String recipeId,
+    required MealDBO updatedMeal,
+  }) async {
+    final entries = _intakeBox.toMap().entries.toList();
+    for (final entry in entries) {
+      final dbo = entry.value;
+      if (dbo.meal.source != MealSourceDBO.recipe) continue;
+      if (dbo.meal.code != recipeId) continue;
+
+      final updated = IntakeDBO(
+        id: dbo.id,
+        unit: dbo.unit,
+        amount: dbo.amount,
+        type: dbo.type,
+        meal: updatedMeal,
+        dateTime: dbo.dateTime,
+      );
+      await _intakeBox.put(entry.key, updated);
+    }
+  }
 }
