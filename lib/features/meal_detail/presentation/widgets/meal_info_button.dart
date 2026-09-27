@@ -16,25 +16,33 @@ class MealInfoButton extends StatelessWidget {
   /// legacy cached entries.
   final String? backendSource;
 
-  const MealInfoButton({
-    super.key,
-    required this.url,
-    required this.source,
-    this.backendSource,
-  });
+  const MealInfoButton({super.key, required this.url, required this.source, this.backendSource});
 
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
+    final infoUrl = _getInfoUrl();
+
+    if (infoUrl.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        child: Text(
+          _getInfoLabelText(context),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
     return TextButton.icon(
-      onPressed: () => _launchUrl(_getInfoUrl()),
+      onPressed: () => _launchUrl(infoUrl),
       icon: Icon(Icons.open_in_new_rounded, size: 20, color: accent),
       label: Text(
         _getInfoLabelText(context),
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: accent,
-              fontWeight: FontWeight.w700,
-            ),
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: accent, fontWeight: FontWeight.w700),
         textAlign: TextAlign.center,
       ),
     );
@@ -55,9 +63,7 @@ class MealInfoButton extends StatelessWidget {
       case MealSourceEntity.fdc:
         // Foods without a per-item detail page (BLS, INDB, TBCA...) link
         // to their database's website instead.
-        siteUrl = url ??
-            SPConst.foodSourceWebsites[backendSource] ??
-            FDCConst.fdcWebsiteUrl;
+        siteUrl = url ?? SPConst.foodSourceWebsites[backendSource] ?? FDCConst.fdcWebsiteUrl;
         break;
       case MealSourceEntity.recipe:
         siteUrl = "";
@@ -92,9 +98,6 @@ class MealInfoButton extends StatelessWidget {
   }
 
   Future<void> _launchUrl(String siteUrl) async {
-    if (!await launchUrl(
-      Uri.parse(siteUrl),
-      mode: LaunchMode.externalApplication,
-    )) {}
+    if (!await launchUrl(Uri.parse(siteUrl), mode: LaunchMode.externalApplication)) {}
   }
 }
