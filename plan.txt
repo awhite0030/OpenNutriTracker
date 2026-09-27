@@ -1,0 +1,5 @@
+1. Modify `lib/features/meal_detail/presentation/widgets/meal_info_button.dart`.
+2. Change `_getInfoUrl()` for `MealSourceEntity.recipe` to assign `siteUrl = url ?? ""` instead of `siteUrl = ""`.
+3. Verify the changes using `git diff`.
+4. Run validation commands (flutter format, analyze, and test).
+5. Pre-commit steps.
