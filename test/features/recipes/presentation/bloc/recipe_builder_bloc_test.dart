@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opennutritracker/core/data/repository/recipe_repository.dart';
 import 'package:opennutritracker/core/domain/entity/recipe_entity.dart';
+import 'package:opennutritracker/core/domain/entity/recipe_ingredient_entity.dart';
 import 'package:opennutritracker/core/domain/usecase/compute_recipe_nutrition_usecase.dart';
 import 'package:opennutritracker/core/domain/usecase/save_recipe_usecase.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
@@ -16,8 +17,7 @@ class _FakeRecipeRepository implements RecipeRepository {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 MealEntity _meal(String code, {double kcal = 100}) {
@@ -66,19 +66,13 @@ void main() {
       expect(bloc.state.isExistingRecipe, isFalse);
     });
 
-    test('AddIngredientEvent recomputes total weight + per-100g nutrition',
-        () async {
-      bloc.add(AddIngredientEvent(
-        meal: _meal('flour', kcal: 340),
-        amount: 100,
-        unit: 'g',
-      ));
+    test('AddIngredientEvent recomputes total weight + per-100g nutrition', () async {
+      bloc.add(AddIngredientEvent(meal: _meal('flour', kcal: 340), amount: 100, unit: 'g'));
       await Future<void>.delayed(Duration.zero);
 
       expect(bloc.state.ingredients, hasLength(1));
       expect(bloc.state.totalWeightG, 100);
-      expect(
-          bloc.state.aggregatedNutrimentsPer100.energyKcal100, closeTo(340, 0.01));
+      expect(bloc.state.aggregatedNutrimentsPer100.energyKcal100, closeTo(340, 0.01));
     });
 
     test('save with empty name emits nameRequired error', () async {
@@ -98,14 +92,9 @@ void main() {
       expect(repo.saved, isEmpty);
     });
 
-    test('save with explicit zero total weight emits invalidTotalWeight',
-        () async {
+    test('save with explicit zero total weight emits invalidTotalWeight', () async {
       bloc.add(const UpdateNameEvent('Cake'));
-      bloc.add(AddIngredientEvent(
-        meal: _meal('flour', kcal: 340),
-        amount: 100,
-        unit: 'g',
-      ));
+      bloc.add(AddIngredientEvent(meal: _meal('flour', kcal: 340), amount: 100, unit: 'g'));
       await Future<void>.delayed(Duration.zero);
       bloc.add(const UpdateTotalWeightEvent(0));
       await Future<void>.delayed(Duration.zero);
@@ -118,11 +107,7 @@ void main() {
 
     test('successful save persists and emits didSave', () async {
       bloc.add(const UpdateNameEvent('Cake'));
-      bloc.add(AddIngredientEvent(
-        meal: _meal('flour', kcal: 340),
-        amount: 100,
-        unit: 'g',
-      ));
+      bloc.add(AddIngredientEvent(meal: _meal('flour', kcal: 340), amount: 100, unit: 'g'));
       await Future<void>.delayed(Duration.zero);
       bloc.add(const SaveRecipeEvent());
       await Future<void>.delayed(Duration.zero);
@@ -154,8 +139,7 @@ void main() {
       expect(bloc.state.name, 'Original');
     });
 
-    test('initialize with empty-id recipe (duplicate sentinel) treats as create',
-        () async {
+    test('initialize with empty-id recipe (duplicate sentinel) treats as create', () async {
       final duplicate = RecipeEntity(
         id: '',
         name: 'Cake (copy)',
@@ -173,6 +157,33 @@ void main() {
       expect(bloc.state.isExistingRecipe, isFalse);
       expect(bloc.state.id, isNull);
       expect(bloc.state.name, 'Cake (copy)');
+    });
+
+    test('initialize with overridden total weight detects the override', () async {
+      final existing = RecipeEntity(
+        id: 'existing-2',
+        name: 'Overridden Recipe',
+        description: null,
+        ingredients: [
+          RecipeIngredientEntity(
+            snapshotMeal: _meal('flour', kcal: 340),
+            amount: 800,
+            unit: 'g',
+            convertedAmountG: 800,
+          ),
+        ],
+        totalWeightG: 720,
+        aggregatedNutrimentsPer100: MealNutrimentsEntity.empty(),
+        createdAt: DateTime.utc(2024, 1, 1),
+        updatedAt: DateTime.utc(2024, 1, 1),
+        servingsCount: null,
+      );
+      bloc.add(InitializeBuilderEvent(existing: existing));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(bloc.state.isExistingRecipe, isTrue);
+      expect(bloc.state.totalWeightG, 720);
+      expect(bloc.state.totalWeightOverridden, isTrue);
     });
   });
 }
