@@ -11,13 +11,11 @@ import 'package:opennutritracker/features/add_meal/domain/entity/meal_nutriments
 part 'recipe_builder_event.dart';
 part 'recipe_builder_state.dart';
 
-class RecipeBuilderBloc
-    extends Bloc<RecipeBuilderEvent, RecipeBuilderState> {
+class RecipeBuilderBloc extends Bloc<RecipeBuilderEvent, RecipeBuilderState> {
   final ComputeRecipeNutritionUseCase _computeUseCase;
   final SaveRecipeUseCase _saveUseCase;
 
-  RecipeBuilderBloc(this._computeUseCase, this._saveUseCase)
-      : super(RecipeBuilderState.initial()) {
+  RecipeBuilderBloc(this._computeUseCase, this._saveUseCase) : super(RecipeBuilderState.initial()) {
     on<InitializeBuilderEvent>(_onInitialize);
     on<UpdateNameEvent>(_onUpdateName);
     on<UpdateDescriptionEvent>(_onUpdateDescription);
@@ -26,10 +24,7 @@ class RecipeBuilderBloc
       emit(state.copyWith(tags: event.tags));
     });
     on<UpdateImagePathEvent>((event, emit) {
-      emit(state.copyWith(
-        imagePath: event.imagePath,
-        clearImagePath: event.imagePath == null,
-      ));
+      emit(state.copyWith(imagePath: event.imagePath, clearImagePath: event.imagePath == null));
     });
     on<AddIngredientEvent>(_onAddIngredient);
     on<UpdateIngredientEvent>(_onUpdateIngredient);
@@ -38,24 +33,22 @@ class RecipeBuilderBloc
     on<SaveRecipeEvent>(_onSave);
   }
 
-
-  void _onInitialize(
-    InitializeBuilderEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) {
+  void _onInitialize(InitializeBuilderEvent event, Emitter<RecipeBuilderState> emit) {
     if (event.existing == null) {
       // Generate the recipe id eagerly so any photo the user attaches
       // before they hit save can be filed under the correct filename
       // (recipe_images/<id>.webp). The id is still kept on save below.
-      emit(RecipeBuilderState.initial().copyWith(
-        id: IdGenerator.getUniqueID(),
-      ));
+      emit(RecipeBuilderState.initial().copyWith(id: IdGenerator.getUniqueID()));
     } else {
       final r = event.existing!;
       // Empty id is the sentinel used by the duplicate-recipe action: keep
       // the field values but treat the builder as a fresh create so save()
       // assigns a new uuid.
       final isDuplicate = r.id.isEmpty;
+
+      final sumG = r.ingredients.fold<double>(0, (sum, i) => sum + i.convertedAmountG);
+      final isOverridden = (r.totalWeightG - sumG).abs() > 0.01;
+
       emit(
         state.copyWith(
           id: isDuplicate ? null : r.id,
@@ -64,7 +57,7 @@ class RecipeBuilderBloc
           servingsCount: r.servingsCount,
           ingredients: r.ingredients,
           totalWeightG: r.totalWeightG,
-          totalWeightOverridden: false,
+          totalWeightOverridden: isOverridden,
           aggregatedNutrimentsPer100: r.aggregatedNutrimentsPer100,
           isExistingRecipe: !isDuplicate,
           tags: r.tags,
@@ -79,37 +72,21 @@ class RecipeBuilderBloc
     }
   }
 
-  void _onUpdateName(
-    UpdateNameEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) {
+  void _onUpdateName(UpdateNameEvent event, Emitter<RecipeBuilderState> emit) {
     emit(state.copyWith(name: event.name));
   }
 
-  void _onUpdateDescription(
-    UpdateDescriptionEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) {
+  void _onUpdateDescription(UpdateDescriptionEvent event, Emitter<RecipeBuilderState> emit) {
     emit(state.copyWith(description: event.description));
   }
 
-  void _onUpdateServings(
-    UpdateServingsCountEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        servingsCount: event.servingsCount,
-        clearServingsCount: event.servingsCount == null,
-      ),
-    );
+  void _onUpdateServings(UpdateServingsCountEvent event, Emitter<RecipeBuilderState> emit) {
+    emit(state.copyWith(servingsCount: event.servingsCount, clearServingsCount: event.servingsCount == null));
   }
 
-  void _onAddIngredient(
-    AddIngredientEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) {
-    final convertedG = _computeUseCase.convertAmountToGrams(
+  void _onAddIngredient(AddIngredientEvent event, Emitter<RecipeBuilderState> emit) {
+    final convertedG =
+        _computeUseCase.convertAmountToGrams(
           amount: event.amount,
           unit: event.unit,
           servingQuantityG: event.meal.servingQuantity,
@@ -121,77 +98,48 @@ class RecipeBuilderBloc
       unit: event.unit,
       convertedAmountG: convertedG,
     );
-    emit(
-      state.copyWith(ingredients: [...state.ingredients, newIngredient]),
-    );
+    emit(state.copyWith(ingredients: [...state.ingredients, newIngredient]));
     _recompute(emit);
   }
 
-  void _onUpdateIngredient(
-    UpdateIngredientEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) {
+  void _onUpdateIngredient(UpdateIngredientEvent event, Emitter<RecipeBuilderState> emit) {
     if (event.index < 0 || event.index >= state.ingredients.length) return;
     final old = state.ingredients[event.index];
-    final convertedG = _computeUseCase.convertAmountToGrams(
+    final convertedG =
+        _computeUseCase.convertAmountToGrams(
           amount: event.amount,
           unit: event.unit,
           servingQuantityG: old.snapshotMeal.servingQuantity,
         ) ??
         0;
-    final updated = old.copyWith(
-      amount: event.amount,
-      unit: event.unit,
-      convertedAmountG: convertedG,
-    );
+    final updated = old.copyWith(amount: event.amount, unit: event.unit, convertedAmountG: convertedG);
     final newList = List<RecipeIngredientEntity>.from(state.ingredients);
     newList[event.index] = updated;
     emit(state.copyWith(ingredients: newList));
     _recompute(emit);
   }
 
-  void _onRemoveIngredient(
-    RemoveIngredientEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) {
+  void _onRemoveIngredient(RemoveIngredientEvent event, Emitter<RecipeBuilderState> emit) {
     if (event.index < 0 || event.index >= state.ingredients.length) return;
-    final newList = List<RecipeIngredientEntity>.from(state.ingredients)
-      ..removeAt(event.index);
+    final newList = List<RecipeIngredientEntity>.from(state.ingredients)..removeAt(event.index);
     emit(state.copyWith(ingredients: newList));
     _recompute(emit);
   }
 
-  void _onUpdateTotalWeight(
-    UpdateTotalWeightEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        totalWeightG: event.totalWeightG,
-        totalWeightOverridden: true,
-      ),
-    );
+  void _onUpdateTotalWeight(UpdateTotalWeightEvent event, Emitter<RecipeBuilderState> emit) {
+    emit(state.copyWith(totalWeightG: event.totalWeightG, totalWeightOverridden: true));
     _recompute(emit);
   }
 
   void _recompute(Emitter<RecipeBuilderState> emit) {
     final result = _computeUseCase.compute(
       state.ingredients,
-      totalWeightOverride:
-          state.totalWeightOverridden ? state.totalWeightG : null,
+      totalWeightOverride: state.totalWeightOverridden ? state.totalWeightG : null,
     );
-    emit(
-      state.copyWith(
-        totalWeightG: result.totalWeightG,
-        aggregatedNutrimentsPer100: result.perHundredG,
-      ),
-    );
+    emit(state.copyWith(totalWeightG: result.totalWeightG, aggregatedNutrimentsPer100: result.perHundredG));
   }
 
-  Future<void> _onSave(
-    SaveRecipeEvent event,
-    Emitter<RecipeBuilderState> emit,
-  ) async {
+  Future<void> _onSave(SaveRecipeEvent event, Emitter<RecipeBuilderState> emit) async {
     final trimmedName = state.name.trim();
     if (trimmedName.isEmpty) {
       emit(state.copyWith(saveError: SaveError.nameRequired));
@@ -212,9 +160,7 @@ class RecipeBuilderBloc
       final recipe = RecipeEntity(
         id: state.id ?? IdGenerator.getUniqueID(),
         name: trimmedName,
-        description: state.description?.trim().isEmpty ?? true
-            ? null
-            : state.description?.trim(),
+        description: state.description?.trim().isEmpty ?? true ? null : state.description?.trim(),
         ingredients: state.ingredients,
         totalWeightG: state.totalWeightG,
         aggregatedNutrimentsPer100: state.aggregatedNutrimentsPer100,
@@ -224,19 +170,10 @@ class RecipeBuilderBloc
         tags: state.tags,
         imagePath: state.imagePath,
       );
-      await _saveUseCase.save(
-        recipe,
-        totalWeightOverridden: state.totalWeightOverridden,
-      );
+      await _saveUseCase.save(recipe, totalWeightOverridden: state.totalWeightOverridden);
       emit(state.copyWith(isSaving: false, didSave: true));
     } catch (e) {
-      emit(
-        state.copyWith(
-          isSaving: false,
-          saveError: SaveError.unknown,
-          errorMessage: e.toString(),
-        ),
-      );
+      emit(state.copyWith(isSaving: false, saveError: SaveError.unknown, errorMessage: e.toString()));
     }
   }
 }
