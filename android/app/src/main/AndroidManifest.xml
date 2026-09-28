@@ -26,7 +26,7 @@
          That suggestion falls back to a BMI-derived percentile, which is what
          Android now uses; iOS still reads body fat from HealthKit. -->
     <uses-permission android:name="android.permission.health.READ_EXERCISE"/>
-    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED"/>
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
 
     <!-- Provide required visibility configuration for API level 30 and above -->
     <queries>

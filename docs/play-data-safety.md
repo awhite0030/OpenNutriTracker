@@ -113,7 +113,7 @@ records it so it is not reopened every release.
 What *did* change on 2026-09-08 is the permission set behind it. Play's Health
 Connect permissions policy enforced against `READ_BODY_FAT`, `READ_DISTANCE`
 and `READ_STEPS` as excessive, and the app now declares only `READ_EXERCISE`
-and `READ_TOTAL_CALORIES_BURNED`. The **Health apps declaration** (Play Console
+and `READ_ACTIVE_CALORIES_BURNED`. The **Health apps declaration** (Play Console
 → App content) has to be brought in line with that in the same pass — it was
 last edited before any health permission existed in the app.
 

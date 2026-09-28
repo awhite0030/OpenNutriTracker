@@ -344,7 +344,7 @@ lib/core/data/data_source/health/health_package_service.dart:19-33
       HealthDataType.BODY_FAT_PERCENTAGE,
     ];
     static const _androidWorkoutDetailTypes = [
-      HealthDataType.TOTAL_CALORIES_BURNED,
+      HealthDataType.ACTIVE_ENERGY_BURNED,
       HealthDataType.DISTANCE_DELTA,
       HealthDataType.STEPS,
     ];
