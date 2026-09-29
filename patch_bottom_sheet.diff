@@ -1,0 +1,33 @@
+<<<<<<< SEARCH
+  bool _hasRequiredProductInfoMissing() {
+    // Meals added via Quick Add can intentionally have missing macros (e.g. only calories)
+    if (widget.product.source == MealSourceEntity.custom) {
+      return false;
+    }
+    final productNutriments = widget.product.nutriments;
+    if (productNutriments.energyKcal100 == null ||
+        productNutriments.carbohydrates100 == null ||
+        productNutriments.fat100 == null ||
+        productNutriments.proteins100 == null) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+=======
+  bool _hasRequiredProductInfoMissing() {
+    // Meals added via Quick Add can intentionally have missing macros (e.g. only calories)
+    if (widget.product.source == MealSourceEntity.custom) {
+      return false;
+    }
+    final productNutriments = widget.product.nutriments;
+    if (productNutriments.energyKcal100 == null ||
+        productNutriments.carbohydrates100 == null ||
+        productNutriments.fat100 == null ||
+        productNutriments.proteins100 == null) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+>>>>>>> REPLACE
