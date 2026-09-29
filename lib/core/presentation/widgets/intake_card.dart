@@ -12,6 +12,8 @@ import 'package:opennutritracker/core/styles/dimens.dart';
 import 'package:opennutritracker/core/utils/energy_display.dart';
 import 'package:opennutritracker/core/utils/locator.dart';
 import 'package:opennutritracker/core/utils/user_image_storage.dart';
+import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
+import 'package:opennutritracker/features/add_meal/util/food_emoji_resolver.dart';
 
 /// A logged intake, rendered as a full-width row: a rounded thumbnail, the meal
 /// name and amount, and the energy on the trailing edge. Replaces the old
@@ -120,6 +122,10 @@ class _Thumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget content;
+    final emoji = (intake.meal.mainImageUrl == null && intake.meal.source == MealSourceEntity.fdc)
+        ? resolveFoodEmoji(intake.meal.name)
+        : null;
+
     if (intake.meal.localImagePath != null) {
       content = _LocalMealImage(relativePath: intake.meal.localImagePath!);
     } else if (intake.meal.mainImageUrl != null) {
@@ -127,11 +133,11 @@ class _Thumbnail extends StatelessWidget {
         cacheManager: locator<CacheManager>(),
         imageUrl: intake.meal.mainImageUrl ?? "",
         fit: BoxFit.cover,
-        errorWidget: (context, url, error) => _fallback(),
-        placeholder: (context, url) => _fallback(),
+        errorWidget: (context, url, error) => _fallback(emoji),
+        placeholder: (context, url) => _fallback(emoji),
       );
     } else {
-      content = _fallback();
+      content = _fallback(emoji);
     }
     return ClipRRect(
       borderRadius: BorderRadius.circular(Dimens.radiusS),
@@ -143,9 +149,14 @@ class _Thumbnail extends StatelessWidget {
     );
   }
 
-  Widget _fallback() => Container(
+  Widget _fallback(String? emoji) => Container(
         color: palette.surfaceMuted,
-        child: Icon(Icons.restaurant_rounded, color: palette.textMuted, size: 24),
+        alignment: Alignment.center,
+        child: emoji != null
+            ? ExcludeSemantics(
+                child: Text(emoji, style: const TextStyle(fontSize: 30)),
+              )
+            : Icon(Icons.restaurant_rounded, color: palette.textMuted, size: 24),
       );
 }
 
