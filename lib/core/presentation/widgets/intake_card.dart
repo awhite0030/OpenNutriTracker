@@ -122,7 +122,7 @@ class _Thumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget content;
-    final emoji = (intake.meal.mainImageUrl == null && intake.meal.source == MealSourceEntity.fdc)
+    final emoji = (intake.meal.thumbnailImageUrl == null && intake.meal.source == MealSourceEntity.fdc)
         ? resolveFoodEmoji(intake.meal.name)
         : null;
 
