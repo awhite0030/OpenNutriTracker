@@ -51,9 +51,7 @@ void main() {
   /// that, and the robust fix is structural XML parsing, which would mean
   /// promoting `xml` from a transitive dependency to a declared one.
   final usesPermission = RegExp(r'<uses-permission\b[^>]*?/?>');
-  final healthName = RegExp(
-    r'''\bandroid:name\s*=\s*["']android\.permission\.health\.([A-Z_]+)["']''',
-  );
+  final healthName = RegExp(r'''\bandroid:name\s*=\s*["']android\.permission\.health\.([A-Z_]+)["']''');
   final nodeRemove = RegExp(r'''\btools:node\s*=\s*["']remove["']''');
 
   /// Health permissions in [xml], split by whether the element carries the
@@ -77,10 +75,12 @@ void main() {
   /// `src/fullRelease` all reach Play. `debug`, `profile` and the `develop`
   /// flavor do not, and are excluded on purpose — failing over a permission
   /// that never ships would be a false alarm.
-  final appManifests = const ['main', 'release', 'full', 'fullRelease']
-      .map((s) => File('android/app/src/$s/AndroidManifest.xml'))
-      .where((f) => f.existsSync())
-      .toList();
+  final appManifests = const [
+    'main',
+    'release',
+    'full',
+    'fullRelease',
+  ].map((s) => File('android/app/src/$s/AndroidManifest.xml')).where((f) => f.existsSync()).toList();
 
   final manifest = appManifests.map((f) => f.readAsStringSync()).join('\n');
 
@@ -118,9 +118,10 @@ void main() {
   final pluginPermissions = <String, Set<String>>{};
   var pluginManifestsRead = 0;
   if (pluginListPresent) {
-    final plugins = ((jsonDecode(pluginList.readAsStringSync())
-            as Map<String, dynamic>)['plugins']
-        as Map<String, dynamic>)['android'] as List<dynamic>;
+    final plugins =
+        ((jsonDecode(pluginList.readAsStringSync()) as Map<String, dynamic>)['plugins']
+                as Map<String, dynamic>)['android']
+            as List<dynamic>;
     for (final plugin in plugins.cast<Map<String, dynamic>>()) {
       final root = (plugin['path'] as String).replaceAll(RegExp(r'/+$'), '');
       // Only the source sets Gradle merges into a release build. `debug`,
@@ -129,16 +130,12 @@ void main() {
       // it would be a false alarm, and the app's own debug/profile manifests
       // are excluded for the same reason.
       for (final sourceSet in const ['main', 'release']) {
-        final pluginManifest =
-            File('$root/android/src/$sourceSet/AndroidManifest.xml');
+        final pluginManifest = File('$root/android/src/$sourceSet/AndroidManifest.xml');
         if (!pluginManifest.existsSync()) continue;
         pluginManifestsRead++;
-        final found = healthIn(pluginManifest.readAsStringSync()).kept
-          ..removeAll(removedByApp);
+        final found = healthIn(pluginManifest.readAsStringSync()).kept..removeAll(removedByApp);
         if (found.isNotEmpty) {
-          pluginPermissions
-              .putIfAbsent(plugin['name'] as String, () => <String>{})
-              .addAll(found);
+          pluginPermissions.putIfAbsent(plugin['name'] as String, () => <String>{}).addAll(found);
         }
       }
     }
@@ -149,16 +146,12 @@ void main() {
       // The workout import needs the session, and the calories that give an
       // imported workout its kcal. Without these the feature cannot work.
       expect(declared, contains('READ_EXERCISE'));
-      expect(declared, contains('READ_TOTAL_CALORIES_BURNED'));
+      expect(declared, contains('READ_ACTIVE_CALORIES_BURNED'));
     });
 
     test('the three permissions Play refused are not declared', () {
       expect(
-        declared.intersection({
-          'READ_BODY_FAT',
-          'READ_DISTANCE',
-          'READ_STEPS',
-        }),
+        declared.intersection({'READ_BODY_FAT', 'READ_DISTANCE', 'READ_STEPS'}),
         isEmpty,
         reason:
             'Play enforced against these on 8 Sept 2026 as excessive for the '
@@ -174,7 +167,7 @@ void main() {
       // that is the separate plugin test below.
       expect(
         declared,
-        {'READ_EXERCISE', 'READ_TOTAL_CALORIES_BURNED'},
+        {'READ_EXERCISE', 'READ_ACTIVE_CALORIES_BURNED'},
         reason:
             'Every declared Health Connect permission has to be justified by '
             'a feature in the Play Console declaration form. Adding one here '
@@ -218,10 +211,7 @@ void main() {
     });
 
     test('nothing is ever written back', () {
-      expect(
-        declared.where((permission) => permission.startsWith('WRITE_')),
-        isEmpty,
-      );
+      expect(declared.where((permission) => permission.startsWith('WRITE_')), isEmpty);
     });
   });
 
@@ -234,10 +224,7 @@ void main() {
   // that release was known to be clean.
   group('the merged manifest Gradle produced', () {
     // AGP has used both spellings for this directory; take whichever exists.
-    final mergedManifests = [
-      'build/app/intermediates/merged_manifest',
-      'build/app/intermediates/merged_manifests',
-    ]
+    final mergedManifests = ['build/app/intermediates/merged_manifest', 'build/app/intermediates/merged_manifests']
         .map(Directory.new)
         .where((directory) => directory.existsSync())
         .expand((directory) => directory.listSync(recursive: true))
@@ -266,7 +253,7 @@ void main() {
         // actually shipped is the last place to be picky about spelling.
         expect(
           healthIn(mergedManifest.readAsStringSync()).kept,
-          {'READ_EXERCISE', 'READ_TOTAL_CALORIES_BURNED'},
+          {'READ_EXERCISE', 'READ_ACTIVE_CALORIES_BURNED'},
           reason:
               '${mergedManifest.path} ships a health permission set the '
               'repo did not declare, and one the plugin check did not '

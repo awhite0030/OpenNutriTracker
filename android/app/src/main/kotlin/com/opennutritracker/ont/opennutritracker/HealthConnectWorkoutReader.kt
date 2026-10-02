@@ -21,12 +21,12 @@ import java.time.Instant
  *
  * Nothing is lost by reading the session directly: the app already ignored the
  * plugin's totals on Android and attributes energy itself from raw
- * TOTAL_CALORIES_BURNED records (see `androidWorkoutEnergyKcal`), so distance
+ * ACTIVE_CALORIES_BURNED records (see `androidWorkoutEnergyKcal`), so distance
  * and steps were read and thrown away. Everything the import actually consumes
  * — id, start, end, activity type, writing app — is on the session record.
  *
  * Only `READ_EXERCISE` is needed here. The calorie read stays on the plugin,
- * which needs only `READ_TOTAL_CALORIES_BURNED`.
+ * which needs only `READ_ACTIVE_CALORIES_BURNED`.
  */
 object HealthConnectWorkoutReader {
 
