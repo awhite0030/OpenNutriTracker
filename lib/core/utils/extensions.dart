@@ -66,7 +66,12 @@ extension DisplayDouble on double? {
 }
 
 extension FormatString on DateTime {
-  String toParsedDay() => DateFormat('yyyy-MM-dd').format(this);
+  String toParsedDay() {
+    if (millisecondsSinceEpoch % 86400000 == 0) {
+      return DateFormat('yyyy-MM-dd').format(toUtc());
+    }
+    return DateFormat('yyyy-MM-dd').format(this);
+  }
 }
 
 extension ColorExtension on Color {

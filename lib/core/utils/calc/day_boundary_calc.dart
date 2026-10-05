@@ -41,17 +41,14 @@ class DayBoundaryCalc {
   }
 
   /// The logical day for "now", given the configured [offsetHours].
-  static DateTime currentLogicalDay(int? offsetHours) =>
-      logicalDayOf(clock(), offsetHours);
+  static DateTime currentLogicalDay(int? offsetHours) => logicalDayOf(clock(), offsetHours);
 
   /// True when [a] and [b] resolve to the same logical day under
   /// [offsetHours].
   static bool isSameLogicalDay(DateTime a, DateTime b, int? offsetHours) {
     final dayA = logicalDayOf(a, offsetHours);
     final dayB = logicalDayOf(b, offsetHours);
-    return dayA.year == dayB.year &&
-        dayA.month == dayB.month &&
-        dayA.day == dayB.day;
+    return dayA.year == dayB.year && dayA.month == dayB.month && dayA.day == dayB.day;
   }
 
   /// Returns the wall-clock midnight of the logical day that [moment]
@@ -66,21 +63,16 @@ class DayBoundaryCalc {
   /// Out-of-range values (negative, or ≥ 24 h) are treated as 0 — the
   /// same defensive behaviour as the hours-only overload.
   static DateTime logicalDayOfMinutes(DateTime moment, int? offsetTotalMinutes) {
-    return _logicalDayOfTotalMinutes(
-      moment,
-      _sanitiseTotalMinutes(offsetTotalMinutes),
-    );
+    return _logicalDayOfTotalMinutes(moment, _sanitiseTotalMinutes(offsetTotalMinutes));
   }
 
   /// The logical day for "now", given the configured [offsetTotalMinutes].
-  static DateTime currentLogicalDayMinutes(int? offsetTotalMinutes) =>
-      logicalDayOfMinutes(clock(), offsetTotalMinutes);
+  static DateTime currentLogicalDayMinutes(int? offsetTotalMinutes) => logicalDayOfMinutes(clock(), offsetTotalMinutes);
 
   /// Composes the hours + minutes pair the data layer passes around into
   /// the single total-minutes value the calculations below expect. A
   /// stored minute value outside 0-59 cannot inflate the total.
-  static int totalMinutesOf(int offsetHours, int offsetMinutes) =>
-      offsetHours * 60 + offsetMinutes.clamp(0, 59);
+  static int totalMinutesOf(int offsetHours, int offsetMinutes) => offsetHours * 60 + offsetMinutes.clamp(0, 59);
 
   /// The label of the logical day "now" falls in, from an hours +
   /// minutes pair.
@@ -101,20 +93,18 @@ class DayBoundaryCalc {
   /// (#586: with a 06:00 boundary, tapping the 20th listed the 19th's
   /// entries, because subtracting six hours from midnight lands in the
   /// previous day). Only [moment] is resolved through the boundary.
-  static bool isMomentInLogicalDayMinutes(
-    DateTime dayLabel,
-    DateTime moment,
-    int? offsetTotalMinutes,
-  ) {
+  static bool isMomentInLogicalDayMinutes(DateTime dayLabel, DateTime moment, int? offsetTotalMinutes) {
     // Some stored entries are themselves labels rather than clock
     // readings, and must be compared as-is: rolling them back would file
     // them a day early. See [_isDayLabel] for who writes them.
-    final momentDay = _isDayLabel(moment)
-        ? moment
-        : logicalDayOfMinutes(moment, offsetTotalMinutes);
-    return momentDay.year == dayLabel.year &&
-        momentDay.month == dayLabel.month &&
-        momentDay.day == dayLabel.day;
+    DateTime momentDay = _isDayLabel(moment) ? moment : logicalDayOfMinutes(moment, offsetTotalMinutes);
+
+    if (momentDay.millisecondsSinceEpoch % 86400000 == 0) {
+      momentDay = momentDay.toUtc();
+    }
+    final dl = dayLabel.millisecondsSinceEpoch % 86400000 == 0 ? dayLabel.toUtc() : dayLabel;
+
+    return momentDay.year == dl.year && momentDay.month == dl.month && momentDay.day == dl.day;
   }
 
   /// True when [a] and [b] resolve to the same logical day under
@@ -122,21 +112,15 @@ class DayBoundaryCalc {
   ///
   /// Both arguments must be real timestamps. If either is a user-picked
   /// calendar date, reach for [isMomentInLogicalDayMinutes] instead.
-  static bool isSameLogicalDayMinutes(
-    DateTime a,
-    DateTime b,
-    int? offsetTotalMinutes,
-  ) {
+  static bool isSameLogicalDayMinutes(DateTime a, DateTime b, int? offsetTotalMinutes) {
     final dayA = logicalDayOfMinutes(a, offsetTotalMinutes);
     final dayB = logicalDayOfMinutes(b, offsetTotalMinutes);
-    return dayA.year == dayB.year &&
-        dayA.month == dayB.month &&
-        dayA.day == dayB.day;
+    return dayA.year == dayB.year && dayA.month == dayB.month && dayA.day == dayB.day;
   }
 
   static DateTime _logicalDayOfTotalMinutes(DateTime moment, int totalMinutes) {
     final shifted = moment.subtract(Duration(minutes: totalMinutes));
-    return DateTime(shifted.year, shifted.month, shifted.day);
+    return DateTime.utc(shifted.year, shifted.month, shifted.day);
   }
 
   /// A bare midnight is how this app spells "the calendar day named
@@ -158,11 +142,8 @@ class DayBoundaryCalc {
   /// of rolling back; `DateTime.now()` carries microseconds, so that is
   /// a rounding error against mis-filing every import.
   static bool _isDayLabel(DateTime value) =>
-      value.hour == 0 &&
-      value.minute == 0 &&
-      value.second == 0 &&
-      value.millisecond == 0 &&
-      value.microsecond == 0;
+      (value.hour == 0 && value.minute == 0 && value.second == 0 && value.millisecond == 0 && value.microsecond == 0) ||
+      (value.millisecondsSinceEpoch % 86400000 == 0);
 
   static int _sanitiseHours(int? offsetHours) {
     if (offsetHours == null) return 0;
