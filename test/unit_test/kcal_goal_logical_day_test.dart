@@ -44,8 +44,7 @@ class _FakeConfigRepository extends Fake implements ConfigRepository {
 
 /// Records the day it was asked for, so the test can assert on the value
 /// the usecase resolved rather than on a number further downstream.
-class _RecordingUserActivityRepository extends Fake
-    implements UserActivityRepository {
+class _RecordingUserActivityRepository extends Fake implements UserActivityRepository {
   final List<UserActivityEntity> activities;
   DateTime? requestedDay;
 
@@ -63,10 +62,7 @@ class _RecordingUserActivityRepository extends Fake
           (activity) => DayBoundaryCalc.isMomentInLogicalDayMinutes(
             dateTime,
             activity.date,
-            DayBoundaryCalc.totalMinutesOf(
-              dayStartOffsetHours,
-              dayStartOffsetMinutes,
-            ),
+            DayBoundaryCalc.totalMinutesOf(dayStartOffsetHours, dayStartOffsetMinutes),
           ),
         )
         .toList();
@@ -77,7 +73,7 @@ void main() {
   // 02:00 — after midnight, before the 06:00 boundary, so the logical day
   // is still the 19th while the wall-clock date is the 20th.
   final beforeBoundary = DateTime(2026, 7, 20, 2, 0);
-  final logicalToday = DateTime(2026, 7, 19);
+  final logicalToday = DateTime.utc(2026, 7, 19);
 
   final user = UserEntity(
     birthday: DateTime(1984, 3, 2),
@@ -91,13 +87,7 @@ void main() {
     caloriesTaperEnabled: false,
   );
 
-  const config = ConfigEntity(
-    false,
-    false,
-    false,
-    AppThemeEntity.system,
-    dayStartOffsetHours: 6,
-  );
+  const config = ConfigEntity(false, false, false, AppThemeEntity.system, dayStartOffsetHours: 6);
 
   // Both belong to the logical 19th: the second was logged after midnight
   // but before the 06:00 boundary.
@@ -130,15 +120,10 @@ void main() {
     final configRepo = _FakeConfigRepository(config);
     activityRepo = _RecordingUserActivityRepository(activities);
     kcalGoalUsecase = GetKcalGoalUsecase(userRepo, configRepo, activityRepo);
-    breakdownUsecase = GetKcalGoalBreakdownUsecase(
-      userRepo,
-      configRepo,
-      activityRepo,
-    );
+    breakdownUsecase = GetKcalGoalBreakdownUsecase(userRepo, configRepo, activityRepo);
   });
 
-  test('the kcal goal asks for the logical day, not the wall-clock one',
-      () async {
+  test('the kcal goal asks for the logical day, not the wall-clock one', () async {
     await kcalGoalUsecase.getKcalGoal();
 
     expect(activityRepo.requestedDay, logicalToday);
@@ -150,8 +135,7 @@ void main() {
     expect(activityRepo.requestedDay, logicalToday);
   });
 
-  test('activities from before the boundary still count toward the goal',
-      () async {
+  test('activities from before the boundary still count toward the goal', () async {
     final breakdown = await breakdownUsecase.getBreakdown();
 
     expect(breakdown.activityKcal, closeTo(312.5 + 87.25, 0.0001));
