@@ -270,13 +270,16 @@
   "dialogOKLabel": "确定",
   "diaryFutureDateWarning": "您正在编辑未来的日期",
   "diaryLabel": "日记",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} 千卡",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -473,7 +476,7 @@
   "magnesiumLabel": "镁",
   "mealBrandsLabel": "品牌",
   "mealCarbsLabel": "碳水化合物",
-  "mealDetailCurrentSelectionLabel": "（+{kcal} 千卡 当前选择）",
+  "mealDetailCurrentSelectionLabel": "（+{kcal} {unit} 当前选择）",
   "mealDetailDayTotalLabel": "今日总计：{consumed} / {goal}",
   "mealEnergyLabel": "能量",
   "mealFatLabel": "脂肪",

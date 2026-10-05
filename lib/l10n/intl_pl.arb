@@ -269,13 +269,16 @@
   "dialogOKLabel": "OK",
   "diaryFutureDateWarning": "Edytujesz przyszłą datę",
   "diaryLabel": "Dziennik",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} kcal",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -472,7 +475,7 @@
   "magnesiumLabel": "magnez",
   "mealBrandsLabel": "Marki",
   "mealCarbsLabel": "Węglowodany",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} kcal bieżący wybór)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} bieżący wybór)",
   "mealDetailDayTotalLabel": "Suma dzienna: {consumed} / {goal}",
   "mealEnergyLabel": "Energia",
   "mealFatLabel": "Tłuszcze",

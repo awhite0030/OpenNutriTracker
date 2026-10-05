@@ -284,13 +284,16 @@
   "dialogOKLabel": "OK",
   "diaryFutureDateWarning": "Egy jövőbeli dátumot szerkeszt",
   "diaryLabel": "Napló",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} kcal",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -484,10 +487,13 @@
   "magnesiumLabel": "magnézium",
   "mealBrandsLabel": "Márkák",
   "mealCarbsLabel": "Szénhidrátok",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} kcal – jelenlegi érték)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} – jelenlegi érték)",
   "@mealDetailCurrentSelectionLabel": {
     "placeholders": {
       "kcal": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }

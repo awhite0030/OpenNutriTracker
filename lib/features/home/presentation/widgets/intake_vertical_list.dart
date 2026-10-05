@@ -35,13 +35,11 @@ class IntakeVerticalList extends StatefulWidget {
   final List<IntakeEntity> intakeList;
   final bool usesImperialUnits;
   final bool showMealMacros;
-  final Function(IntakeEntity intake, TrackedDayEntity? trackedDayEntity)
-      onDeleteIntakeCallback;
+  final Function(IntakeEntity intake, TrackedDayEntity? trackedDayEntity) onDeleteIntakeCallback;
   final Function(BuildContext, IntakeEntity)? onItemLongPressedCallback;
   final Function(bool)? onItemDragCallback;
   final Function(BuildContext, IntakeEntity, bool)? onItemTappedCallback;
-  final Function(IntakeEntity intake, TrackedDayEntity? trackedDayEntity,
-      AddMealType? type)? onCopyIntakeCallback;
+  final Function(IntakeEntity intake, TrackedDayEntity? trackedDayEntity, AddMealType? type)? onCopyIntakeCallback;
   final TrackedDayEntity? trackedDayEntity;
   // #150: optional recommended kcal target for this meal section. When
   // supplied and > 0, the section header shows "consumed / target kcal" so
@@ -96,40 +94,38 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
   }
 
   double get totalKcal {
-    return widget.intakeList
-        .fold(0, (previousValue, element) => previousValue + element.totalKcal);
+    return widget.intakeList.fold(0, (previousValue, element) => previousValue + element.totalKcal);
   }
 
   double get totalCarbsGram {
-    return widget.intakeList
-        .fold(0, (previousValue, element) => previousValue + element.totalCarbsGram);
+    return widget.intakeList.fold(0, (previousValue, element) => previousValue + element.totalCarbsGram);
   }
 
   double get totalFatsGram {
-    return widget.intakeList
-        .fold(0, (previousValue, element) => previousValue + element.totalFatsGram);
+    return widget.intakeList.fold(0, (previousValue, element) => previousValue + element.totalFatsGram);
   }
 
   double get totalProteinsGram {
-    return widget.intakeList
-        .fold(0, (previousValue, element) => previousValue + element.totalProteinsGram);
+    return widget.intakeList.fold(0, (previousValue, element) => previousValue + element.totalProteinsGram);
   }
 
   // #150: only show a header when we have something to say — either some
   // food was logged, or a recommended target exists so the section can read
   // "0 / 600 kcal" before anything is logged.
-  bool get _hasMealKcalTarget =>
-      widget.mealKcalTarget != null && widget.mealKcalTarget! > 0;
+  bool get _hasMealKcalTarget => widget.mealKcalTarget != null && widget.mealKcalTarget! > 0;
 
   bool get _shouldShowHeaderSummary => totalKcal > 0 || _hasMealKcalTarget;
 
   String _buildHeaderSummary(BuildContext context) {
     final consumed = EnergyDisplay.formatValue(context, totalKcal);
     final kcalLine = _hasMealKcalTarget
-        ? S.of(context).diaryMealKcalConsumedOfTarget(
-              consumed,
-              EnergyDisplay.formatValue(context, widget.mealKcalTarget!),
-            )
+        ? S
+              .of(context)
+              .diaryMealKcalConsumedOfTarget(
+                consumed,
+                EnergyDisplay.formatValue(context, widget.mealKcalTarget!),
+                EnergyDisplay.unitLabelStatic(context),
+              )
         : EnergyDisplay.formatWithUnit(context, totalKcal);
     if (widget.showMealMacros && totalKcal > 0) {
       return '$kcalLine\n'
@@ -149,21 +145,13 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.fromLTRB(
-            Dimens.spacing16,
-            Dimens.spacing20,
-            Dimens.spacing12,
-            Dimens.spacing8,
-          ),
+          padding: const EdgeInsets.fromLTRB(Dimens.spacing16, Dimens.spacing20, Dimens.spacing12, Dimens.spacing8),
           alignment: Alignment.centerLeft,
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(Dimens.spacing8),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  borderRadius: Dimens.borderRadiusS,
-                ),
+                decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: Dimens.borderRadiusS),
                 child: Icon(widget.listIcon, size: 20, color: accent),
               ),
               const SizedBox(width: Dimens.spacing12),
@@ -173,10 +161,7 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
                   maxLines: 1,
                   minFontSize: 14,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.titleLarge?.copyWith(
-                    color: palette.textStrong,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: textTheme.titleLarge?.copyWith(color: palette.textStrong, fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(width: Dimens.spacing8),
@@ -194,102 +179,95 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
                     textAlign: TextAlign.end,
                   ),
                 ),
-              if (widget.onSortTypeChanged != null && totalKcal > 0)
-                _buildSortMenu(context),
+              if (widget.onSortTypeChanged != null && totalKcal > 0) _buildSortMenu(context),
               Semantics(
-                  identifier: 'intake-section-menu',
-                  // Tight bounds: without this the node inherits the flex
-                  // Row's full-width box and coordinate taps miss the button.
-                  container: true,
-                  child: PopupMenuButton<VerticalListPopupMenuSelections>(
-                    icon: Icon(Icons.more_vert_rounded, color: palette.textMuted),
-                    shape: Dimens.shapeM,
-                    onSelected:
-                        (VerticalListPopupMenuSelections selection) async {
-                      switch (selection) {
-                        case VerticalListPopupMenuSelections.onCopy:
-                          final copyDialog =
-                              CopyDialog(initialValue: widget.addMealType);
-                          final selectedMealType =
-                              await showDialog<AddMealType>(
-                                  context: context,
-                                  builder: (context) => copyDialog);
-                          if (selectedMealType != null) {
-                            for (IntakeEntity intake in widget.intakeList) {
-                              widget.onCopyIntakeCallback!(
-                                  intake, null, selectedMealType);
-                            }
+                identifier: 'intake-section-menu',
+                // Tight bounds: without this the node inherits the flex
+                // Row's full-width box and coordinate taps miss the button.
+                container: true,
+                child: PopupMenuButton<VerticalListPopupMenuSelections>(
+                  icon: Icon(Icons.more_vert_rounded, color: palette.textMuted),
+                  shape: Dimens.shapeM,
+                  onSelected: (VerticalListPopupMenuSelections selection) async {
+                    switch (selection) {
+                      case VerticalListPopupMenuSelections.onCopy:
+                        final copyDialog = CopyDialog(initialValue: widget.addMealType);
+                        final selectedMealType = await showDialog<AddMealType>(
+                          context: context,
+                          builder: (context) => copyDialog,
+                        );
+                        if (selectedMealType != null) {
+                          for (IntakeEntity intake in widget.intakeList) {
+                            widget.onCopyIntakeCallback!(intake, null, selectedMealType);
+                          }
+                        }
+                        break;
+                      case VerticalListPopupMenuSelections.onDelete:
+                        final shouldDeleteIntakes = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => const DeleteAllDialog(),
+                        );
+                        if (shouldDeleteIntakes != null) {
+                          for (IntakeEntity intake in widget.intakeList) {
+                            widget.onDeleteIntakeCallback(intake, widget.trackedDayEntity);
                           }
                           break;
-                        case VerticalListPopupMenuSelections.onDelete:
-                          final shouldDeleteIntakes = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => const DeleteAllDialog());
-                          if (shouldDeleteIntakes != null) {
-                            for (IntakeEntity intake in widget.intakeList) {
-                              widget.onDeleteIntakeCallback(
-                                  intake, widget.trackedDayEntity);
-                            }
-                            break;
-                          }
-                        case VerticalListPopupMenuSelections.onShare:
-                          if (context.mounted) {
-                            final code = SharedMealPayload.fromIntakeList(
-                              widget.intakeList,
-                              recipeRepository: locator<RecipeRepository>(),
-                            ).toJsonString();
-                            final hasOtherProfiles =
-                                locator<GetProfilesUsecase>()
-                                        .getProfiles()
-                                        .length >
-                                    1;
-                            await showDialog(
-                              context: context,
-                              builder: (_) => ShareQrDialog(
-                                title: S.of(context).shareMealLabel,
-                                code: code,
-                                fileBaseName: 'meal_qr',
-                                onCopyToProfile: hasOtherProfiles
-                                    ? () => showCopyToProfileSheet(
-                                          context,
-                                          widget.intakeList,
-                                        )
-                                    : null,
-                              ),
-                            );
-                          }
-                        case VerticalListPopupMenuSelections.onImport:
-                          if (context.mounted) {
-                            Navigator.of(context).pushNamed(
-                              NavigationOptions.importMealScannerRoute,
-                              arguments: ImportMealScannerArguments(
-                                widget.addMealType.getIntakeType(),
-                                widget.addMealType,
-                                widget.day,
-                              ),
-                            );
-                          }
-                      }
-                    },
-                    itemBuilder: (BuildContext context) =>
-                        <PopupMenuEntry<VerticalListPopupMenuSelections>>[
-                          if (widget.onCopyIntakeCallback != null &&
-                              totalKcal > 0)
-                            PopupMenuItem<VerticalListPopupMenuSelections>(
-                                value: VerticalListPopupMenuSelections.onCopy,
-                                child: Text(S.of(context).dialogCopyLabel)),
-                          if (totalKcal > 0)
-                            PopupMenuItem<VerticalListPopupMenuSelections>(
-                                value: VerticalListPopupMenuSelections.onDelete,
-                                child: Text(S.of(context).deleteAllLabel)),
-                          if (totalKcal > 0)
-                            PopupMenuItem<VerticalListPopupMenuSelections>(
-                                value: VerticalListPopupMenuSelections.onShare,
-                                child: Text(S.of(context).shareMealLabel)),
-                          PopupMenuItem<VerticalListPopupMenuSelections>(
-                              value: VerticalListPopupMenuSelections.onImport,
-                              child: Text(S.of(context).importMealLabel)),
-                        ])),
+                        }
+                      case VerticalListPopupMenuSelections.onShare:
+                        if (context.mounted) {
+                          final code = SharedMealPayload.fromIntakeList(
+                            widget.intakeList,
+                            recipeRepository: locator<RecipeRepository>(),
+                          ).toJsonString();
+                          final hasOtherProfiles = locator<GetProfilesUsecase>().getProfiles().length > 1;
+                          await showDialog(
+                            context: context,
+                            builder: (_) => ShareQrDialog(
+                              title: S.of(context).shareMealLabel,
+                              code: code,
+                              fileBaseName: 'meal_qr',
+                              onCopyToProfile: hasOtherProfiles
+                                  ? () => showCopyToProfileSheet(context, widget.intakeList)
+                                  : null,
+                            ),
+                          );
+                        }
+                      case VerticalListPopupMenuSelections.onImport:
+                        if (context.mounted) {
+                          Navigator.of(context).pushNamed(
+                            NavigationOptions.importMealScannerRoute,
+                            arguments: ImportMealScannerArguments(
+                              widget.addMealType.getIntakeType(),
+                              widget.addMealType,
+                              widget.day,
+                            ),
+                          );
+                        }
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<VerticalListPopupMenuSelections>>[
+                    if (widget.onCopyIntakeCallback != null && totalKcal > 0)
+                      PopupMenuItem<VerticalListPopupMenuSelections>(
+                        value: VerticalListPopupMenuSelections.onCopy,
+                        child: Text(S.of(context).dialogCopyLabel),
+                      ),
+                    if (totalKcal > 0)
+                      PopupMenuItem<VerticalListPopupMenuSelections>(
+                        value: VerticalListPopupMenuSelections.onDelete,
+                        child: Text(S.of(context).deleteAllLabel),
+                      ),
+                    if (totalKcal > 0)
+                      PopupMenuItem<VerticalListPopupMenuSelections>(
+                        value: VerticalListPopupMenuSelections.onShare,
+                        child: Text(S.of(context).shareMealLabel),
+                      ),
+                    PopupMenuItem<VerticalListPopupMenuSelections>(
+                      value: VerticalListPopupMenuSelections.onImport,
+                      child: Text(S.of(context).importMealLabel),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -322,19 +300,13 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
                       ),
                     ),
                     childWhenDragging: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Dimens.spacing16,
-                        vertical: Dimens.spacing4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: Dimens.spacing16, vertical: Dimens.spacing4),
                       child: Container(
                         height: 76,
                         decoration: BoxDecoration(
                           color: palette.surfaceMuted,
                           borderRadius: Dimens.borderRadiusM,
-                          border: Border.all(
-                            color: palette.border,
-                            width: Dimens.hairline,
-                          ),
+                          border: Border.all(color: palette.border, width: Dimens.hairline),
                         ),
                       ),
                     ),
@@ -405,13 +377,22 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
   }
 
   void _onPlaceholderCardTapped(BuildContext context) {
-    Navigator.pushNamed(context, NavigationOptions.addMealRoute,
-        arguments: AddMealScreenArguments(widget.addMealType, widget.day));
+    Navigator.pushNamed(
+      context,
+      NavigationOptions.addMealRoute,
+      arguments: AddMealScreenArguments(widget.addMealType, widget.day),
+    );
   }
 
   void _onItemDropped(IntakeEntity entity) {
-    _mealDetailBloc.addIntake(context, entity.unit, entity.amount.toString(),
-        widget.addMealType.getIntakeType(), entity.meal, entity.dateTime);
+    _mealDetailBloc.addIntake(
+      context,
+      entity.unit,
+      entity.amount.toString(),
+      widget.addMealType.getIntakeType(),
+      entity.meal,
+      entity.dateTime,
+    );
     _homeBloc.deleteIntakeItem(entity);
 
     // Refresh Home Page

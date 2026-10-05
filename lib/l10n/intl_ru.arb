@@ -284,13 +284,16 @@
   "dialogOKLabel": "ОК",
   "diaryFutureDateWarning": "Вы редактируете будущую дату",
   "diaryLabel": "Дневник",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} ккал",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -484,10 +487,13 @@
   "magnesiumLabel": "магний",
   "mealBrandsLabel": "Бренды",
   "mealCarbsLabel": "Углеводы",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} ккал текущий выбор)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} текущий выбор)",
   "@mealDetailCurrentSelectionLabel": {
     "placeholders": {
       "kcal": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }

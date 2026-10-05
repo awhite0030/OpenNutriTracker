@@ -269,13 +269,16 @@
   "dialogOKLabel": "ОК",
   "diaryFutureDateWarning": "Ви редагуєте майбутню дату",
   "diaryLabel": "Щоденник",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} kcal",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -472,7 +475,7 @@
   "magnesiumLabel": "магній",
   "mealBrandsLabel": "Бренди",
   "mealCarbsLabel": "Вуглеводи",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} kcal поточний вибір)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} поточний вибір)",
   "mealDetailDayTotalLabel": "Денний підсумок: {consumed} / {goal}",
   "mealEnergyLabel": "Енергія",
   "mealFatLabel": "Жири",
