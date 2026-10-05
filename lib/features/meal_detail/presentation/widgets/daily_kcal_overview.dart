@@ -64,7 +64,12 @@ class DailyKcalOverview extends StatelessWidget {
           ),
           const SizedBox(height: Dimens.spacing8),
           Text(
-            S.of(context).mealDetailDayTotalLabel(projected.toStringAsFixed(0), dayKcalGoal.toStringAsFixed(0)),
+            S
+                .of(context)
+                .mealDetailDayTotalLabel(
+                  EnergyDisplay.formatValue(context, projected),
+                  EnergyDisplay.formatValue(context, dayKcalGoal),
+                ),
             style: textTheme.labelLarge?.copyWith(color: accent, fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),

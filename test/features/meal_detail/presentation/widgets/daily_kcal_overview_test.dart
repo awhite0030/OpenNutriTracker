@@ -14,7 +14,11 @@ Widget _wrapWithMaterial(Widget child, {bool useKj = false}) {
       return p;
     },
     child: MaterialApp(
-      localizationsDelegates: const [S.delegate, GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate],
+      localizationsDelegates: const [
+        S.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
       supportedLocales: const [Locale('en', '')],
       home: Scaffold(body: child),
     ),
@@ -23,25 +27,30 @@ Widget _wrapWithMaterial(Widget child, {bool useKj = false}) {
 
 void main() {
   testWidgets('displays unit correctly with current selection in kj mode', (tester) async {
-    await tester.pumpWidget(_wrapWithMaterial(const DailyKcalOverview(
-      dayKcalGoal: 2000,
-      dayKcalConsumed: 500,
-      currentSelectionKcal: 100,
-    ), useKj: true));
+    await tester.pumpWidget(
+      _wrapWithMaterial(
+        const DailyKcalOverview(dayKcalGoal: 2000, dayKcalConsumed: 500, currentSelectionKcal: 100),
+        useKj: true,
+      ),
+    );
     await tester.pumpAndSettle();
 
     // 100 kcal is 418 kJ
     expect(find.textContaining('(+418 kJ current selection)'), findsOneWidget);
+    // 600 kcal is 2510 kJ, 2000 kcal is 8368 kJ.
+    expect(find.textContaining('Day total: 2510 / 8368'), findsOneWidget);
   });
 
   testWidgets('displays unit correctly with current selection in kcal mode', (tester) async {
-    await tester.pumpWidget(_wrapWithMaterial(const DailyKcalOverview(
-      dayKcalGoal: 2000,
-      dayKcalConsumed: 500,
-      currentSelectionKcal: 100,
-    ), useKj: false));
+    await tester.pumpWidget(
+      _wrapWithMaterial(
+        const DailyKcalOverview(dayKcalGoal: 2000, dayKcalConsumed: 500, currentSelectionKcal: 100),
+        useKj: false,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('(+100 kcal current selection)'), findsOneWidget);
+    expect(find.textContaining('Day total: 600 / 2000'), findsOneWidget);
   });
 }
