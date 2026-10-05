@@ -217,6 +217,7 @@ void main() {
     );
 
     // Leaving the field again must not re-open the dialog for the same value.
+    await tester.ensureVisible(find.byType(TextFormField).first);
     await tester.tap(find.byType(TextFormField).first);
     await tester.pumpAndSettle();
     await tester.tap(find.byType(TextFormField).at(2));
