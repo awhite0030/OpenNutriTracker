@@ -62,6 +62,12 @@ class TrackedDayRepository {
     double totalFatGoal,
     double totalProteinGoal,
   ) async {
+    // Copy nutrient goals from the previous day if they exist (#1316).
+    // The previous day's row holds the user's most recently configured targets.
+    final previousDay = DateTime.utc(day.year, day.month, day.day - 1);
+    final previousDayRecord =
+        await _trackedDayDataSource.getTrackedDay(previousDay);
+
     await _trackedDayDataSource.saveTrackedDay(
       TrackedDayDBO(
         day: day,
@@ -73,6 +79,16 @@ class TrackedDayRepository {
         fatTracked: 0,
         proteinGoal: totalProteinGoal,
         proteinTracked: 0,
+        fibreGoal: previousDayRecord?.fibreGoal,
+        satFatGoal: previousDayRecord?.satFatGoal,
+        sugarsGoal: previousDayRecord?.sugarsGoal,
+        sodiumGoal: previousDayRecord?.sodiumGoal,
+        calciumGoal: previousDayRecord?.calciumGoal,
+        ironGoal: previousDayRecord?.ironGoal,
+        potassiumGoal: previousDayRecord?.potassiumGoal,
+        vitaminDGoal: previousDayRecord?.vitaminDGoal,
+        vitaminB12Goal: previousDayRecord?.vitaminB12Goal,
+        magnesiumGoal: previousDayRecord?.magnesiumGoal,
       ),
     );
   }
