@@ -18,6 +18,7 @@ import 'package:opennutritracker/core/utils/energy_unit_provider.dart';
 import 'package:opennutritracker/core/utils/locator.dart';
 import 'package:opennutritracker/features/add_meal/presentation/add_meal_type.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/diary/presentation/widgets/daily_nutrient_panel.dart';
 import 'package:opennutritracker/features/diary/presentation/widgets/diary_sort_type.dart';
 import 'package:opennutritracker/features/home/presentation/widgets/intake_vertical_list.dart';
@@ -277,7 +278,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
                 onItemLongPressedCallback: onActivityItemLongPressed,
                 onItemTappedCallback: widget.onEditActivity,
                 onCopyActivityCallback:
-                    DateUtils.isSameDay(widget.selectedDay, DateTime.now())
+                    DateUtils.isSameDay(widget.selectedDay, locator<DiaryBloc>().currentDay)
                         ? null
                         : (activity) =>
                             widget.onCopyActivity(activity, widget.trackedDayEntity),
@@ -299,7 +300,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
                 onItemLongPressedCallback: onIntakeItemLongPressed,
                 onItemTappedCallback: widget.onEditIntake,
                 onCopyIntakeCallback:
-                    DateUtils.isSameDay(widget.selectedDay, DateTime.now())
+                    DateUtils.isSameDay(widget.selectedDay, locator<DiaryBloc>().currentDay)
                         ? null
                         : widget.onCopyIntake,
                 usesImperialUnits: widget.usesImperialUnits,
@@ -324,7 +325,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
                 usesImperialUnits: widget.usesImperialUnits,
                 showMealMacros: widget.showMealMacros,
                 onCopyIntakeCallback:
-                    DateUtils.isSameDay(widget.selectedDay, DateTime.now())
+                    DateUtils.isSameDay(widget.selectedDay, locator<DiaryBloc>().currentDay)
                         ? null
                         : widget.onCopyIntake,
                 trackedDayEntity: trackedDay,
@@ -345,7 +346,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
                 onItemLongPressedCallback: onIntakeItemLongPressed,
                 onItemTappedCallback: widget.onEditIntake,
                 onCopyIntakeCallback:
-                    DateUtils.isSameDay(widget.selectedDay, DateTime.now())
+                    DateUtils.isSameDay(widget.selectedDay, locator<DiaryBloc>().currentDay)
                         ? null
                         : widget.onCopyIntake,
                 usesImperialUnits: widget.usesImperialUnits,
@@ -369,7 +370,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
                 usesImperialUnits: widget.usesImperialUnits,
                 showMealMacros: widget.showMealMacros,
                 onCopyIntakeCallback:
-                    DateUtils.isSameDay(widget.selectedDay, DateTime.now())
+                    DateUtils.isSameDay(widget.selectedDay, locator<DiaryBloc>().currentDay)
                         ? null
                         : widget.onCopyIntake,
                 trackedDayEntity: trackedDay,
@@ -463,7 +464,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
     BuildContext context,
     IntakeEntity intakeEntity,
   ) async {
-    if (DateUtils.isSameDay(widget.selectedDay, DateTime.now())) {
+    if (DateUtils.isSameDay(widget.selectedDay, locator<DiaryBloc>().currentDay)) {
       showDeleteIntakeDialog(context, intakeEntity);
     } else {
       showCopyOrDeleteIntakeDialog(context, intakeEntity);
@@ -474,7 +475,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
     BuildContext context,
     UserActivityEntity activityEntity,
   ) async {
-    if (DateUtils.isSameDay(widget.selectedDay, DateTime.now())) {
+    if (DateUtils.isSameDay(widget.selectedDay, locator<DiaryBloc>().currentDay)) {
       final shouldDelete = await showDialog<bool>(
         context: context,
         builder: (context) => const DeleteDialog(),

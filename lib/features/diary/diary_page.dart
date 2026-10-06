@@ -200,7 +200,7 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
     await _calendarDayBloc.deleteIntakeItem(
       context,
       intakeEntity,
-      trackedDayEntity?.day ?? DateTime.now(),
+      trackedDayEntity?.day ?? _selectedDate,
     );
     _diaryBloc.add(const LoadDiaryYearEvent());
     _calendarDayBloc.add(LoadCalendarDayEvent(_selectedDate));
@@ -219,7 +219,7 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
     await _calendarDayBloc.deleteUserActivityItem(
       context,
       userActivityEntity,
-      trackedDayEntity?.day ?? DateTime.now(),
+      trackedDayEntity?.day ?? _selectedDate,
     );
     _diaryBloc.add(const LoadDiaryYearEvent());
     _calendarDayBloc.add(LoadCalendarDayEvent(_selectedDate));
@@ -248,7 +248,7 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
       intakeEntity.amount.toString(),
       finalType,
       intakeEntity.meal,
-      DateTime.now(),
+      _currentDate,
     );
     _diaryBloc.updateHomePage();
   }
@@ -268,7 +268,7 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
         kcal.toString(),
         kcal,
         activity,
-        DateTime.now(),
+        _currentDate,
       );
     } else {
       final user = await locator<GetUserUsecase>().getUserData();
@@ -281,7 +281,7 @@ class _DiaryPageState extends State<DiaryPage> with WidgetsBindingObserver {
         userActivityEntity.duration.toString(),
         burnedKcal,
         activity,
-        DateTime.now(),
+        _currentDate,
       );
     }
     _diaryBloc.updateHomePage();

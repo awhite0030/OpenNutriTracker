@@ -237,7 +237,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             if (showActivityTracking)
               ActivityVerticalList(
-                day: DateTime.now(),
+                day: _homeBloc.currentDay,
                 title: S.of(context).activityLabel,
                 userActivityList: userActivities,
                 onItemLongPressedCallback: onActivityItemLongPressed,
@@ -250,7 +250,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             // hidden section still count toward daily totals.
             if (breakfastSharePct > 0)
               IntakeVerticalList(
-                day: DateTime.now(),
+                day: _homeBloc.currentDay,
                 title: S.of(context).breakfastLabel,
                 listIcon: IntakeTypeEntity.breakfast.getIconData(),
                 addMealType: AddMealType.breakfastType,
@@ -264,7 +264,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             if (lunchSharePct > 0)
               IntakeVerticalList(
-                day: DateTime.now(),
+                day: _homeBloc.currentDay,
                 title: S.of(context).lunchLabel,
                 listIcon: IntakeTypeEntity.lunch.getIconData(),
                 addMealType: AddMealType.lunchType,
@@ -278,7 +278,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             if (dinnerSharePct > 0)
               IntakeVerticalList(
-                day: DateTime.now(),
+                day: _homeBloc.currentDay,
                 title: S.of(context).dinnerLabel,
                 addMealType: AddMealType.dinnerType,
                 listIcon: IntakeTypeEntity.dinner.getIconData(),
@@ -292,7 +292,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
             if (snackSharePct > 0)
               IntakeVerticalList(
-                day: DateTime.now(),
+                day: _homeBloc.currentDay,
                 title: S.of(context).snackLabel,
                 listIcon: IntakeTypeEntity.snack.getIconData(),
                 addMealType: AddMealType.snackType,
