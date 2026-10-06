@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:opennutritracker/core/domain/entity/tracked_day_entity.dart';
-import 'package:opennutritracker/features/add_meal/presentation/add_meal_type.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/diary/presentation/widgets/day_info_widget.dart';
 import 'package:opennutritracker/generated/l10n.dart';
-import 'package:mockito/mockito.dart';
 import 'package:opennutritracker/core/utils/energy_unit_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -49,12 +46,12 @@ void main() {
         lunchIntake: const [],
         dinnerIntake: const [],
         snackIntake: const [],
-        onDeleteIntake: (_, __) {},
-        onDeleteActivity: (_, __) {},
-        onCopyIntake: (_, __, ___) {},
-        onCopyActivity: (_, __) {},
-        onEditIntake: (_, __, ___) {},
-        onEditActivity: (_, __) {},
+        onDeleteIntake: (_, _) {},
+        onDeleteActivity: (_, _) {},
+        onCopyIntake: (_, _, _) {},
+        onCopyActivity: (_, _) {},
+        onEditIntake: (_, _, _) {},
+        onEditActivity: (_, _) {},
         usesImperialUnits: false,
         showMealMacros: false,
         showActivityTracking: false,
