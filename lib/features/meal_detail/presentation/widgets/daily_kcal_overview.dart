@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:opennutritracker/core/styles/app_palette.dart';
 import 'package:opennutritracker/core/styles/dimens.dart';
+import 'package:opennutritracker/core/utils/energy_display.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 
 class DailyKcalOverview extends StatelessWidget {
@@ -35,12 +36,7 @@ class DailyKcalOverview extends StatelessWidget {
 
     return Container(
       color: palette.surface,
-      padding: const EdgeInsets.fromLTRB(
-        Dimens.spacing16,
-        Dimens.spacing8,
-        Dimens.spacing16,
-        Dimens.spacing8,
-      ),
+      padding: const EdgeInsets.fromLTRB(Dimens.spacing16, Dimens.spacing8, Dimens.spacing16, Dimens.spacing8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -68,21 +64,18 @@ class DailyKcalOverview extends StatelessWidget {
           ),
           const SizedBox(height: Dimens.spacing8),
           Text(
-            S.of(context).mealDetailDayTotalLabel(
-                  projected.toStringAsFixed(0),
-                  dayKcalGoal.toStringAsFixed(0),
-                ),
-            style: textTheme.labelLarge?.copyWith(
-              color: accent,
-              fontWeight: FontWeight.w700,
-            ),
+            S.of(context).mealDetailDayTotalLabel(projected.toStringAsFixed(0), dayKcalGoal.toStringAsFixed(0)),
+            style: textTheme.labelLarge?.copyWith(color: accent, fontWeight: FontWeight.w700),
             textAlign: TextAlign.center,
           ),
           if (hasLiveSelection) ...[
             const SizedBox(height: Dimens.spacing4),
             Text(
-              S.of(context).mealDetailCurrentSelectionLabel(
-                    currentSelectionKcal.toStringAsFixed(0),
+              S
+                  .of(context)
+                  .mealDetailCurrentSelectionLabel(
+                    EnergyDisplay.formatValue(context, currentSelectionKcal),
+                    EnergyDisplay.unitLabelStatic(context),
                   ),
               style: textTheme.labelSmall?.copyWith(color: palette.textMuted),
               textAlign: TextAlign.center,

@@ -403,13 +403,16 @@
   "policyChangeNoticeBody": "Nada de lo que hace la aplicación ha cambiado. Lo que ha cambiado es cuánto te contamos de ello.\n\nLos servicios que siempre recibían tus búsquedas ahora están nombrados. Hay una nueva sección sobre datos de salud, para la importación de entrenamientos que puedes activar. Y ahora revelamos la ubicación aproximada que nuestro backend de búsqueda de alimentos registra junto a una petición y conserva durante 24 horas.\n\nTu diario permanece en tu dispositivo, como siempre.",
   "policyChangeNoticeReadAction": "Leer la política",
   "policyChangeNoticeDismissAction": "Entendido",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} kcal",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -493,10 +496,13 @@
   "magnesiumLabel": "magnesio",
   "mealBrandsLabel": "Marcas",
   "mealCarbsLabel": "Hidratos de carbono",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} kcal de la selección actual)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} de la selección actual)",
   "@mealDetailCurrentSelectionLabel": {
     "placeholders": {
       "kcal": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }

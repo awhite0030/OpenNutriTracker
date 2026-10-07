@@ -269,13 +269,16 @@
   "dialogOKLabel": "OK",
   "diaryFutureDateWarning": "Upravujete datum v budoucnosti",
   "diaryLabel": "Diář",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} kcal",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -472,7 +475,7 @@
   "magnesiumLabel": "hořčík",
   "mealBrandsLabel": "Výrobce, značka",
   "mealCarbsLabel": "Sacharidy",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} kcal aktuální výběr)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} aktuální výběr)",
   "mealDetailDayTotalLabel": "Denní součet: {consumed} / {goal}",
   "mealEnergyLabel": "Energie",
   "mealFatLabel": "Tuky",

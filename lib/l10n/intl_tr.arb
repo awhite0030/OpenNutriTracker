@@ -269,13 +269,16 @@
   "dialogOKLabel": "TAMAM",
   "diaryFutureDateWarning": "Gelecekteki bir tarihi düzenliyorsunuz",
   "diaryLabel": "Günlük",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} kcal",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -472,7 +475,7 @@
   "magnesiumLabel": "magnezyum",
   "mealBrandsLabel": "Markalar",
   "mealCarbsLabel": "Karbonhidrat",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} kcal mevcut seçim)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} mevcut seçim)",
   "mealDetailDayTotalLabel": "Günlük toplam: {consumed} / {goal}",
   "mealEnergyLabel": "Enerji",
   "mealFatLabel": "Yağ",

@@ -48,6 +48,9 @@
       },
       "target": {
         "type": "String"
+      },
+      "unit": {
+        "type": "String"
       }
     }
   },
@@ -89,6 +92,9 @@
   "@mealDetailCurrentSelectionLabel": {
     "placeholders": {
       "kcal": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -363,7 +369,7 @@
   "dialogOKLabel": "OK",
   "diaryFutureDateWarning": "You are editing a future date",
   "diaryLabel": "Diary",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} kcal",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "diaryNutrientPanelDataDisclaimer": "Only nutrients tracked on the meals you logged are summed here. A meal missing a value contributes nothing to that nutrient — so these totals may underreport.",
   "diaryNutrientPanelTitle": "Today's nutrients",
   "driPanelInfoTitle": "Reference intake",
@@ -514,7 +520,7 @@
   "magnesiumLabel": "magnesium",
   "mealBrandsLabel": "Brands",
   "mealCarbsLabel": "Carbohydrates",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} kcal current selection)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} current selection)",
   "mealDetailDayTotalLabel": "Day total: {consumed} / {goal}",
   "mealEnergyLabel": "Energy",
   "mealFatLabel": "Fat",

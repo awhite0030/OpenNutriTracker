@@ -284,13 +284,16 @@
   "dialogOKLabel": "OK",
   "diaryFutureDateWarning": "Vous modifiez une date future",
   "diaryLabel": "Journal",
-  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} kcal",
+  "diaryMealKcalConsumedOfTarget": "{consumed} / {target} {unit}",
   "@diaryMealKcalConsumedOfTarget": {
     "placeholders": {
       "consumed": {
         "type": "String"
       },
       "target": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
@@ -484,10 +487,13 @@
   "magnesiumLabel": "magnésium",
   "mealBrandsLabel": "Marques",
   "mealCarbsLabel": "Glucides",
-  "mealDetailCurrentSelectionLabel": "(+{kcal} kcal sélection actuelle)",
+  "mealDetailCurrentSelectionLabel": "(+{kcal} {unit} sélection actuelle)",
   "@mealDetailCurrentSelectionLabel": {
     "placeholders": {
       "kcal": {
+        "type": "String"
+      },
+      "unit": {
         "type": "String"
       }
     }
