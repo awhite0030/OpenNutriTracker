@@ -29,8 +29,7 @@ import '../../helpers/test_l10n.dart';
 /// read, none of which are what these tests are about.
 class _FakeSettingsBloc extends Fake implements SettingsBloc {
   @override
-  SettingsState get state =>
-      const SettingsLoadedState('1.0.0', false, AppThemeEntity.system, false);
+  SettingsState get state => const SettingsLoadedState('1.0.0', false, AppThemeEntity.system, false);
 
   @override
   Stream<SettingsState> get stream => const Stream<SettingsState>.empty();
@@ -83,9 +82,7 @@ void _register() {
   getIt.registerSingleton<TrendsBloc>(_FakeTrendsBloc());
   final credentials = AiCredentialStorage(_EmptyStorage());
   getIt.registerSingleton<AiCredentialStorage>(credentials);
-  getIt.registerSingleton<AiEndpointProbeRunner>(
-    AiEndpointProbeRunner(credentials, _FakeProber()),
-  );
+  getIt.registerSingleton<AiEndpointProbeRunner>(AiEndpointProbeRunner(credentials, _FakeProber()));
 }
 
 /// Pushes the settings route the way the app does, so the screen reads its
@@ -139,16 +136,15 @@ void main() {
       // scrolls to a computed offset, which a fling never rests at. So this
       // pins the structural property the fix rests on instead, and says so
       // rather than implying wider cover.
-      await tester.pumpWidget(
-        embeddedIn(const SettingsScreen(embedded: true)),
-      );
+      await tester.pumpWidget(embeddedIn(const SettingsScreen(embedded: true)));
       await tester.pumpAndSettle();
 
       final scrollables = tester.widgetList(find.byType(Scrollable));
       expect(
         scrollables,
         hasLength(1),
-        reason: 'only the host scrollable — the embedded settings must add '
+        reason:
+            'only the host scrollable — the embedded settings must add '
             'none of its own',
       );
     });
@@ -160,16 +156,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(Scrollable), findsWidgets);
-      expect(
-        tester.widget<ListView>(find.byType(ListView).first).physics,
-        isNot(isA<NeverScrollableScrollPhysics>()),
-      );
+      expect(tester.widget<ListView>(find.byType(ListView).first).physics, isNot(isA<NeverScrollableScrollPhysics>()));
     });
   });
 
-  testWidgets('the AI row is nowhere near the top of a plain Settings', (
-    tester,
-  ) async {
+  testWidgets('the AI row is nowhere near the top of a plain Settings', (tester) async {
     // The premise of #852, pinned so the fix cannot be read as cosmetic: on
     // a Pixel-sized screen the Data group is far enough down that the tile
     // is not even built, let alone visible. A user sent here by the notice
@@ -186,28 +177,18 @@ void main() {
     expect(find.byType(AiAssistDialog), findsNothing);
   });
 
-  testWidgets('asked for the AI settings, it opens the AI dialog', (
-    tester,
-  ) async {
+  testWidgets('asked for the AI settings, it opens the AI dialog', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.625;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(
-      _app(arguments: const SettingsScreenArguments(openAiAssist: true)),
-    );
+    await tester.pumpWidget(_app(arguments: const SettingsScreenArguments(openAiAssist: true)));
     await tester.pumpAndSettle();
 
-    expect(
-      find.byType(AiAssistDialog),
-      findsOneWidget,
-      reason: 'the caller named the control the user came to change',
-    );
+    expect(find.byType(AiAssistDialog), findsOneWidget, reason: 'the caller named the control the user came to change');
   });
 
-  testWidgets('the dialog is opened once, not on every rebuild', (
-    tester,
-  ) async {
+  testWidgets('the dialog is opened once, not on every rebuild', (tester) async {
     // `didChangeDependencies` runs again for a theme change, a locale
     // change, a keyboard. Reading the arguments each time would reopen a
     // dialog over the one already up, and closing it would leave a second
@@ -216,9 +197,7 @@ void main() {
     tester.view.devicePixelRatio = 2.625;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(
-      _app(arguments: const SettingsScreenArguments(openAiAssist: true)),
-    );
+    await tester.pumpWidget(_app(arguments: const SettingsScreenArguments(openAiAssist: true)));
     await tester.pumpAndSettle();
 
     // Anything that makes the screen's dependencies change: a new
@@ -229,9 +208,7 @@ void main() {
     expect(find.byType(AiAssistDialog), findsOneWidget);
   });
 
-  testWidgets('arguments that ask for nothing leave the screen alone', (
-    tester,
-  ) async {
+  testWidgets('arguments that ask for nothing leave the screen alone', (tester) async {
     // Every other way into Settings pushes the route plain. A screen that
     // opened the AI dialog for them would be a worse bug than the one #852
     // fixes.
@@ -243,5 +220,45 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AiAssistDialog), findsNothing);
+  });
+
+  group('dialogs with scrollable content', () {
+    testWidgets('the Language dialog is scrollable to avoid overflow', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_app());
+      await tester.pumpAndSettle();
+
+      final listFinder = find.byType(ListView).first;
+      final textFinder = find.text(l10nEn.settingsLanguageLabel);
+
+      await tester.dragUntilVisible(textFinder, listFinder, const Offset(0, -500));
+      await tester.tap(textFinder);
+      await tester.pumpAndSettle();
+
+      final dialogContent = find.descendant(of: find.byType(AlertDialog), matching: find.byType(SingleChildScrollView));
+      expect(dialogContent, findsOneWidget);
+    });
+
+    testWidgets('the Theme dialog is scrollable to avoid overflow', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_app());
+      await tester.pumpAndSettle();
+
+      final listFinder = find.byType(ListView).first;
+      final textFinder = find.text(l10nEn.settingsThemeLabel);
+
+      await tester.dragUntilVisible(textFinder, listFinder, const Offset(0, -500));
+      await tester.tap(textFinder);
+      await tester.pumpAndSettle();
+
+      final dialogContent = find.descendant(of: find.byType(AlertDialog), matching: find.byType(SingleChildScrollView));
+      expect(dialogContent, findsOneWidget);
+    });
   });
 }
