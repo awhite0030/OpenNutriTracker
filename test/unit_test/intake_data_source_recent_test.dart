@@ -33,14 +33,8 @@ MealDBO _meal({required String code, required MealSourceDBO source}) => MealDBO(
   source: source,
 );
 
-IntakeDBO _intake(String id, MealDBO meal, DateTime at) => IntakeDBO(
-  id: id,
-  unit: 'g',
-  amount: 100,
-  type: IntakeTypeDBO.lunch,
-  meal: meal,
-  dateTime: at,
-);
+IntakeDBO _intake(String id, MealDBO meal, DateTime at) =>
+    IntakeDBO(id: id, unit: 'g', amount: 100, type: IntakeTypeDBO.lunch, meal: meal, dateTime: at);
 
 void main() {
   group('IntakeDataSource.getRecentlyAddedIntake', () {
@@ -54,9 +48,7 @@ void main() {
     });
 
     setUp(() async {
-      box = await Hive.openBox<IntakeDBO>(
-        'recent_intake_${DateTime.now().microsecondsSinceEpoch}',
-      );
+      box = await Hive.openBox<IntakeDBO>('recent_intake_${DateTime.now().microsecondsSinceEpoch}');
       dataSource = IntakeDataSource(FakeHiveDBProvider(intakeBox: box));
     });
 
@@ -66,26 +58,25 @@ void main() {
 
     test('orders entries newest first regardless of meal source', () async {
       await box.addAll([
-        _intake(
-          'old-custom',
-          _meal(code: 'c1', source: MealSourceDBO.custom),
-          DateTime.utc(2025, 1, 1),
-        ),
-        _intake(
-          'new-off',
-          _meal(code: 'o1', source: MealSourceDBO.off),
-          DateTime.utc(2025, 1, 3),
-        ),
-        _intake(
-          'mid-off',
-          _meal(code: 'o2', source: MealSourceDBO.off),
-          DateTime.utc(2025, 1, 2),
-        ),
+        _intake('old-custom', _meal(code: 'c1', source: MealSourceDBO.custom), DateTime.utc(2025, 1, 1)),
+        _intake('new-off', _meal(code: 'o1', source: MealSourceDBO.off), DateTime.utc(2025, 1, 3)),
+        _intake('mid-off', _meal(code: 'o2', source: MealSourceDBO.off), DateTime.utc(2025, 1, 2)),
       ]);
 
       final recent = await dataSource.getRecentlyAddedIntake();
 
       expect(recent.map((i) => i.id), ['new-off', 'mid-off', 'old-custom']);
+    });
+
+    test('deduplicates properly without prioritizing custom items when code or name clashes', () async {
+      await box.addAll([
+        _intake('breakfast-custom', _meal(code: 'shared-name', source: MealSourceDBO.custom), DateTime.utc(2025, 1, 1)),
+        _intake('lunch-off', _meal(code: 'shared-name', source: MealSourceDBO.off), DateTime.utc(2025, 1, 2)),
+      ]);
+
+      final recent = await dataSource.getRecentlyAddedIntake();
+
+      expect(recent.map((i) => i.id), ['lunch-off', 'breakfast-custom']);
     });
 
     test('keeps only the latest entry per meal', () async {
@@ -102,21 +93,9 @@ void main() {
 
     test('respects the number limit after ordering', () async {
       await box.addAll([
-        _intake(
-          'a',
-          _meal(code: 'a', source: MealSourceDBO.off),
-          DateTime.utc(2025, 1, 1),
-        ),
-        _intake(
-          'b',
-          _meal(code: 'b', source: MealSourceDBO.custom),
-          DateTime.utc(2025, 1, 2),
-        ),
-        _intake(
-          'c',
-          _meal(code: 'c', source: MealSourceDBO.off),
-          DateTime.utc(2025, 1, 3),
-        ),
+        _intake('a', _meal(code: 'a', source: MealSourceDBO.off), DateTime.utc(2025, 1, 1)),
+        _intake('b', _meal(code: 'b', source: MealSourceDBO.custom), DateTime.utc(2025, 1, 2)),
+        _intake('c', _meal(code: 'c', source: MealSourceDBO.off), DateTime.utc(2025, 1, 3)),
       ]);
 
       final recent = await dataSource.getRecentlyAddedIntake(number: 2);
