@@ -112,6 +112,7 @@ class _KcalAdjustmentDialogState extends State<KcalAdjustmentDialog> {
   }
 
   Future<void> _save() async {
+    _applyKcalInput();
     await widget.settingsBloc.setKcalAdjustment(
       _kcalAdjustment.toInt().toDouble(),
     );
