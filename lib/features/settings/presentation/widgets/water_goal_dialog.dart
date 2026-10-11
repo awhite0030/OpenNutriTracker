@@ -79,6 +79,7 @@ class _WaterGoalDialogState extends State<WaterGoalDialog> {
   }
 
   Future<void> _save() async {
+    _applyTextInput();
     await widget.settingsBloc.setDailyWaterGoalMl(_goalMl);
     widget.homeBloc.add(const LoadItemsEvent());
     locator<ProfileBloc>().add(LoadProfileEvent());
