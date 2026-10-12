@@ -243,36 +243,16 @@ class TrackedDayDataSource {
     log.fine('Updating tracked day nutrient goals');
     final updateDay = await getTrackedDay(day);
     if (updateDay != null) {
-      if (fibreGoal != null) {
-        updateDay.fibreGoal = fibreGoal;
-      }
-      if (satFatGoal != null) {
-        updateDay.satFatGoal = satFatGoal;
-      }
-      if (sugarsGoal != null) {
-        updateDay.sugarsGoal = sugarsGoal;
-      }
-      if (sodiumGoal != null) {
-        updateDay.sodiumGoal = sodiumGoal;
-      }
-      if (calciumGoal != null) {
-        updateDay.calciumGoal = calciumGoal;
-      }
-      if (ironGoal != null) {
-        updateDay.ironGoal = ironGoal;
-      }
-      if (potassiumGoal != null) {
-        updateDay.potassiumGoal = potassiumGoal;
-      }
-      if (vitaminDGoal != null) {
-        updateDay.vitaminDGoal = vitaminDGoal;
-      }
-      if (vitaminB12Goal != null) {
-        updateDay.vitaminB12Goal = vitaminB12Goal;
-      }
-      if (magnesiumGoal != null) {
-        updateDay.magnesiumGoal = magnesiumGoal;
-      }
+      updateDay.fibreGoal = fibreGoal;
+      updateDay.satFatGoal = satFatGoal;
+      updateDay.sugarsGoal = sugarsGoal;
+      updateDay.sodiumGoal = sodiumGoal;
+      updateDay.calciumGoal = calciumGoal;
+      updateDay.ironGoal = ironGoal;
+      updateDay.potassiumGoal = potassiumGoal;
+      updateDay.vitaminDGoal = vitaminDGoal;
+      updateDay.vitaminB12Goal = vitaminB12Goal;
+      updateDay.magnesiumGoal = magnesiumGoal;
       await updateDay.save();
     }
   }

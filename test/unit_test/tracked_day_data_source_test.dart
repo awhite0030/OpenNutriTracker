@@ -339,23 +339,24 @@ void main() {
       expect(result.magnesiumGoal, equals(420));
     });
 
-    test('updateDayNutrientGoals leaves omitted fields untouched', () async {
+    test('updateDayNutrientGoals clears fields when null is passed', () async {
       await ds.saveTrackedDay(seed());
-      // First pass sets every column.
+      // First pass sets several columns.
       await ds.updateDayNutrientGoals(
         day,
         fibreGoal: 30,
         sodiumGoal: 2000,
         ironGoal: 8,
       );
-      // Second pass only updates fibre — sodium and iron must stay.
-      await ds.updateDayNutrientGoals(day, fibreGoal: 40);
+      // Second pass sets fibre and iron but leaves sodium null.
+      await ds.updateDayNutrientGoals(day, fibreGoal: 40, ironGoal: 10);
 
       final result = await ds.getTrackedDay(day);
       expect(result!.fibreGoal, equals(40), reason: 'fibre updated');
-      expect(result.sodiumGoal, equals(2000), reason: 'sodium preserved');
-      expect(result.ironGoal, equals(8), reason: 'iron preserved');
-      // Untouched columns stay null.
+      expect(result.ironGoal, equals(10), reason: 'iron updated');
+      // Fields that are not passed in the second pass are now implicitly null
+      // and should therefore clear out previous values to allow "reset" functionality.
+      expect(result.sodiumGoal, isNull, reason: 'sodium cleared');
       expect(result.calciumGoal, isNull);
       expect(result.potassiumGoal, isNull);
       expect(result.magnesiumGoal, isNull);
