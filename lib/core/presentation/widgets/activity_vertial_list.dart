@@ -116,8 +116,9 @@ class _ActivityVerticalListState extends State<ActivityVerticalList> {
         ),
         Column(
           children: [
-            for (final userActivity in widget.userActivityList)
+            for (final (index, userActivity) in widget.userActivityList.indexed)
               ActivityCard(
+                key: ValueKey('${userActivity.id}_$index'),
                 activityEntity: userActivity,
                 onItemLongPressed: widget.onItemLongPressedCallback,
                 onItemTapped: widget.onItemTappedCallback,

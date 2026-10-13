@@ -22,28 +22,31 @@ class IntakeDataSource {
 
   Future<void> addAllIntakes(List<IntakeDBO> intakeDBOList) async {
     log.fine('Adding new intake items to db');
-    await _intakeBox.addAll(intakeDBOList);
+    final map = {for (final dbo in intakeDBOList) dbo.id: dbo};
+    // Update existing entries.
+    for (var i = 0; i < _intakeBox.length; i++) {
+      final existing = _intakeBox.getAt(i);
+      if (existing != null && map.containsKey(existing.id)) {
+        await _intakeBox.putAt(i, map.remove(existing.id)!);
+      }
+    }
+    // Add remaining new entries.
+    if (map.isNotEmpty) {
+      await _intakeBox.addAll(map.values);
+    }
   }
 
   Future<void> deleteIntakeFromId(String intakeId) async {
     log.fine('Deleting intake item from db');
-    final toDelete =
-        _intakeBox.values.where((dbo) => dbo.id == intakeId).toList();
+    final toDelete = _intakeBox.values.where((dbo) => dbo.id == intakeId).toList();
     for (final element in toDelete) {
       await element.delete();
     }
   }
 
-  Future<IntakeDBO?> updateIntake(
-    String intakeId,
-    Map<String, dynamic> fields,
-  ) async {
-    log.fine(
-      'Updating intake $intakeId with fields ${fields.toString()} in db',
-    );
-    var intakeObject = _intakeBox.values.indexed
-        .where((indexedDbo) => indexedDbo.$2.id == intakeId)
-        .firstOrNull;
+  Future<IntakeDBO?> updateIntake(String intakeId, Map<String, dynamic> fields) async {
+    log.fine('Updating intake $intakeId with fields ${fields.toString()} in db');
+    var intakeObject = _intakeBox.values.indexed.where((indexedDbo) => indexedDbo.$2.id == intakeId).firstOrNull;
     if (intakeObject == null) {
       log.fine('Cannot update intake $intakeId as it is non existent');
       return null;
@@ -54,9 +57,7 @@ class IntakeDataSource {
   }
 
   Future<IntakeDBO?> getIntakeById(String intakeId) async {
-    return _intakeBox.values.firstWhereOrNull(
-      (intake) => intake.id == intakeId,
-    );
+    return _intakeBox.values.firstWhereOrNull((intake) => intake.id == intakeId);
   }
 
   Future<List<IntakeDBO>> getAllIntakes() async {
@@ -78,18 +79,11 @@ class IntakeDataSource {
     int dayStartOffsetHours = 0,
     int dayStartOffsetMinutes = 0,
   }) async {
-    final totalMinutes = DayBoundaryCalc.totalMinutesOf(
-      dayStartOffsetHours,
-      dayStartOffsetMinutes,
-    );
+    final totalMinutes = DayBoundaryCalc.totalMinutesOf(dayStartOffsetHours, dayStartOffsetMinutes);
     return _intakeBox.values
         .where(
           (intake) =>
-              DayBoundaryCalc.isMomentInLogicalDayMinutes(
-                day,
-                intake.dateTime,
-                totalMinutes,
-              ) &&
+              DayBoundaryCalc.isMomentInLogicalDayMinutes(day, intake.dateTime, totalMinutes) &&
               intake.type == intakeType,
         )
         .toList();
@@ -103,10 +97,7 @@ class IntakeDataSource {
 
     final filterCodes = <String>{};
     final uniqueIntake = intakeList
-        .where(
-          (intake) =>
-              filterCodes.add(intake.meal.code ?? intake.meal.name ?? ""),
-        )
+        .where((intake) => filterCodes.add(intake.meal.code ?? intake.meal.name ?? ""))
         .toList();
 
     return uniqueIntake.take(number).toList();

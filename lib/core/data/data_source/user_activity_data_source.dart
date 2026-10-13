@@ -18,11 +18,20 @@ class UserActivityDataSource {
     await _userActivityBox.add(userActivityDBO);
   }
 
-  Future<void> addAllUserActivities(
-    List<UserActivityDBO> userActivityDBOList,
-  ) async {
+  Future<void> addAllUserActivities(List<UserActivityDBO> userActivityDBOList) async {
     log.fine('Adding new user activities to db');
-    await _userActivityBox.addAll(userActivityDBOList);
+    final map = {for (final dbo in userActivityDBOList) dbo.id: dbo};
+    // Update existing entries.
+    for (var i = 0; i < _userActivityBox.length; i++) {
+      final existing = _userActivityBox.getAt(i);
+      if (existing != null && map.containsKey(existing.id)) {
+        await _userActivityBox.putAt(i, map.remove(existing.id)!);
+      }
+    }
+    // Add remaining new entries.
+    if (map.isNotEmpty) {
+      await _userActivityBox.addAll(map.values);
+    }
   }
 
   Future<UserActivityDBO?> updateUserActivity(
@@ -32,8 +41,7 @@ class UserActivityDataSource {
     double? userKcal,
   }) async {
     log.fine('Updating user activity in db');
-    final existing =
-        _userActivityBox.values.firstWhereOrNull((dbo) => dbo.id == id);
+    final existing = _userActivityBox.values.firstWhereOrNull((dbo) => dbo.id == id);
     if (existing == null) return null;
     final updated = UserActivityDBO(
       existing.id,
@@ -54,9 +62,7 @@ class UserActivityDataSource {
 
   Future<void> deleteIntakeFromId(String activityId) async {
     log.fine('Deleting activity item from db');
-    final toDelete = _userActivityBox.values
-        .where((dbo) => dbo.id == activityId)
-        .toList();
+    final toDelete = _userActivityBox.values.where((dbo) => dbo.id == activityId).toList();
     for (final element in toDelete) {
       await element.delete();
     }
@@ -75,18 +81,9 @@ class UserActivityDataSource {
     int dayStartOffsetHours = 0,
     int dayStartOffsetMinutes = 0,
   }) async {
-    final totalMinutes = DayBoundaryCalc.totalMinutesOf(
-      dayStartOffsetHours,
-      dayStartOffsetMinutes,
-    );
+    final totalMinutes = DayBoundaryCalc.totalMinutesOf(dayStartOffsetHours, dayStartOffsetMinutes);
     return _userActivityBox.values
-        .where(
-          (activity) => DayBoundaryCalc.isMomentInLogicalDayMinutes(
-            day,
-            activity.date,
-            totalMinutes,
-          ),
-        )
+        .where((activity) => DayBoundaryCalc.isMomentInLogicalDayMinutes(day, activity.date, totalMinutes))
         .toList();
   }
 
@@ -97,29 +94,20 @@ class UserActivityDataSource {
   /// cannot produce a duplicate entry.
   Future<Set<String>> getExternalIdsSince(DateTime from) async {
     return _userActivityBox.values
-        .where(
-          (activity) =>
-              activity.externalId != null && !activity.date.isBefore(from),
-        )
+        .where((activity) => activity.externalId != null && !activity.date.isBefore(from))
         .map((activity) => activity.externalId!)
         .toSet();
   }
 
-  Future<List<UserActivityDBO>> getRecentlyAddedUserActivity(
-      {int number = 100}) async {
+  Future<List<UserActivityDBO>> getRecentlyAddedUserActivity({int number = 100}) async {
     final userActivities = _userActivityBox.values.toList();
 
     //  sort list by date descending and filter unique activities
-    userActivities.sort(
-      (a, b) => b.date.compareTo(a.date),
-    );
+    userActivities.sort((a, b) => b.date.compareTo(a.date));
 
     final filterActivityCodes = <String>{};
     final uniqueUserActivities = userActivities
-        .where(
-          (activity) =>
-              filterActivityCodes.add(activity.physicalActivityDBO.code),
-        )
+        .where((activity) => filterActivityCodes.add(activity.physicalActivityDBO.code))
         .toList();
 
     // return range or full list
