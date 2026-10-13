@@ -300,9 +300,9 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
           builder: (context, candidateData, rejectedData) {
             return Column(
               children: [
-                for (final intakeEntity in widget.intakeList)
+                for (final (index, intakeEntity) in widget.intakeList.indexed)
                   LongPressDraggable<IntakeEntity>(
-                    key: ValueKey(intakeEntity.id),
+                    key: ValueKey('${intakeEntity.id}_$index'),
                     data: intakeEntity,
                     onDragStarted: () => widget.onItemDragCallback?.call(true),
                     onDragEnd: (_) => widget.onItemDragCallback?.call(false),
@@ -313,7 +313,7 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
                         child: Opacity(
                           opacity: 0.85,
                           child: IntakeCard(
-                            key: ValueKey('fb-${intakeEntity.id}'),
+                            key: ValueKey('fb-${intakeEntity.id}_$index'),
                             intake: intakeEntity,
                             firstListElement: false,
                             usesImperialUnits: widget.usesImperialUnits,
@@ -339,7 +339,7 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
                       ),
                     ),
                     child: IntakeCard(
-                      key: ValueKey(intakeEntity.id),
+                      key: ValueKey('${intakeEntity.id}_$index'),
                       intake: intakeEntity,
                       onItemLongPressed: widget.onItemLongPressedCallback,
                       onItemTapped: widget.onItemTappedCallback,

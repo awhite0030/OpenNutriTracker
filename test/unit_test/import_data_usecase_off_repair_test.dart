@@ -351,6 +351,25 @@ void main() {
     },
   );
 
+  test('importing the same bundle twice deduplicates intakes and activities by id', () async {
+    write(
+      'backup.zip',
+      zipWith({
+        ExportImportBloc.userActivityJsonFileName: '[]',
+        ExportImportBloc.userIntakeJsonFileName: '[$_legacyOffIntakeJson]',
+        ExportImportBloc.trackedDayJsonFileName: '[]',
+        ExportImportBloc.recipeJsonFileName: '[]',
+      }),
+    );
+
+    expect(await importJson(), isTrue);
+    expect(intakeBox.length, 1);
+
+    // Import the exact same zip a second time
+    expect(await importJson(), isTrue);
+    expect(intakeBox.length, 1, reason: 'Duplicate intake should have overwritten the first');
+  });
+
   test(
     'a CSV bundle without the meal_data_version column is scaled the same way',
     () async {
