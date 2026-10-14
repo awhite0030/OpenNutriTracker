@@ -160,7 +160,9 @@ class _NutrientGoalsScreenState extends State<NutrientGoalsScreen> {
 
   Future<void> _load() async {
     final user = await widget.profileBloc.getUser();
-    final today = await widget.settingsBloc.getTodayTrackedDay(DateTime.now());
+    final today = await widget.settingsBloc.getTodayTrackedDay(
+      widget.diaryBloc.currentDay,
+    );
     if (!mounted) return;
     setState(() {
       _user = user;
@@ -230,9 +232,9 @@ class _NutrientGoalsScreenState extends State<NutrientGoalsScreen> {
     // nutrient values onto it. updateTrackedDay creates the row from
     // current macro goals if missing, or refreshes the macro columns
     // on the existing one.
-    await widget.settingsBloc.updateTrackedDay(DateTime.now());
+    await widget.settingsBloc.updateTrackedDay(widget.diaryBloc.currentDay);
     await widget.settingsBloc.setTodayNutrientGoals(
-      DateTime.now(),
+      widget.diaryBloc.currentDay,
       fibreGoal: _fibre,
       satFatGoal: _satFat,
       sugarsGoal: _sugars,

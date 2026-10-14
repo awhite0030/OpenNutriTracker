@@ -6,6 +6,7 @@ import 'package:opennutritracker/core/domain/entity/user_gender_entity.dart';
 import 'package:opennutritracker/core/presentation/widgets/calories_profile_info_dialog.dart';
 import 'package:opennutritracker/core/utils/calc/unit_calc.dart';
 import 'package:opennutritracker/core/utils/energy_unit_provider.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
 import 'package:opennutritracker/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:opennutritracker/features/settings/presentation/bloc/settings_bloc.dart';
@@ -21,12 +22,14 @@ class KcalAdjustmentDialog extends StatefulWidget {
   final SettingsBloc settingsBloc;
   final ProfileBloc profileBloc;
   final HomeBloc homeBloc;
+  final DiaryBloc diaryBloc;
 
   const KcalAdjustmentDialog({
     super.key,
     required this.settingsBloc,
     required this.profileBloc,
     required this.homeBloc,
+    required this.diaryBloc,
   });
 
   @override
@@ -119,7 +122,7 @@ class _KcalAdjustmentDialogState extends State<KcalAdjustmentDialog> {
     widget.homeBloc.add(const LoadItemsEvent());
     // Recompute today's stored kcal goal so the diary card reflects
     // the new adjustment immediately instead of waiting for tomorrow.
-    await widget.settingsBloc.updateTrackedDay(DateTime.now());
+    await widget.settingsBloc.updateTrackedDay(widget.diaryBloc.currentDay);
     if (!mounted) return;
     Navigator.of(context).pop();
   }

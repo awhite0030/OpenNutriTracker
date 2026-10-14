@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
 import 'package:opennutritracker/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:opennutritracker/generated/l10n.dart';
@@ -15,12 +16,14 @@ class DiaryDayBoundaryDialog extends StatefulWidget {
   final SettingsBloc settingsBloc;
   final HomeBloc homeBloc;
   final CalendarDayBloc calendarDayBloc;
+  final DiaryBloc diaryBloc;
 
   const DiaryDayBoundaryDialog({
     super.key,
     required this.settingsBloc,
     required this.homeBloc,
     required this.calendarDayBloc,
+    required this.diaryBloc,
   });
 
   @override
@@ -58,6 +61,7 @@ class _DiaryDayBoundaryDialogState extends State<DiaryDayBoundaryDialog> {
     // intake by day boundary.
     widget.homeBloc.add(const LoadItemsEvent());
     widget.calendarDayBloc.add(RefreshCalendarDayEvent());
+    widget.diaryBloc.add(const LoadDiaryYearEvent());
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -69,38 +73,26 @@ class _DiaryDayBoundaryDialogState extends State<DiaryDayBoundaryDialog> {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Text(
-              s.settingsDayStartLabel,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          Expanded(child: Text(s.settingsDayStartLabel, maxLines: 2, overflow: TextOverflow.ellipsis)),
           const SizedBox(width: 8),
           TextButton(
             onPressed: _loaded
                 ? () => setState(() {
-                      _hours = 0;
-                      _minutes = 0;
-                    })
+                    _hours = 0;
+                    _minutes = 0;
+                  })
                 : null,
             child: Text(s.buttonResetLabel),
           ),
         ],
       ),
       content: !_loaded
-          ? const SizedBox(
-              height: 80,
-              child: Center(child: CircularProgressIndicator()),
-            )
+          ? const SizedBox(height: 80, child: Center(child: CircularProgressIndicator()))
           : Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  s.settingsDayStartDescription,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text(s.settingsDayStartDescription, style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 16),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,18 +103,14 @@ class _DiaryDayBoundaryDialogState extends State<DiaryDayBoundaryDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              s.settingsDayStartHoursPickerLabel,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
+                            Text(s.settingsDayStartHoursPickerLabel, style: Theme.of(context).textTheme.bodySmall),
                             Slider(
                               min: 0,
                               max: 23,
                               divisions: 23,
                               value: _hours.toDouble(),
                               label: '$_hours',
-                              onChanged: (v) =>
-                                  setState(() => _hours = v.round()),
+                              onChanged: (v) => setState(() => _hours = v.round()),
                             ),
                           ],
                         ),
@@ -135,18 +123,14 @@ class _DiaryDayBoundaryDialogState extends State<DiaryDayBoundaryDialog> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              s.settingsDayStartMinutesPickerLabel,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
+                            Text(s.settingsDayStartMinutesPickerLabel, style: Theme.of(context).textTheme.bodySmall),
                             Slider(
                               min: 0,
                               max: 59,
                               divisions: 59,
                               value: _minutes.toDouble(),
                               label: _minutes.toString().padLeft(2, '0'),
-                              onChanged: (v) =>
-                                  setState(() => _minutes = v.round()),
+                              onChanged: (v) => setState(() => _minutes = v.round()),
                             ),
                           ],
                         ),
@@ -155,10 +139,7 @@ class _DiaryDayBoundaryDialogState extends State<DiaryDayBoundaryDialog> {
                     SizedBox(
                       width: 64,
                       child: Text(
-                        s.settingsDayStartTimeLabel(
-                          _hours,
-                          _minutes.toString().padLeft(2, '0'),
-                        ),
+                        s.settingsDayStartTimeLabel(_hours, _minutes.toString().padLeft(2, '0')),
                         textAlign: TextAlign.right,
                       ),
                     ),
@@ -167,16 +148,10 @@ class _DiaryDayBoundaryDialogState extends State<DiaryDayBoundaryDialog> {
               ],
             ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(s.dialogCancelLabel),
-        ),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(s.dialogCancelLabel)),
         Semantics(
           identifier: 'day-boundary-save',
-          child: TextButton(
-            onPressed: _loaded ? _save : null,
-            child: Text(s.dialogOKLabel),
-          ),
+          child: TextButton(onPressed: _loaded ? _save : null, child: Text(s.dialogOKLabel)),
         ),
       ],
     );

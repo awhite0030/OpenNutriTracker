@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
 import 'package:opennutritracker/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:opennutritracker/generated/l10n.dart';
@@ -53,11 +54,13 @@ import 'package:opennutritracker/generated/l10n.dart';
 class MacroSplitDialog extends StatefulWidget {
   final SettingsBloc settingsBloc;
   final HomeBloc homeBloc;
+  final DiaryBloc diaryBloc;
 
   const MacroSplitDialog({
     super.key,
     required this.settingsBloc,
     required this.homeBloc,
+    required this.diaryBloc,
   });
 
   @override
@@ -272,7 +275,7 @@ class _MacroSplitDialogState extends State<MacroSplitDialog> {
     );
     widget.settingsBloc.add(LoadSettingsEvent());
     widget.homeBloc.add(const LoadItemsEvent());
-    await widget.settingsBloc.updateTrackedDay(DateTime.now());
+    await widget.settingsBloc.updateTrackedDay(widget.diaryBloc.currentDay);
     if (!mounted) return;
     Navigator.of(context).pop();
   }

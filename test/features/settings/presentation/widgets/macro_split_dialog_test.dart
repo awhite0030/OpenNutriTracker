@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
 import 'package:opennutritracker/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:opennutritracker/features/settings/presentation/widgets/macro_split_dialog.dart';
@@ -43,6 +44,11 @@ class _FakeHomeBloc extends Fake implements HomeBloc {
   void add(HomeEvent event) {}
 }
 
+class _FakeDiaryBloc extends Fake implements DiaryBloc {
+  @override
+  DateTime get currentDay => DateTime(2023, 1, 1);
+}
+
 Widget _wrap(Widget child) {
   return MaterialApp(
     localizationsDelegates: const [S.delegate],
@@ -68,6 +74,7 @@ void main() {
                 builder: (_) => MacroSplitDialog(
                   settingsBloc: settingsBloc,
                   homeBloc: homeBloc,
+                  diaryBloc: _FakeDiaryBloc(),
                 ),
               ),
               child: const Text('Open'),
@@ -113,6 +120,7 @@ void main() {
                 builder: (_) => MacroSplitDialog(
                   settingsBloc: settingsBloc,
                   homeBloc: homeBloc,
+                  diaryBloc: _FakeDiaryBloc(),
                 ),
               ),
               child: const Text('Open'),
@@ -152,6 +160,7 @@ void main() {
                   builder: (_) => MacroSplitDialog(
                     settingsBloc: settingsBloc,
                     homeBloc: homeBloc,
+                    diaryBloc: _FakeDiaryBloc(),
                   ),
                 ),
                 child: const Text('Open'),
