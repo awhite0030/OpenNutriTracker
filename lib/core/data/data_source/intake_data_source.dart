@@ -23,13 +23,20 @@ class IntakeDataSource {
   Future<void> addAllIntakes(List<IntakeDBO> intakeDBOList) async {
     log.fine('Adding new intake items to db');
     final map = {for (final dbo in intakeDBOList) dbo.id: dbo};
+    final updates = <dynamic, IntakeDBO>{};
+
     // Update existing entries.
-    for (var i = 0; i < _intakeBox.length; i++) {
-      final existing = _intakeBox.getAt(i);
-      if (existing != null && map.containsKey(existing.id)) {
-        await _intakeBox.putAt(i, map.remove(existing.id)!);
+    for (final entry in _intakeBox.toMap().entries) {
+      final existing = entry.value;
+      if (map.containsKey(existing.id)) {
+        updates[entry.key] = map.remove(existing.id)!;
       }
     }
+
+    if (updates.isNotEmpty) {
+      await _intakeBox.putAll(updates);
+    }
+
     // Add remaining new entries.
     if (map.isNotEmpty) {
       await _intakeBox.addAll(map.values);

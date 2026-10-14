@@ -302,7 +302,7 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
               children: [
                 for (final (index, intakeEntity) in widget.intakeList.indexed)
                   LongPressDraggable<IntakeEntity>(
-                    key: ValueKey('${intakeEntity.id}_$index'),
+                    key: ValueKey('${intakeEntity.id}_${index}_parent'),
                     data: intakeEntity,
                     onDragStarted: () => widget.onItemDragCallback?.call(true),
                     onDragEnd: (_) => widget.onItemDragCallback?.call(false),
@@ -339,7 +339,7 @@ class _IntakeVerticalListState extends State<IntakeVerticalList> {
                       ),
                     ),
                     child: IntakeCard(
-                      key: ValueKey('${intakeEntity.id}_$index'),
+                      key: ValueKey('${intakeEntity.id}_${index}_child'),
                       intake: intakeEntity,
                       onItemLongPressed: widget.onItemLongPressedCallback,
                       onItemTapped: widget.onItemTappedCallback,

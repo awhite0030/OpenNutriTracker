@@ -21,13 +21,20 @@ class UserActivityDataSource {
   Future<void> addAllUserActivities(List<UserActivityDBO> userActivityDBOList) async {
     log.fine('Adding new user activities to db');
     final map = {for (final dbo in userActivityDBOList) dbo.id: dbo};
+    final updates = <dynamic, UserActivityDBO>{};
+
     // Update existing entries.
-    for (var i = 0; i < _userActivityBox.length; i++) {
-      final existing = _userActivityBox.getAt(i);
-      if (existing != null && map.containsKey(existing.id)) {
-        await _userActivityBox.putAt(i, map.remove(existing.id)!);
+    for (final entry in _userActivityBox.toMap().entries) {
+      final existing = entry.value;
+      if (map.containsKey(existing.id)) {
+        updates[entry.key] = map.remove(existing.id)!;
       }
     }
+
+    if (updates.isNotEmpty) {
+      await _userActivityBox.putAll(updates);
+    }
+
     // Add remaining new entries.
     if (map.isNotEmpty) {
       await _userActivityBox.addAll(map.values);
