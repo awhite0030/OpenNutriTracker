@@ -8,6 +8,7 @@ import 'package:opennutritracker/core/domain/entity/tracked_day_entity.dart';
 import 'package:opennutritracker/core/domain/usecase/add_config_usecase.dart';
 import 'package:opennutritracker/core/domain/usecase/add_tracked_day_usecase.dart';
 import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
+import 'package:opennutritracker/core/utils/calc/day_boundary_calc.dart';
 import 'package:opennutritracker/core/domain/usecase/get_kcal_goal_usecase.dart';
 import 'package:opennutritracker/core/domain/usecase/get_macro_goal_usecase.dart';
 import 'package:opennutritracker/core/domain/usecase/get_tracked_day_usecase.dart';
@@ -47,8 +48,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       final appVersion = await AppConst.getVersionNumber();
       final usesImperialUnits = userConfig.usesImperialUnits;
       final offCacheCount = _cachedOffMealDataSource.count;
-      final offCacheSizeBytes = await _cachedOffMealDataSource
-          .getStorageSizeBytes();
+      final offCacheSizeBytes = await _cachedOffMealDataSource.getStorageSizeBytes();
 
       emit(
         SettingsLoadedState(
@@ -88,9 +88,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   }
 
   Future<void> setHasAcceptedAnonymousData(bool hasAcceptedAnonymousData) {
-    return _addConfigUsecase.setConfigHasAcceptedAnonymousData(
-      hasAcceptedAnonymousData,
-    );
+    return _addConfigUsecase.setConfigHasAcceptedAnonymousData(hasAcceptedAnonymousData);
   }
 
   void setAppTheme(AppThemeEntity appTheme) async {
@@ -227,11 +225,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     await _addConfigUsecase.setConfigDailyWaterGoalMl(goalMl);
   }
 
-  Future<void> setMacroGoals(
-    double carbGoalPct,
-    double proteinGoalPct,
-    double fatGoalPct,
-  ) async {
+  Future<void> setMacroGoals(double carbGoalPct, double proteinGoalPct, double fatGoalPct) async {
     await _addConfigUsecase.setConfigMacroGoalPct(
       carbGoalPct.toInt() / 100,
       proteinGoalPct.toInt() / 100,
@@ -255,7 +249,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   /// Returns nulls (and a null entity) when nothing has been logged
   /// for the day yet.
   Future<TrackedDayEntity?> getTodayTrackedDay(DateTime day) async {
-    return await _getTrackedDayUsecase.getTrackedDay(day);
+    final config = await _getConfigUsecase.getConfig();
+    final logicalDay = DayBoundaryCalc.logicalDayOfMinutes(day, config.dayStartOffsetTotalMinutes);
+    return await _getTrackedDayUsecase.getTrackedDay(logicalDay);
   }
 
   /// #173 (+follow-up): persist user-set per-nutrient goals to today's
@@ -275,8 +271,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     double? vitaminB12Goal,
     double? magnesiumGoal,
   }) async {
+    final config = await _getConfigUsecase.getConfig();
+    final logicalDay = DayBoundaryCalc.logicalDayOfMinutes(day, config.dayStartOffsetTotalMinutes);
     await _addTrackedDayUsecase.updateDayNutrientGoals(
-      day,
+      logicalDay,
       fibreGoal: fibreGoal,
       satFatGoal: satFatGoal,
       sugarsGoal: sugarsGoal,
@@ -292,23 +290,30 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
   Future<void> updateTrackedDay(DateTime day) async {
     final totalKcalGoal = await _getKcalGoalUsecase.getKcalGoal();
-    final totalCarbsGoal = await _getMacroGoalUsecase.getCarbsGoal(
-      totalKcalGoal,
-    );
+    final totalCarbsGoal = await _getMacroGoalUsecase.getCarbsGoal(totalKcalGoal);
     final totalFatGoal = await _getMacroGoalUsecase.getFatsGoal(totalKcalGoal);
-    final totalProteinGoal = await _getMacroGoalUsecase.getProteinsGoal(
-      totalKcalGoal,
-    );
+    final totalProteinGoal = await _getMacroGoalUsecase.getProteinsGoal(totalKcalGoal);
 
-    final hasTrackedDay = await _addTrackedDayUsecase.hasTrackedDay(day);
+    final config = await _getConfigUsecase.getConfig();
+    final logicalDay = DayBoundaryCalc.logicalDayOfMinutes(day, config.dayStartOffsetTotalMinutes);
+
+    final hasTrackedDay = await _addTrackedDayUsecase.hasTrackedDay(logicalDay);
 
     if (hasTrackedDay) {
-      await _addTrackedDayUsecase.updateDayCalorieGoal(day, totalKcalGoal);
+      await _addTrackedDayUsecase.updateDayCalorieGoal(logicalDay, totalKcalGoal);
       await _addTrackedDayUsecase.updateDayMacroGoals(
-        day,
+        logicalDay,
         carbsGoal: totalCarbsGoal,
         fatGoal: totalFatGoal,
         proteinGoal: totalProteinGoal,
+      );
+    } else {
+      await _addTrackedDayUsecase.addNewTrackedDay(
+        logicalDay,
+        totalKcalGoal,
+        totalCarbsGoal,
+        totalFatGoal,
+        totalProteinGoal,
       );
     }
   }

@@ -16,7 +16,8 @@ class DiaryBloc extends Bloc<DiaryEvent, DiaryState> {
   final GetTrackedDayUsecase _getDayTrackedUsecase;
   final GetConfigUsecase _getConfigUsecase;
 
-  DateTime currentDay = DateTime.now();
+  // Initialized safely in LoadDiaryYearEvent using the configured offset
+  late DateTime currentDay;
 
   DiaryBloc(this._getDayTrackedUsecase, this._getConfigUsecase)
       : super(DiaryInitial()) {
