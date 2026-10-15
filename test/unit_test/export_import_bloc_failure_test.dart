@@ -86,6 +86,7 @@ class _ThrowingExportDataUsecase extends ExportDataUsecase {
         CustomActivityTemplateRepository(
           CustomActivityTemplateDataSource(_provider),
         ),
+        ConfigRepository(ConfigDataSource(_provider)),
       );
 
   final Object error;
@@ -154,6 +155,7 @@ ExportImportBloc _bloc({
       CustomActivityTemplateRepository(
         CustomActivityTemplateDataSource(_provider),
       ),
+      ConfigRepository(ConfigDataSource(_provider)),
       pickFile: pickFile ?? () async => throw StateError('unused'),
     ),
     ImportMealsCsvUsecase(customMealDataSource),

@@ -101,6 +101,11 @@ class _StubTemplateRepository extends CustomActivityTemplateRepository {
   Future<List<CustomActivityTemplateDBO>> allTemplateDBOs() async => [];
 }
 
+class _StubConfigRepository extends Fake implements ConfigRepository {
+  @override
+  Future<ConfigDBO> getConfigDBO() async => ConfigDBO.empty();
+}
+
 MealDBO _meal({required String id, String? localImagePath}) {
   return MealDBO(
     code: id,
@@ -203,6 +208,7 @@ void main() {
         recipeJsonFileName: 'user_recipes.json',
         weightLogJsonFileName: 'weight_log.json',
         customActivityTemplateJsonFileName: 'custom_activity_templates.json',
+        profileConfigJsonFileName: 'profile.json',
       );
 
       final photoEntry = archive.findFile(slug);
@@ -273,6 +279,7 @@ void main() {
       recipeJsonFileName: 'user_recipes.json',
       weightLogJsonFileName: 'weight_log.json',
       customActivityTemplateJsonFileName: 'custom_activity_templates.json',
+      profileConfigJsonFileName: 'profile.json',
     );
 
     expect(archive.findFile(slug), isNull);
