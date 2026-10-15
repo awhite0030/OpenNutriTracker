@@ -1,0 +1,14 @@
+<<<<<<< SEARCH
+          Text(S.of(context).trendsCaloriesLabel, style: text.titleMedium),
+          const SizedBox(height: Dimens.spacing20),
+          Semantics(
+            label: S.of(context).trendsCaloriesLabel,
+=======
+          Text(
+            '${S.of(context).trendsCaloriesLabel} (${EnergyDisplay.unitLabel(context)})',
+            style: text.titleMedium,
+          ),
+          const SizedBox(height: Dimens.spacing20),
+          Semantics(
+            label: '${S.of(context).trendsCaloriesLabel} (${EnergyDisplay.unitLabel(context)})',
+>>>>>>> REPLACE
