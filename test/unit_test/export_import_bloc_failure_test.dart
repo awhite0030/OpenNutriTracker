@@ -98,7 +98,8 @@ class _ThrowingExportDataUsecase extends ExportDataUsecase {
     String trackedDayJsonFileName,
     String recipeJsonFileName,
     String weightLogJsonFileName,
-    String customActivityTemplateJsonFileName, {
+    String customActivityTemplateJsonFileName,
+    String profileConfigJsonFileName, {
     ExportFormat format = ExportFormat.json,
     String userActivityCsvFileName = 'user_activity.csv',
     String userIntakeCsvFileName = 'user_intake.csv',

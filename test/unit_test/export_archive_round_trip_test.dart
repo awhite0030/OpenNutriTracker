@@ -25,6 +25,8 @@ import 'package:opennutritracker/core/data/repository/recipe_repository.dart';
 import 'package:opennutritracker/core/data/repository/tracked_day_repository.dart';
 import 'package:opennutritracker/core/data/repository/user_activity_repository.dart';
 import 'package:opennutritracker/core/data/repository/weight_log_repository.dart';
+import 'package:opennutritracker/core/data/repository/config_repository.dart';
+import 'package:opennutritracker/core/data/dbo/config_dbo.dart';
 import 'package:opennutritracker/core/utils/user_image_storage.dart';
 import 'package:opennutritracker/features/settings/domain/usecase/export_data_usecase.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -190,6 +192,7 @@ void main() {
         _StubCustomMealDataSource([]),
         _StubWeightLogRepository(),
         _StubTemplateRepository(),
+        _StubConfigRepository(),
       );
 
       final archive = await usecase.assembleArchive(
@@ -259,6 +262,7 @@ void main() {
       _StubCustomMealDataSource([]),
       _StubWeightLogRepository(),
       _StubTemplateRepository(),
+      _StubConfigRepository(),
     );
 
     final archive = await usecase.assembleArchive(

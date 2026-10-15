@@ -67,6 +67,7 @@ ImportDataUsecase _usecase(Future<PlatformFile?> Function() pickFile) {
     CustomActivityTemplateRepository(
       CustomActivityTemplateDataSource(provider),
     ),
+    ConfigRepository(ConfigDataSource(provider)),
     pickFile: pickFile,
   );
 }
@@ -78,6 +79,7 @@ Future<bool> _importJson(ImportDataUsecase usecase) => usecase.importData(
   ExportImportBloc.recipeJsonFileName,
   ExportImportBloc.weightLogJsonFileName,
   ExportImportBloc.customActivityTemplateJsonFileName,
+  ExportImportBloc.profileConfigJsonFileName,
 );
 
 Matcher _failsWith(ExportImportFailureReason reason) => throwsA(

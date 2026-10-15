@@ -244,6 +244,7 @@ void main() {
       CustomActivityTemplateRepository(
         CustomActivityTemplateDataSource(provider),
       ),
+      ConfigRepository(ConfigDataSource(provider)),
       pickFile: () async =>
           _PickedFile('backup.zip', File('${tempDir.path}/backup.zip').uri),
     );
@@ -276,6 +277,7 @@ void main() {
     ExportImportBloc.recipeJsonFileName,
     ExportImportBloc.weightLogJsonFileName,
     ExportImportBloc.customActivityTemplateJsonFileName,
+    ExportImportBloc.profileConfigJsonFileName,
   );
 
   test('a JSON bundle from a build before #775 lands with its Open Food Facts '
