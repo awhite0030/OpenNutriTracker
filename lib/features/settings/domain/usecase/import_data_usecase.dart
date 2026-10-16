@@ -135,6 +135,14 @@ class ImportDataUsecase {
       await _customActivityTemplateRepository.addAllTemplateDBOs(templateDBOs);
     }
 
+    // Extract and process Profile config data — optional for backward compatibility
+    final configFile = archive.findFile(profileConfigJsonFileName);
+    if (configFile != null) {
+      final configJsonStr = utf8.decode(configFile.content as List<int>);
+      final configDBO = ConfigDBO.fromJson(jsonDecode(configJsonStr) as Map<String, dynamic>);
+      await _configRepository.updateConfig(ConfigEntity.fromConfigDBO(configDBO));
+    }
+
     // Restore any user-attached photos — recipes under `recipe_images/`
     // and custom meals under `meal_images/`. Each archive entry's name
     // already matches the relative slug we stored on the matching DBO,

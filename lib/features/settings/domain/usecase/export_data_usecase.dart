@@ -211,6 +211,11 @@ class ExportDataUsecase {
       final fullTemplates = await _customActivityTemplateRepository.allTemplateDBOs();
       final templatesBytes = utf8.encode(jsonEncode(fullTemplates.map((template) => template.toJson()).toList()));
       archive.addFile(ArchiveFile(customActivityTemplateJsonFileName, templatesBytes.length, templatesBytes));
+
+      // Profile config
+      final config = await _configRepository.getConfigDBO();
+      final configBytes = utf8.encode(jsonEncode(config.toJson()));
+      archive.addFile(ArchiveFile(profileConfigJsonFileName, configBytes.length, configBytes));
     }
 
     return archive;

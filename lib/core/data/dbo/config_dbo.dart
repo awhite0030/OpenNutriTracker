@@ -240,7 +240,37 @@ class ConfigDBO extends HiveObject {
     usesImperialFoodUnits: entity.usesImperialFoodUnits,
     usesImperialHeightUnits: entity.usesImperialHeightUnits,
     bodyWeightUnitIndex: entity.bodyWeightUnit.index,
-  );
+    userKcalAdjustment: entity.userKcalAdjustment,
+    showActivityTracking: entity.showActivityTracking,
+    showMealMacros: entity.showMealMacros,
+    notificationsEnabled: entity.notificationsEnabled,
+    notificationHour: entity.notificationHour,
+    notificationMinute: entity.notificationMinute,
+    selectedLocale: entity.selectedLocale,
+    showMicronutrients: entity.showMicronutrients,
+    usesKilojoules: entity.usesKilojoules,
+    mealKcalSharesPct: entity.mealKcalSharesPct,
+    dayStartOffsetHours: entity.dayStartOffsetHours,
+    diarySortPreferences: entity.diarySortPreferences,
+    nutrientPanelVisibility: entity.nutrientPanelVisibility,
+    dayStartOffsetMinutes: entity.dayStartOffsetMinutes,
+    dailyWaterGoalMl: entity.dailyWaterGoalMl,
+    fastingWarningAcknowledged: entity.fastingWarningAcknowledged,
+    useMaterialYou: entity.useMaterialYou,
+    accentColor: entity.accentColor,
+    scannerPortraitLock: entity.scannerPortraitLock,
+    foodSourceToggles: entity.foodSourceToggles,
+    isDemoData: entity.isDemoData,
+    healthImportEnabled: entity.healthImportEnabled,
+    healthWorkoutKcalMultiplier: entity.healthWorkoutKcalMultiplier,
+    healthLastImportAt: entity.healthLastImportAt,
+    policyNoticeRevisionSeen: entity.policyNoticeRevisionSeen,
+    healthDeletedWorkouts: entity.healthDeletedWorkouts,
+    defaultToRawFoodUnits: entity.defaultToRawFoodUnits,
+  )
+    ..userCarbGoalPct = entity.userCarbGoalPct
+    ..userProteinGoalPct = entity.userProteinGoalPct
+    ..userFatGoalPct = entity.userFatGoalPct;
 
   factory ConfigDBO.fromJson(Map<String, dynamic> json) =>
       _$ConfigDBOFromJson(json);
