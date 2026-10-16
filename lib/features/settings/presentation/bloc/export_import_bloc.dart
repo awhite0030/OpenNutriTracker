@@ -23,8 +23,8 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
   static const recipeJsonFileName = 'user_recipes.json';
   static const weightLogJsonFileName = 'weight_log.json';
   // #70 follow-up: saved Custom activity templates (name + typical kcal).
-  static const customActivityTemplateJsonFileName =
-      'custom_activity_templates.json';
+  static const customActivityTemplateJsonFileName = 'custom_activity_templates.json';
+  static const profileConfigJsonFileName = 'profile_config.json';
 
   static final _log = Logger('ExportImportBloc');
 
@@ -59,6 +59,7 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
           recipeJsonFileName,
           weightLogJsonFileName,
           customActivityTemplateJsonFileName,
+          profileConfigJsonFileName,
           format: event.format,
         );
 
@@ -85,6 +86,7 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
                 recipeJsonFileName,
                 weightLogJsonFileName,
                 customActivityTemplateJsonFileName,
+                profileConfigJsonFileName,
               );
         if (result) {
           emit(ExportImportSuccess());
@@ -104,11 +106,13 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
           // User cancelled the file picker — go back to initial.
           emit(ExportImportInitial());
         } else {
-          emit(CsvImportResultState(
-            imported: result.imported,
-            skipped: result.skipped,
-            anyHadBarcode: result.anyImportedHadBarcode,
-          ));
+          emit(
+            CsvImportResultState(
+              imported: result.imported,
+              skipped: result.skipped,
+              anyHadBarcode: result.anyImportedHadBarcode,
+            ),
+          );
         }
       } catch (e, stackTrace) {
         _log.severe('Import meals CSV failed', e, stackTrace);
@@ -123,10 +127,7 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
         if (result == null) {
           emit(ExportImportInitial());
         } else {
-          emit(RecipeCsvImportResultState(
-            imported: result.imported,
-            skipped: result.skippedRows,
-          ));
+          emit(RecipeCsvImportResultState(imported: result.imported, skipped: result.skippedRows));
         }
       } catch (e, stackTrace) {
         _log.severe('Import recipes CSV failed', e, stackTrace);
@@ -147,8 +148,7 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
     on<DownloadSampleRecipesCsvEvent>((event, emit) async {
       try {
         emit(ExportImportLoadingState());
-        final saved =
-            await _downloadSampleCsvUsecase.downloadRecipeSample();
+        final saved = await _downloadSampleCsvUsecase.downloadRecipeSample();
         emit(saved ? ExportImportSuccess() : ExportImportInitial());
       } catch (e, stackTrace) {
         emit(_failed('Download recipes CSV sample', e, stackTrace));
@@ -175,11 +175,13 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
         } else if (result.imported == 0) {
           emit(JsonImportErrorState(result.errorMessages));
         } else {
-          emit(JsonImportResultState(
-            imported: result.imported,
-            savedAsCustomMeals: result.savedAsCustomMeals,
-            errorMessages: result.errorMessages,
-          ));
+          emit(
+            JsonImportResultState(
+              imported: result.imported,
+              savedAsCustomMeals: result.savedAsCustomMeals,
+              errorMessages: result.errorMessages,
+            ),
+          );
         }
       } catch (e, stackTrace) {
         _log.severe('Import meals JSON failed', e, stackTrace);
@@ -196,11 +198,13 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
         } else if (result.imported == 0) {
           emit(RecipeJsonImportErrorState(result.errorMessages));
         } else {
-          emit(RecipeJsonImportResultState(
-            imported: result.imported,
-            skipped: result.skippedRecipes,
-            errorMessages: result.errorMessages,
-          ));
+          emit(
+            RecipeJsonImportResultState(
+              imported: result.imported,
+              skipped: result.skippedRecipes,
+              errorMessages: result.errorMessages,
+            ),
+          );
         }
       } catch (e, stackTrace) {
         _log.severe('Import recipes JSON failed', e, stackTrace);
@@ -213,8 +217,7 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
         emit(ExportImportLoadingState());
         // Reuses the meals download usecase shape — recipes share the
         // same single-file save flow.
-        final saved =
-            await _downloadSampleJsonUsecase.downloadRecipeSample();
+        final saved = await _downloadSampleJsonUsecase.downloadRecipeSample();
         emit(saved ? ExportImportSuccess() : ExportImportInitial());
       } catch (e, stackTrace) {
         emit(_failed('Download recipes JSON sample', e, stackTrace));
@@ -233,21 +236,13 @@ class ExportImportBloc extends Bloc<ExportImportEvent, ExportImportState> {
   /// with nothing but "it says error". A dismissed picker is not a
   /// failure: it goes back to [ExportImportInitial], so the dialog shows
   /// its description again instead of an error row.
-  ExportImportState _failed(
-    String operation,
-    Object error,
-    StackTrace stackTrace,
-  ) {
+  ExportImportState _failed(String operation, Object error, StackTrace stackTrace) {
     if (error is ExportImportFailure) {
       if (error.reason == ExportImportFailureReason.cancelled) {
         _log.fine('$operation cancelled by the user');
         return ExportImportInitial();
       }
-      _log.severe(
-        '$operation failed (${error.reason.name})',
-        error,
-        stackTrace,
-      );
+      _log.severe('$operation failed (${error.reason.name})', error, stackTrace);
       return ExportImportError(error.reason);
     }
     _log.severe('$operation failed (unexpected)', error, stackTrace);

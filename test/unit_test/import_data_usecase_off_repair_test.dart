@@ -22,6 +22,8 @@ import 'package:opennutritracker/core/data/dbo/weight_log_dbo.dart';
 import 'package:opennutritracker/core/data/repository/custom_activity_template_repository.dart';
 import 'package:opennutritracker/core/data/repository/intake_repository.dart';
 import 'package:opennutritracker/core/data/repository/recipe_repository.dart';
+import 'package:opennutritracker/core/data/repository/config_repository.dart';
+import 'package:opennutritracker/core/data/data_source/config_data_source.dart';
 import 'package:opennutritracker/core/data/repository/tracked_day_repository.dart';
 import 'package:opennutritracker/core/data/repository/user_activity_repository.dart';
 import 'package:opennutritracker/core/data/repository/weight_log_repository.dart';
@@ -244,6 +246,7 @@ void main() {
       CustomActivityTemplateRepository(
         CustomActivityTemplateDataSource(provider),
       ),
+      ConfigRepository(ConfigDataSource(provider)),
       pickFile: () async =>
           _PickedFile('backup.zip', File('${tempDir.path}/backup.zip').uri),
     );
@@ -276,6 +279,7 @@ void main() {
     ExportImportBloc.recipeJsonFileName,
     ExportImportBloc.weightLogJsonFileName,
     ExportImportBloc.customActivityTemplateJsonFileName,
+    ExportImportBloc.profileConfigJsonFileName,
   );
 
   test('a JSON bundle from a build before #775 lands with its Open Food Facts '

@@ -25,6 +25,8 @@ import 'package:opennutritracker/core/data/repository/recipe_repository.dart';
 import 'package:opennutritracker/core/data/repository/tracked_day_repository.dart';
 import 'package:opennutritracker/core/data/repository/user_activity_repository.dart';
 import 'package:opennutritracker/core/data/repository/weight_log_repository.dart';
+import 'package:opennutritracker/core/data/repository/config_repository.dart';
+import 'package:opennutritracker/core/data/dbo/config_dbo.dart';
 import 'package:opennutritracker/core/utils/user_image_storage.dart';
 import 'package:opennutritracker/features/settings/domain/usecase/export_data_usecase.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -97,6 +99,11 @@ class _StubTemplateRepository extends CustomActivityTemplateRepository {
 
   @override
   Future<List<CustomActivityTemplateDBO>> allTemplateDBOs() async => [];
+}
+
+class _StubConfigRepository extends Fake implements ConfigRepository {
+  @override
+  Future<ConfigDBO> getConfigDBO() async => ConfigDBO.empty();
 }
 
 MealDBO _meal({required String id, String? localImagePath}) {
@@ -190,6 +197,7 @@ void main() {
         _StubCustomMealDataSource([]),
         _StubWeightLogRepository(),
         _StubTemplateRepository(),
+        _StubConfigRepository(),
       );
 
       final archive = await usecase.assembleArchive(
@@ -200,6 +208,7 @@ void main() {
         recipeJsonFileName: 'user_recipes.json',
         weightLogJsonFileName: 'weight_log.json',
         customActivityTemplateJsonFileName: 'custom_activity_templates.json',
+        profileConfigJsonFileName: 'profile.json',
       );
 
       final photoEntry = archive.findFile(slug);
@@ -259,6 +268,7 @@ void main() {
       _StubCustomMealDataSource([]),
       _StubWeightLogRepository(),
       _StubTemplateRepository(),
+      _StubConfigRepository(),
     );
 
     final archive = await usecase.assembleArchive(
@@ -269,6 +279,7 @@ void main() {
       recipeJsonFileName: 'user_recipes.json',
       weightLogJsonFileName: 'weight_log.json',
       customActivityTemplateJsonFileName: 'custom_activity_templates.json',
+      profileConfigJsonFileName: 'profile.json',
     );
 
     expect(archive.findFile(slug), isNull);

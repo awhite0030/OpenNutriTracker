@@ -9,6 +9,9 @@ import 'package:opennutritracker/core/data/dbo/intake_dbo.dart';
 import 'package:opennutritracker/core/data/dbo/recipe_dbo.dart';
 import 'package:opennutritracker/core/data/dbo/tracked_day_dbo.dart';
 import 'package:opennutritracker/core/data/dbo/weight_log_dbo.dart';
+import 'package:opennutritracker/core/data/repository/config_repository.dart';
+import 'package:opennutritracker/core/data/dbo/config_dbo.dart';
+import 'package:opennutritracker/core/domain/entity/config_entity.dart';
 import 'package:opennutritracker/core/data/repository/custom_activity_template_repository.dart';
 import 'package:opennutritracker/core/data/repository/intake_repository.dart';
 import 'package:opennutritracker/core/data/repository/recipe_repository.dart';
@@ -33,6 +36,7 @@ class ImportDataUsecase {
   final RecipeRepository _recipeRepository;
   final WeightLogRepository _weightLogRepository;
   final CustomActivityTemplateRepository _customActivityTemplateRepository;
+  final ConfigRepository _configRepository;
 
   /// Seam for tests: `FilePicker.pickFile` is static and needs a platform
   /// channel, so the picker outcomes (#1103: cancel, a pick without a
@@ -45,7 +49,8 @@ class ImportDataUsecase {
     this._trackedDayRepository,
     this._recipeRepository,
     this._weightLogRepository,
-    this._customActivityTemplateRepository, {
+    this._customActivityTemplateRepository,
+    this._configRepository, {
     PickImportFile pickFile = _pickAnyFile,
   }) : _pickFile = pickFile;
 
@@ -66,16 +71,14 @@ class ImportDataUsecase {
     String recipeJsonFileName,
     String weightLogJsonFileName,
     String customActivityTemplateJsonFileName,
+    String profileConfigJsonFileName,
   ) async {
     final archive = await _pickAndDecodeArchive();
 
     // Extract and process user activity data
     final userActivityFile = archive.findFile(userActivityJsonFileName);
     if (userActivityFile != null) {
-      final userActivityDBOs = _decodeJsonList(
-        userActivityFile,
-        UserActivityDBO.fromJson,
-      );
+      final userActivityDBOs = _decodeJsonList(userActivityFile, UserActivityDBO.fromJson);
       await _userActivityRepository.addAllUserActivityDBOs(userActivityDBOs);
     } else {
       throw _missingEntry(userActivityJsonFileName);
@@ -100,10 +103,7 @@ class ImportDataUsecase {
     // Extract and process tracked day data
     final trackedDayFile = archive.findFile(trackedDayJsonFileName);
     if (trackedDayFile != null) {
-      final trackedDayDBOs = _decodeJsonList(
-        trackedDayFile,
-        TrackedDayDBO.fromJson,
-      );
+      final trackedDayDBOs = _decodeJsonList(trackedDayFile, TrackedDayDBO.fromJson);
       await _trackedDayRepository.addAllTrackedDays(trackedDayDBOs);
     } else {
       throw _missingEntry(trackedDayJsonFileName);
@@ -123,10 +123,7 @@ class ImportDataUsecase {
     // Extract and process weight log data — optional so older zips still import.
     final weightLogFile = archive.findFile(weightLogJsonFileName);
     if (weightLogFile != null) {
-      final weightLogDBOs = _decodeJsonList(
-        weightLogFile,
-        WeightLogDBO.fromJson,
-      );
+      final weightLogDBOs = _decodeJsonList(weightLogFile, WeightLogDBO.fromJson);
       await _weightLogRepository.addAllEntries(weightLogDBOs);
     }
 
@@ -134,10 +131,7 @@ class ImportDataUsecase {
     // — also optional so zips produced before templates landed still import.
     final templateFile = archive.findFile(customActivityTemplateJsonFileName);
     if (templateFile != null) {
-      final templateDBOs = _decodeJsonList(
-        templateFile,
-        CustomActivityTemplateDBO.fromJson,
-      );
+      final templateDBOs = _decodeJsonList(templateFile, CustomActivityTemplateDBO.fromJson);
       await _customActivityTemplateRepository.addAllTemplateDBOs(templateDBOs);
     }
 
@@ -147,18 +141,14 @@ class ImportDataUsecase {
     // so we just write the bytes back into the right private documents
     // subdirectory. Anything outside those known prefixes is skipped by
     // the sanitiser, so a hostile zip can't escape into other folders.
-    final recipeDir = await UserImageStorage.ensureDirectory(
-      UserImageKind.recipe,
-    );
+    final recipeDir = await UserImageStorage.ensureDirectory(UserImageKind.recipe);
     final mealDir = await UserImageStorage.ensureDirectory(UserImageKind.meal);
     for (final entry in archive.files) {
       if (!entry.isFile) continue;
       final sanitized = UserImageStorage.sanitizeRelative(entry.name);
       if (sanitized == null) continue;
       final parts = sanitized.split('/');
-      final targetDir = parts[0] == UserImageKind.recipe.subdir
-          ? recipeDir
-          : mealDir;
+      final targetDir = parts[0] == UserImageKind.recipe.subdir ? recipeDir : mealDir;
       final destPath = '${targetDir.path}/${parts[1]}';
       final destFile = File(destPath);
       await destFile.writeAsBytes(entry.content as List<int>, flush: true);
@@ -185,10 +175,7 @@ class ImportDataUsecase {
 
     final activityFile = archive.findFile(userActivityCsvFileName);
     if (activityFile != null) {
-      final dbos = _decodeCsv(
-        activityFile,
-        CsvDataExporter.parseUserActivitiesFromCsv,
-      );
+      final dbos = _decodeCsv(activityFile, CsvDataExporter.parseUserActivitiesFromCsv);
       await _userActivityRepository.addAllUserActivityDBOs(dbos);
     } else {
       throw _missingEntry(userActivityCsvFileName);
@@ -209,10 +196,7 @@ class ImportDataUsecase {
 
     final trackedDayFile = archive.findFile(trackedDayCsvFileName);
     if (trackedDayFile != null) {
-      final dbos = _decodeCsv(
-        trackedDayFile,
-        CsvDataExporter.parseTrackedDaysFromCsv,
-      );
+      final dbos = _decodeCsv(trackedDayFile, CsvDataExporter.parseTrackedDaysFromCsv);
       await _trackedDayRepository.addAllTrackedDays(dbos);
     } else {
       throw _missingEntry(trackedDayCsvFileName);
@@ -233,10 +217,7 @@ class ImportDataUsecase {
   Future<Archive> _pickAndDecodeArchive() async {
     final result = await _pickFile();
     if (result == null) {
-      throw const ExportImportFailure(
-        ExportImportFailureReason.cancelled,
-        'The user dismissed the file picker',
-      );
+      throw const ExportImportFailure(ExportImportFailureReason.cancelled, 'The user dismissed the file picker');
     }
     final path = result.path;
     if (path == null) {
@@ -268,19 +249,13 @@ class ImportDataUsecase {
   /// Decodes one archive entry holding a JSON array of [T] objects. A
   /// decode or `fromJson` failure is reported as wrong format rather than
   /// escaping as a bare `FormatException` / `TypeError`.
-  List<T> _decodeJsonList<T>(
-    ArchiveFile entry,
-    T Function(Map<String, dynamic>) fromJson,
-  ) {
+  List<T> _decodeJsonList<T>(ArchiveFile entry, T Function(Map<String, dynamic>) fromJson) {
     return ExportImportFailure.guardSync(
       ExportImportFailureReason.unreadableOrWrongFormat,
       'Could not parse ${entry.name}',
       () {
         final jsonString = utf8.decode(entry.content as List<int>);
-        return (jsonDecode(jsonString) as List)
-            .cast<Map<String, dynamic>>()
-            .map(fromJson)
-            .toList();
+        return (jsonDecode(jsonString) as List).cast<Map<String, dynamic>>().map(fromJson).toList();
       },
     );
   }
