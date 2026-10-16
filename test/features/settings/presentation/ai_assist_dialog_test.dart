@@ -760,6 +760,38 @@ void main() {
       );
     });
 
+    testWidgets('scrolling to validation errors works', (tester) async {
+      await storage.writeOwnServerConfiguration(
+        endpoint: 'http://192.168.1.5:11434',
+        model: 'gemma3:4b',
+        provider: AiProvider.ownServer,
+      );
+      await tester.pumpWidget(_app(storage));
+      await tester.pumpAndSettle();
+
+      // Ensure the screen is too small to fit the error initially
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 2.0;
+
+      // Clear the model to cause a validation error
+      final modelFieldFinder = find.bySemanticsIdentifier('ai-assist-model-field');
+      await tester.ensureVisible(modelFieldFinder);
+      await tester.enterText(modelFieldFinder, '');
+      await tester.pumpAndSettle();
+
+      final button = find.text(l10nEn.dialogOKLabel);
+      await tester.ensureVisible(button);
+      await tester.tap(button, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
+
+      // Verify we get the error
+      expect(find.text(l10nEn.aiAssistModelRequiredLabel), findsOneWidget);
+
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     testWidgets('the address stays editable once a key is stored too', (tester) async {
       // The case the OK gate is really for, and the one a first version of
       // the test above missed: with no key stored, splitting "has a key" from

@@ -107,6 +107,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
   final _apiKeyController = TextEditingController();
   final _endpointController = TextEditingController();
   final _modelController = TextEditingController();
+  final _modelFieldKey = GlobalKey();
   final _scrollController = ScrollController();
 
   /// Watched so that finishing with the address is a moment the app can act
@@ -424,10 +425,9 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
     // stored one on write for the same reason — `llama3.2:8b` is a claim
     // about one machine and says nothing about the next — and this is that
     // rule where the user can see it happen rather than discover it later.
-    setState(() {
-      _modelController.text = '';
-      _modelError = null;
-    });
+    // However, if the address changed while the user has manually typed a model
+    // we should not blindly clear it, unless it's genuinely the first time or they pick a predefined model.
+    // Changing the address shouldn't clear a model the user typed.
     _loadModels();
   }
 
@@ -616,6 +616,14 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
             _endpointError = endpointError;
             _modelError = modelError;
           });
+          final errorContext = endpointError != null ? _endpointFocus.context : _modelFieldKey.currentContext;
+          if (errorContext != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (errorContext.mounted) {
+                Scrollable.ensureVisible(errorContext);
+              }
+            });
+          }
           return;
         }
 
@@ -1285,6 +1293,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
           Semantics(
             identifier: 'ai-assist-model-field',
             child: TextField(
+              key: _modelFieldKey,
               controller: _modelController,
               autocorrect: false,
               decoration: InputDecoration(
