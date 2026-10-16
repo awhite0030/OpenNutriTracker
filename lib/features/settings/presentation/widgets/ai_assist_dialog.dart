@@ -50,12 +50,7 @@ class AiAssistDialog extends StatefulWidget {
   /// worse than none.
   final AiEndpointProbeRunner? probeRunner;
 
-  const AiAssistDialog({
-    super.key,
-    required this.storage,
-    this.modelList,
-    this.probeRunner,
-  });
+  const AiAssistDialog({super.key, required this.storage, this.modelList, this.probeRunner});
 
   /// Returns true when the stored state changed, so the caller can refresh
   /// its subtitle.
@@ -74,11 +69,7 @@ class AiAssistDialog extends StatefulWidget {
   }) => showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => AiAssistDialog(
-      storage: storage,
-      modelList: modelList,
-      probeRunner: probeRunner,
-    ),
+    builder: (_) => AiAssistDialog(storage: storage, modelList: modelList, probeRunner: probeRunner),
   ).then((changed) => changed ?? false);
 
   /// The accessibility identifier for a model row.
@@ -92,8 +83,7 @@ class AiAssistDialog extends StatefulWidget {
   /// Public so a test can pin that the curated catalogue folds to distinct
   /// identifiers. Two models colliding here would make the driver tap a row
   /// it was not asked for and report success.
-  static String modelIdentifier(String modelId) =>
-      'ai-assist-model-${modelId.replaceAll(RegExp('[^a-z0-9]+'), '-')}';
+  static String modelIdentifier(String modelId) => 'ai-assist-model-${modelId.replaceAll(RegExp('[^a-z0-9]+'), '-')}';
 
   /// The accessibility identifier for a provider row.
   ///
@@ -191,8 +181,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
   /// a dialog nobody asks for models in never constructs an HTTP client.
   AiModelListApi? _ownedModelList;
 
-  AiModelListApi get _modelList =>
-      widget.modelList ?? (_ownedModelList ??= AiModelListApi());
+  AiModelListApi get _modelList => widget.modelList ?? (_ownedModelList ??= AiModelListApi());
 
   /// What the setup check last established about this `(endpoint, model)`,
   /// **per capability**. #735: two independent results collapsed into one
@@ -285,9 +274,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
     final modelId = await widget.storage.readModel(provider: provider);
     // Asked separately from `configured`, because for a server the user runs
     // they are different questions and only this one may mask a field.
-    final hasKey = summary.provider == null
-        ? false
-        : await widget.storage.hasApiKey(provider: provider);
+    final hasKey = summary.provider == null ? false : await widget.storage.hasApiKey(provider: provider);
     // Read, not run. Opening settings must not start a 66-second request at
     // somebody's server; what lands here is whatever the last check found,
     // which is the whole point of storing it.
@@ -311,9 +298,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
       _modelController.text = modelId ?? '';
       // The stored address counts as already asked-about, so returning to a
       // configured server and leaving the field alone is not a URL change.
-      _lastEndpoint = summary.endpoint == null
-          ? null
-          : AiCredentialStorage.resolveEndpoint(summary.endpoint!);
+      _lastEndpoint = summary.endpoint == null ? null : AiCredentialStorage.resolveEndpoint(summary.endpoint!);
       // A provider switch reloads through here, so this is also what stops a
       // list fetched from one server being offered as another server's.
       _modelIds = null;
@@ -343,13 +328,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
     final provider = _provider;
     setState(() => _probing = true);
     unawaited(
-      _showWhenItLands(
-        provider,
-        runner.start(
-          provider,
-          localeCode: Localizations.localeOf(context).languageCode,
-        ),
-      ),
+      _showWhenItLands(provider, runner.start(provider, localeCode: Localizations.localeOf(context).languageCode)),
     );
   }
 
@@ -368,10 +347,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
   /// visible symptom — which is the moment to add it, not a reason to skip it:
   /// the invariant is what the next reader will assume, and the containment is
   /// a coincidence of the current layout.
-  Future<void> _showWhenItLands(
-    AiProvider provider,
-    Future<AiEndpointProbe> probe,
-  ) async {
+  Future<void> _showWhenItLands(AiProvider provider, Future<AiEndpointProbe> probe) async {
     final found = await probe;
     if (!mounted || provider != _provider) return;
     setState(() {
@@ -442,9 +418,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
     // and could not see the back button; adding this made every one of its
     // own writes dead, and a fifth exit would have had to remember it.
     if (ModalRoute.of(context)?.isCurrent == false) return;
-    final resolved = AiCredentialStorage.resolveEndpoint(
-      _endpointController.text.trim(),
-    );
+    final resolved = AiCredentialStorage.resolveEndpoint(_endpointController.text.trim());
     if (resolved == null || resolved == _lastEndpoint) return;
     // The model belonged to the address that just changed. #755 drops the
     // stored one on write for the same reason — `llama3.2:8b` is a claim
@@ -506,9 +480,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
     final typedKey = _apiKeyController.text.trim();
     final result = await _modelList.list(
       url,
-      apiKey: typedKey.isNotEmpty
-          ? typedKey
-          : await widget.storage.readApiKey(provider: provider),
+      apiKey: typedKey.isNotEmpty ? typedKey : await widget.storage.readApiKey(provider: provider),
     );
 
     // Dropping this one loses nothing: a newer request writes every field it
@@ -615,9 +587,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
       // what an address is. The store refuses the pair too; the reason to ask
       // again here is that a refusal has to land on a field, and only this
       // side knows which one the user is looking at.
-      final resolved = endpoint.isEmpty
-          ? null
-          : AiCredentialStorage.resolveEndpoint(endpoint);
+      final resolved = endpoint.isEmpty ? null : AiCredentialStorage.resolveEndpoint(endpoint);
 
       // Two empty fields mean different things depending on whether there is
       // anything behind them.
@@ -659,11 +629,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
         // what is already stored are all facts about the storage format —
         // this widget knowing them is how the order came to be documented in
         // a comment beside a button.
-        if (await widget.storage.writeOwnServerConfiguration(
-          endpoint: endpoint,
-          model: model,
-          provider: provider,
-        )) {
+        if (await widget.storage.writeOwnServerConfiguration(endpoint: endpoint, model: model, provider: provider)) {
           changed = true;
         }
 
@@ -716,11 +682,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
     if (await widget.storage.hasAcceptedTerms()) return true;
     if (!mounted) return false;
 
-    final agreed = await AiConsentScreen.show(
-      context,
-      provider: provider,
-      typedEndpoint: _endpointController.text,
-    );
+    final agreed = await AiConsentScreen.show(context, provider: provider, typedEndpoint: _endpointController.text);
     if (!agreed) {
       if (mounted) _apiKeyController.clear();
       return false;
@@ -779,8 +741,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
     return literal != null && !isPrivateDestination(literal);
   }
 
-  String _providerName(BuildContext context, AiProvider provider) =>
-      switch (provider) {
+  String _providerName(BuildContext context, AiProvider provider) => switch (provider) {
     // Brand names, deliberately not localized.
     AiProvider.anthropic => 'Anthropic',
     AiProvider.openrouter => 'OpenRouter',
@@ -823,10 +784,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
       // carries the badge, and the note below states what it means.
       title: Text(s.settingsAiAssistLabel),
       content: _loading
-          ? const SizedBox(
-              height: 64,
-              child: Center(child: CircularProgressIndicator()),
-            )
+          ? const SizedBox(height: 64, child: Center(child: CircularProgressIndicator()))
           // The content is taller than a phone dialog and cannot be made to
           // fit: the OpenRouter disclosure alone runs past the fold, and
           // every sentence in it is load-bearing. So rather than pretend,
@@ -866,8 +824,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
                           // ignore: deprecated_member_use
                           groupValue: _provider,
                           // ignore: deprecated_member_use
-                          onChanged: (value) =>
-                              value == null ? null : _selectProvider(value),
+                          onChanged: (value) => value == null ? null : _selectProvider(value),
                         ),
                       ),
                     ),
@@ -951,9 +908,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
                     else ...[
                       Text(
                         s.aiAssistNoKeyForProviderLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: 8),
                       Semantics(
@@ -964,9 +919,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
                           enableSuggestions: false,
                           obscureText: true,
                           decoration: InputDecoration(
-                            labelText: s.aiAssistKeyFieldLabel(
-                              _providerName(context, _provider),
-                            ),
+                            labelText: s.aiAssistKeyFieldLabel(_providerName(context, _provider)),
                             border: const OutlineInputBorder(),
                           ),
                         ),
@@ -1040,9 +993,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
                     // on.
                     Text(
                       s.aiAssistExperimentalNote,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontStyle: FontStyle.italic,
-                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
                     ),
                   ],
                 ),
@@ -1051,10 +1002,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
       actions: [
         Semantics(
           identifier: 'ai-assist-cancel',
-          child: TextButton(
-            onPressed: _cancel,
-            child: Text(s.dialogCancelLabel),
-          ),
+          child: TextButton(onPressed: _cancel, child: Text(s.dialogCancelLabel)),
         ),
         // Offered whenever something on screen can still be typed into, **or
         // whenever there is already a change to confirm**. For the hosted
@@ -1078,8 +1026,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
         // `_changed` is the right question rather than `_provider != _providerOnOpen`:
         // a model pick and the enabled toggle are also changes someone may
         // want to keep, and they are already written by the time they set it.
-        if (!_loading &&
-            (!_hasKey || _provider == AiProvider.ownServer || _changed))
+        if (!_loading && (!_hasKey || _provider == AiProvider.ownServer || _changed))
           Semantics(
             identifier: 'ai-assist-save-key',
             child: TextButton(onPressed: _save, child: Text(s.dialogOKLabel)),
@@ -1132,9 +1079,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
       AiModelListFailure.rejected => s.aiAssistModelsRejectedLabel(host),
       // A list did come back. Only its being empty is worth a sentence — a
       // list with entries in it speaks for itself, in the picker below.
-      null => _modelIds != null && _modelIds!.isEmpty
-          ? s.aiAssistModelsEmptyLabel(host)
-          : null,
+      null => _modelIds != null && _modelIds!.isEmpty ? s.aiAssistModelsEmptyLabel(host) : null,
     };
   }
 
@@ -1170,9 +1115,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
           // the slow path is the likely one here rather than the exotic one.
           child: Text(
             s.aiAssistProbeRunningLabel(aiProbeWorstCaseMinutes()),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ),
       _probeRow(
@@ -1241,9 +1184,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
   _ProbeRowState _rowStateFor(AiCapability capability) => switch (capability) {
     AiCapability.passed => _ProbeRowState.passed,
     AiCapability.failed => _ProbeRowState.failed,
-    AiCapability.unknown => _probe.checked
-        ? _ProbeRowState.noAnswer
-        : _ProbeRowState.neverChecked,
+    AiCapability.unknown => _probe.checked ? _ProbeRowState.noAnswer : _ProbeRowState.neverChecked,
   };
 
   /// One capability, its verdict, and what that verdict means for the user.
@@ -1252,12 +1193,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
   /// a punctuation mark chosen in English and pasted into nine locales — `：`
   /// in Chinese, spaced differently in French-influenced typography — for a
   /// join the layout already expresses.
-  Widget _probeRow(
-    ThemeData theme,
-    String name,
-    _ProbeRowState state,
-    String status,
-  ) => Padding(
+  Widget _probeRow(ThemeData theme, String name, _ProbeRowState state, String status) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1295,18 +1231,8 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                name,
-                style: theme.textTheme.bodyMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                status,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              Text(name, style: theme.textTheme.bodyMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(status, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ],
           ),
         ),
@@ -1316,12 +1242,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
 
   Widget _label(ThemeData theme, String text) => Padding(
     padding: const EdgeInsets.only(bottom: 4),
-    child: Text(
-      text,
-      style: theme.textTheme.labelLarge?.copyWith(
-        color: theme.colorScheme.primary,
-      ),
-    ),
+    child: Text(text, style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary)),
   );
 
   /// The model list, or a single stated model where there is no choice.
@@ -1386,10 +1307,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
               // so waiting does not add a widget to a Row that already has to
               // survive 2x German on a 320px phone.
               icon: _fetchingModels
-                  ? const SizedBox.square(
-                      dimension: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.cloud_download_outlined),
               label: Text(s.aiAssistLoadModelsLabel),
             ),
@@ -1399,9 +1317,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
                 message,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
             ),
           // A **dropdown**, not a row per model: an Ollama host with twenty
@@ -1422,19 +1338,12 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
                 // server did not offer: a typed id is still a valid answer,
                 // and `DropdownButton` asserts on a value that is not in its
                 // items.
-                value: ids.contains(_modelController.text)
-                    ? _modelController.text
-                    : null,
+                value: ids.contains(_modelController.text) ? _modelController.text : null,
                 items: [
                   for (final id in ids)
                     DropdownMenuItem(
                       value: id,
-                      child: Text(
-                        id,
-                        style: theme.textTheme.bodyMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      child: Text(id, style: theme.textTheme.bodyMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                 ],
                 onChanged: (id) => id == null ? null : _pickModel(id),
@@ -1454,10 +1363,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
         if (!single && sharedVendor != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              s.aiAssistServedByLabel(sharedVendor),
-              style: theme.textTheme.bodySmall,
-            ),
+            child: Text(s.aiAssistServedByLabel(sharedVendor), style: theme.textTheme.bodySmall),
           ),
         if (single)
           Padding(
@@ -1500,16 +1406,10 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
                 // like this, is not available: it builds a `LayoutBuilder`,
                 // the dialog asks this row for an intrinsic height, and
                 // `LayoutBuilder` throws rather than answering one.
-                title: Text(
-                  model.id,
-                  style: theme.textTheme.bodyMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                title: Text(model.id, style: theme.textTheme.bodyMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
                 subtitle: Text(
                   [
-                    if (sharedVendor == null)
-                      s.aiAssistServedByLabel(model.servedBy),
+                    if (sharedVendor == null) s.aiAssistServedByLabel(model.servedBy),
                     if (model.id == models.first.id)
                       s.aiAssistModelRecommendedLabel
                     else if (model.note case final note?)
@@ -1521,9 +1421,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
                 // ignore: deprecated_member_use
                 groupValue: _model?.id,
                 // ignore: deprecated_member_use
-                onChanged: (value) => value == null
-                    ? null
-                    : _selectModel(models.firstWhere((m) => m.id == value)),
+                onChanged: (value) => value == null ? null : _selectModel(models.firstWhere((m) => m.id == value)),
               ),
             ),
           ),
