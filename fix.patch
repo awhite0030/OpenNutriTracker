@@ -1,0 +1,102 @@
+--- a/lib/features/settings/presentation/widgets/ai_assist_dialog.dart
++++ b/lib/features/settings/presentation/widgets/ai_assist_dialog.dart
+@@ -118,6 +118,8 @@
+   final _endpointController = TextEditingController();
+   final _modelController = TextEditingController();
+   final _scrollController = ScrollController();
++  final _endpointFieldKey = GlobalKey();
++  final _modelFieldKey = GlobalKey();
+
+   /// Watched so that finishing with the address is a moment the app can act
+   /// on. See [_endpointCommitted] for why that moment and no other.
+@@ -446,12 +448,7 @@
+       _endpointController.text.trim(),
+     );
+     if (resolved == null || resolved == _lastEndpoint) return;
+-    // The model belonged to the address that just changed. #755 drops the
+-    // stored one on write for the same reason — `llama3.2:8b` is a claim
+-    // about one machine and says nothing about the next — and this is that
+-    // rule where the user can see it happen rather than discover it later.
+     setState(() {
+-      _modelController.text = '';
+       _modelError = null;
+     });
+     _loadModels();
+@@ -646,6 +643,20 @@
+             _endpointError = endpointError;
+             _modelError = modelError;
+           });
++        WidgetsBinding.instance.addPostFrameCallback((_) {
++          if (!mounted) return;
++          final targetContext = endpointError != null
++              ? _endpointFieldKey.currentContext
++              : _modelFieldKey.currentContext;
++          if (targetContext != null) {
++            Scrollable.ensureVisible(
++              targetContext,
++              duration: const Duration(milliseconds: 200),
++              curve: Curves.easeInOut,
++              alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
++            );
++          }
++        });
+           return;
+         }
+
+@@ -875,6 +886,7 @@
+                     if (_provider == AiProvider.ownServer) ...[
+                       _label(theme, s.aiAssistEndpointFieldLabel),
+                       Semantics(
++                        key: _endpointFieldKey,
+                         identifier: 'ai-assist-endpoint-field',
+                         child: TextField(
+                           controller: _endpointController,
+@@ -1362,6 +1374,7 @@
+         children: [
+           _label(theme, s.aiAssistModelLabel),
+           Semantics(
++            key: _modelFieldKey,
+             identifier: 'ai-assist-model-field',
+             child: TextField(
+               controller: _modelController,
+--- a/test/features/settings/presentation/ai_assist_dialog_test.dart
++++ b/test/features/settings/presentation/ai_assist_dialog_test.dart
+@@ -1361,12 +1361,10 @@
+         );
+       });
+
+-      testWidgets('changing the address fetches, and drops the model that '
+-          'belonged to the old one', (tester) async {
+-        // #755 clears the stored model whenever the address changes, because
+-        // `gemma3:4b` is a claim about one machine and says nothing about the
+-        // next. This is that rule where the user can see it happen — someone
+-        // alternating between a laptop and a desktop re-picks every time.
++      testWidgets('changing the address fetches, and keeps the model', (
++        tester,
++      ) async {
++        // Changing the address shouldn't clear a model the user typed.
+         final server = _Server.listing(['qwen3:8b']);
+         await storage.writeOwnServerConfiguration(
+           endpoint: 'http://192.168.1.5:11434',
+@@ -1377,6 +1375,11 @@
+         expect(server.requests, isEmpty, reason: 'nothing on open');
+
+         await typeEndpoint(tester, 'http://192.168.1.9:11434');
++        await tester.enterText(
++          find.bySemanticsIdentifier('ai-assist-model-field'),
++          'gemma3:4b',
++        );
++        await tester.pumpAndSettle();
+         await tester.testTextInput.receiveAction(TextInputAction.done);
+         await tester.pumpAndSettle();
+
+@@ -1395,8 +1398,8 @@
+               )
+               .controller
+               ?.text,
+-          isEmpty,
+-          reason: 'the model belonged to the address that just changed',
++          'gemma3:4b',
++          reason: 'changing the address doesn\'t clear the model',
+         );
+       });

@@ -108,6 +108,8 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
   final _endpointController = TextEditingController();
   final _modelController = TextEditingController();
   final _scrollController = ScrollController();
+  final _endpointFieldKey = GlobalKey();
+  final _modelFieldKey = GlobalKey();
 
   /// Watched so that finishing with the address is a moment the app can act
   /// on. See [_endpointCommitted] for why that moment and no other.
@@ -420,12 +422,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
     if (ModalRoute.of(context)?.isCurrent == false) return;
     final resolved = AiCredentialStorage.resolveEndpoint(_endpointController.text.trim());
     if (resolved == null || resolved == _lastEndpoint) return;
-    // The model belonged to the address that just changed. #755 drops the
-    // stored one on write for the same reason — `llama3.2:8b` is a claim
-    // about one machine and says nothing about the next — and this is that
-    // rule where the user can see it happen rather than discover it later.
     setState(() {
-      _modelController.text = '';
       _modelError = null;
     });
     _loadModels();
@@ -615,6 +612,20 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
           setState(() {
             _endpointError = endpointError;
             _modelError = modelError;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final targetContext = endpointError != null
+                ? _endpointFieldKey.currentContext
+                : _modelFieldKey.currentContext;
+            if (targetContext != null) {
+              Scrollable.ensureVisible(
+                targetContext,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+              );
+            }
           });
           return;
         }
@@ -832,6 +843,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
                     if (_provider == AiProvider.ownServer) ...[
                       _label(theme, s.aiAssistEndpointFieldLabel),
                       Semantics(
+                        key: _endpointFieldKey,
                         identifier: 'ai-assist-endpoint-field',
                         child: TextField(
                           controller: _endpointController,
@@ -1283,6 +1295,7 @@ class _AiAssistDialogState extends State<AiAssistDialog> {
         children: [
           _label(theme, s.aiAssistModelLabel),
           Semantics(
+            key: _modelFieldKey,
             identifier: 'ai-assist-model-field',
             child: TextField(
               controller: _modelController,
