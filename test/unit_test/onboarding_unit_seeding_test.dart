@@ -10,6 +10,9 @@ import 'package:opennutritracker/core/domain/entity/config_entity.dart';
 import 'package:opennutritracker/core/domain/usecase/add_config_usecase.dart';
 import 'package:opennutritracker/core/domain/usecase/add_user_usecase.dart';
 import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
+import 'package:opennutritracker/core/domain/usecase/add_weight_log_usecase.dart';
+import 'package:opennutritracker/core/domain/entity/weight_log_entity.dart';
+import 'package:mockito/mockito.dart';
 import 'package:opennutritracker/core/utils/locale_units.dart';
 import 'package:opennutritracker/features/onboarding/presentation/bloc/onboarding_bloc.dart';
 
@@ -26,27 +29,19 @@ class _FakeConfigRepository implements ConfigRepository {
   Future<ConfigEntity> getConfig() async => ConfigEntity.fromConfigDBO(dbo);
 
   @override
-  noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError(invocation.memberName.toString());
+  noSuchMethod(Invocation invocation) => throw UnimplementedError(invocation.memberName.toString());
 }
 
 /// Only needed to build AddUserUsecase; the onboarding load never writes.
 class _FakeUserRepository implements UserRepository {
   @override
-  noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError(invocation.memberName.toString());
+  noSuchMethod(Invocation invocation) => throw UnimplementedError(invocation.memberName.toString());
 }
 
 void main() {
   /// The freshly-installed shape: the three split unit fields are null and
   /// the legacy flag has never been set either.
-  ConfigDBO freshConfig() => ConfigDBO(
-    false,
-    false,
-    false,
-    AppThemeDBO.system,
-    usesImperialUnits: null,
-  );
+  ConfigDBO freshConfig() => ConfigDBO(false, false, false, AppThemeDBO.system, usesImperialUnits: null);
 
   Future<OnboardingBloc> loadedBloc(ConfigDBO config) async {
     final configRepo = _FakeConfigRepository(config);
@@ -54,6 +49,7 @@ void main() {
       AddUserUsecase(_FakeUserRepository()),
       AddConfigUsecase(configRepo),
       GetConfigUsecase(configRepo),
+      _MockAddWeightLogUsecase(),
     );
     bloc.add(LoadOnboardingEvent());
     await bloc.stream.firstWhere((state) => state is OnboardingLoadedState);
@@ -66,10 +62,7 @@ void main() {
       addTearDown(bloc.close);
 
       final expected = LocaleUnitDefaults.fromLocale(Platform.localeName);
-      expect(
-        bloc.userSelection.heightUsesImperial,
-        expected.heightUsesImperial,
-      );
+      expect(bloc.userSelection.heightUsesImperial, expected.heightUsesImperial);
       expect(bloc.userSelection.bodyWeightUnit, expected.bodyWeightUnit);
       expect(bloc.userSelection.foodUsesImperial, expected.foodUsesImperial);
     });
@@ -119,15 +112,7 @@ void main() {
 
     test('the legacy imperial flag alone counts as a choice', () async {
       // Pre-split install: only usesImperialUnits was ever written.
-      final bloc = await loadedBloc(
-        ConfigDBO(
-          false,
-          false,
-          false,
-          AppThemeDBO.system,
-          usesImperialUnits: true,
-        ),
-      );
+      final bloc = await loadedBloc(ConfigDBO(false, false, false, AppThemeDBO.system, usesImperialUnits: true));
       addTearDown(bloc.close);
 
       expect(bloc.userSelection.heightUsesImperial, isTrue);
@@ -147,15 +132,7 @@ void main() {
       // ConfigDBO.empty() writes false here, so it cannot distinguish an
       // untouched install from a deliberate metric one.
       final usecase = GetConfigUsecase(
-        _FakeConfigRepository(
-          ConfigDBO(
-            false,
-            false,
-            false,
-            AppThemeDBO.system,
-            usesImperialUnits: false,
-          ),
-        ),
+        _FakeConfigRepository(ConfigDBO(false, false, false, AppThemeDBO.system, usesImperialUnits: false)),
       );
 
       expect(await usecase.hasExplicitUnitPreferences(), isFalse);
@@ -164,14 +141,7 @@ void main() {
     test('any split unit field being set counts', () async {
       final usecase = GetConfigUsecase(
         _FakeConfigRepository(
-          ConfigDBO(
-            false,
-            false,
-            false,
-            AppThemeDBO.system,
-            usesImperialUnits: null,
-            bodyWeightUnitIndex: 0,
-          ),
+          ConfigDBO(false, false, false, AppThemeDBO.system, usesImperialUnits: null, bodyWeightUnitIndex: 0),
         ),
       );
 
@@ -184,10 +154,7 @@ void main() {
       final bloc = await loadedBloc(freshConfig());
       addTearDown(bloc.close);
 
-      expect(
-        bloc.userSelection.foodSourceToggles,
-        defaultFoodSourceToggles(Platform.localeName),
-      );
+      expect(bloc.userSelection.foodSourceToggles, defaultFoodSourceToggles(Platform.localeName));
     });
 
     test('a stored set of toggles is restored untouched', () async {
@@ -199,14 +166,7 @@ void main() {
         'bls': true,
       };
       final bloc = await loadedBloc(
-        ConfigDBO(
-          false,
-          false,
-          false,
-          AppThemeDBO.system,
-          usesImperialUnits: null,
-          foodSourceToggles: stored,
-        ),
+        ConfigDBO(false, false, false, AppThemeDBO.system, usesImperialUnits: null, foodSourceToggles: stored),
       );
       addTearDown(bloc.close);
 
@@ -224,6 +184,7 @@ void main() {
         AddUserUsecase(_FakeUserRepository()),
         AddConfigUsecase(configRepo),
         GetConfigUsecase(configRepo),
+        _MockAddWeightLogUsecase(),
       );
       addTearDown(bloc.close);
 
@@ -257,6 +218,7 @@ void main() {
         AddUserUsecase(_FakeUserRepository()),
         AddConfigUsecase(configRepo),
         GetConfigUsecase(configRepo),
+        _MockAddWeightLogUsecase(),
       );
       addTearDown(bloc.close);
 
@@ -297,6 +259,10 @@ class _MutableConfigRepository implements ConfigRepository {
   Future<ConfigEntity> getConfig() async => ConfigEntity.fromConfigDBO(dbo);
 
   @override
-  noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError(invocation.memberName.toString());
+  noSuchMethod(Invocation invocation) => throw UnimplementedError(invocation.memberName.toString());
+}
+
+class _MockAddWeightLogUsecase extends Mock implements AddWeightLogUsecase {
+  @override
+  Future<void> addEntry(WeightLogEntity entry) async {}
 }
