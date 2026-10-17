@@ -1,0 +1,13 @@
+--- lib/features/profile/presentation/weight_history_screen.dart
++++ lib/features/profile/presentation/weight_history_screen.dart
+@@ -220,10 +220,16 @@
+   Future<void> _onAddEntry() async {
+     final initialWeightKg = _entries.isNotEmpty
+         ? _entries.first.weightKg
+         : _getUserUsecase != null
+         ? (await _getUserUsecase!.getUserData()).weightKG
+         : 70.0;
+     if (!mounted) return;
+     final result = await showDialog<_NewWeightEntry>(
+       context: context,
+       builder: (context) => _AddWeightEntryDialog(

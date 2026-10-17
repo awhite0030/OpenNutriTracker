@@ -221,7 +221,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
     final initialWeightKg = _entries.isNotEmpty
         ? _entries.first.weightKg
         : _getUserUsecase != null
-        ? (await _getUserUsecase.getUserData()).weightKG
+        ? (await _getUserUsecase!.getUserData()).weightKG
         : 70.0;
     if (!mounted) return;
     final result = await showDialog<_NewWeightEntry>(
