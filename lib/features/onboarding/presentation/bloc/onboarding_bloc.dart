@@ -15,6 +15,8 @@ import 'package:opennutritracker/core/utils/calc/calorie_goal_calc.dart';
 import 'package:opennutritracker/core/utils/calc/macro_calc.dart';
 import 'package:opennutritracker/core/utils/url_const.dart';
 import 'package:opennutritracker/features/onboarding/domain/entity/user_data_mask_entity.dart';
+import 'package:opennutritracker/core/domain/usecase/add_weight_log_usecase.dart';
+import 'package:opennutritracker/core/domain/entity/weight_log_entity.dart';
 
 part 'onboarding_event.dart';
 
@@ -28,12 +30,10 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
   final AddUserUsecase _addUserUsecase;
   final AddConfigUsecase _addConfigUsecase;
   final GetConfigUsecase _getConfigUsecase;
+  final AddWeightLogUsecase _addWeightLogUsecase;
 
-  OnboardingBloc(
-    this._addUserUsecase,
-    this._addConfigUsecase,
-    this._getConfigUsecase,
-  ) : super(OnboardingInitialState()) {
+  OnboardingBloc(this._addUserUsecase, this._addConfigUsecase, this._getConfigUsecase, this._addWeightLogUsecase)
+    : super(OnboardingInitialState()) {
     on<LoadOnboardingEvent>((event, emit) async {
       emit(OnboardingLoadingState());
       await _seedUnitSelection();
@@ -84,14 +84,10 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
   Future<void> _seedFoodSourceSelection() async {
     if (await _getConfigUsecase.hasExplicitFoodSourceToggles()) {
       final config = await _getConfigUsecase.getConfig();
-      userSelection.foodSourceToggles = Map<String, bool>.from(
-        config.foodSourceToggles,
-      );
+      userSelection.foodSourceToggles = Map<String, bool>.from(config.foodSourceToggles);
       return;
     }
-    userSelection.foodSourceToggles = defaultFoodSourceToggles(
-      Platform.localeName,
-    );
+    userSelection.foodSourceToggles = defaultFoodSourceToggles(Platform.localeName);
   }
 
   Future<void> saveOnboardingData(
@@ -107,6 +103,12 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     required int? accentColor,
   }) async {
     await _addUserUsecase.addUser(userEntity);
+
+    // Add initial weight to log
+    final today = DateTime.now();
+    await _addWeightLogUsecase.addEntry(
+      WeightLogEntity(date: DateTime(today.year, today.month, today.day), weightKg: userEntity.weightKG, note: null),
+    );
     // Privacy policy is required to leave the intro page, so completing
     // onboarding always means the user accepted it. Persist that – the flag
     // previously only lived in ephemeral intro UI state.
@@ -116,12 +118,8 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     // one, and telling a brand-new user that the document they just read has
     // changed is the small wrongness that makes the next notice trusted less
     // (#887).
-    await _addConfigUsecase.setConfigPolicyNoticeRevisionSeen(
-      URLConst.policyRevision,
-    );
-    await _addConfigUsecase.setConfigHasAcceptedAnonymousData(
-      hasAcceptedDataCollection,
-    );
+    await _addConfigUsecase.setConfigPolicyNoticeRevisionSeen(URLConst.policyRevision);
+    await _addConfigUsecase.setConfigHasAcceptedAnonymousData(hasAcceptedDataCollection);
     await _addConfigUsecase.setConfigUsesImperialHeightUnits(heightImperial);
     await _addConfigUsecase.setConfigBodyWeightUnit(bodyWeightUnit);
     // Food units are chosen explicitly during onboarding, so someone on feet

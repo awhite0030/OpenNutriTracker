@@ -1,3 +1,8 @@
+import 'package:opennutritracker/features/trends/presentation/bloc/trends_bloc.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
+import 'package:get_it/get_it.dart';
+import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
+import 'package:mockito/mockito.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opennutritracker/core/domain/entity/user_entity.dart';
@@ -35,8 +40,7 @@ class _FakeSettingsBloc extends Fake implements SettingsBloc {
 
 class _FakeProfileBloc extends Fake implements ProfileBloc {
   @override
-  Future<UserEntity> getUser() async =>
-      UserEntityFixtures.youngSedentaryMaleWantingToMaintainWeight;
+  Future<UserEntity> getUser() async => UserEntityFixtures.youngSedentaryMaleWantingToMaintainWeight;
 }
 
 class _FakeHomeBloc extends Fake implements HomeBloc {
@@ -48,13 +52,19 @@ void main() {
   late _FakeSettingsBloc settingsBloc;
 
   setUp(() {
+    if (!GetIt.I.isRegistered<DiaryBloc>()) {
+      GetIt.I.registerFactory<DiaryBloc>(() => _MockDiaryBloc());
+      if (!GetIt.I.isRegistered<CalendarDayBloc>()) {
+        GetIt.I.registerFactory<CalendarDayBloc>(() => _MockCalendarDayBloc());
+      }
+      if (!GetIt.I.isRegistered<TrendsBloc>()) {
+        GetIt.I.registerFactory<TrendsBloc>(() => _MockTrendsBloc());
+      }
+    }
     settingsBloc = _FakeSettingsBloc();
   });
 
-  Future<void> openDialog(
-    WidgetTester tester, {
-    bool usesKilojoules = false,
-  }) async {
+  Future<void> openDialog(WidgetTester tester, {bool usesKilojoules = false}) async {
     await tester.pumpWidget(
       ChangeNotifierProvider<EnergyUnitProvider>(
         create: (_) => EnergyUnitProvider(usesKilojoules: usesKilojoules),
@@ -85,23 +95,18 @@ void main() {
 
   // #1347: typing a value and tapping OK without the keyboard's Done key
   // used to save the slider's last value instead of the typed one.
-  testWidgets(
-    'saves the typed kcal adjustment when OK is tapped without Done',
-    (tester) async {
-      await openDialog(tester);
+  testWidgets('saves the typed kcal adjustment when OK is tapped without Done', (tester) async {
+    await openDialog(tester);
 
-      await tester.enterText(find.byType(TextField), '250');
-      await tester.tap(find.text(l10nEn.dialogOKLabel));
-      await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '250');
+    await tester.tap(find.text(l10nEn.dialogOKLabel));
+    await tester.pumpAndSettle();
 
-      expect(settingsBloc.savedAdjustments, [250]);
-      expect(find.byType(KcalAdjustmentDialog), findsNothing);
-    },
-  );
+    expect(settingsBloc.savedAdjustments, [250]);
+    expect(find.byType(KcalAdjustmentDialog), findsNothing);
+  });
 
-  testWidgets('converts a typed kJ adjustment to kcal on OK without Done', (
-    tester,
-  ) async {
+  testWidgets('converts a typed kJ adjustment to kcal on OK without Done', (tester) async {
     await openDialog(tester, usesKilojoules: true);
 
     await tester.enterText(find.byType(TextField), '1000');
@@ -126,4 +131,22 @@ void main() {
 
     expect(settingsBloc.savedAdjustments, [100]);
   });
+}
+
+class _MockDiaryBloc extends Mock implements DiaryBloc {}
+
+class _MockCalendarDayBloc extends Mock implements CalendarDayBloc {
+  @override
+  Stream<CalendarDayState> get stream => const Stream.empty();
+
+  @override
+  Future<void> close() async {}
+}
+
+class _MockTrendsBloc extends Mock implements TrendsBloc {
+  @override
+  Stream<TrendsState> get stream => const Stream.empty();
+
+  @override
+  Future<void> close() async {}
 }
