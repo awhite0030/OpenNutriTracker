@@ -80,20 +80,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // detection on app resume respects the user's configured boundary.
       // The follow-up to #139 routes the boundary through total minutes
       // so a 04:30 setting is honoured exactly.
-      currentDay = DayBoundaryCalc.currentLogicalDayMinutes(
-        configData.dayStartOffsetTotalMinutes,
-      );
+      currentDay = DayBoundaryCalc.currentLogicalDayMinutes(configData.dayStartOffsetTotalMinutes);
       final usesImperialUnits = configData.usesImperialFoodUnits;
       final bodyWeightUnit = configData.bodyWeightUnit;
       final showDisclaimerDialog = !configData.hasAcceptedDisclaimer;
       final showMealMacros = configData.showMealMacros;
       final showActivityTracking = configData.showActivityTracking;
 
-      final breakfastIntakeList = await _getIntakeUsecase
-          .getTodayBreakfastIntake(
-            dayStartOffsetHours: dayStartOffsetHours,
-            dayStartOffsetMinutes: dayStartOffsetMinutes,
-          );
+      final breakfastIntakeList = await _getIntakeUsecase.getTodayBreakfastIntake(
+        dayStartOffsetHours: dayStartOffsetHours,
+        dayStartOffsetMinutes: dayStartOffsetMinutes,
+      );
       final totalBreakfastKcal = getTotalKcal(breakfastIntakeList);
       final totalBreakfastCarbs = getTotalCarbs(breakfastIntakeList);
       final totalBreakfastFats = getTotalFats(breakfastIntakeList);
@@ -126,79 +123,36 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final totalSnackFats = getTotalFats(snackIntakeList);
       final totalSnackProteins = getTotalProteins(snackIntakeList);
 
-      final totalKcalIntake =
-          totalBreakfastKcal +
-          totalLunchKcal +
-          totalDinnerKcal +
-          totalSnackKcal;
-      final totalCarbsIntake =
-          totalBreakfastCarbs +
-          totalLunchCarbs +
-          totalDinnerCarbs +
-          totalSnackCarbs;
-      final totalFatsIntake =
-          totalBreakfastFats +
-          totalLunchFats +
-          totalDinnerFats +
-          totalSnackFats;
+      final totalKcalIntake = totalBreakfastKcal + totalLunchKcal + totalDinnerKcal + totalSnackKcal;
+      final totalCarbsIntake = totalBreakfastCarbs + totalLunchCarbs + totalDinnerCarbs + totalSnackCarbs;
+      final totalFatsIntake = totalBreakfastFats + totalLunchFats + totalDinnerFats + totalSnackFats;
       final totalProteinsIntake =
-          totalBreakfastProteins +
-          totalLunchProteins +
-          totalDinnerProteins +
-          totalSnackProteins;
+          totalBreakfastProteins + totalLunchProteins + totalDinnerProteins + totalSnackProteins;
 
       final userActivities = await _getUserActivityUsecase.getTodayUserActivity(
         dayStartOffsetHours: dayStartOffsetHours,
         dayStartOffsetMinutes: dayStartOffsetMinutes,
       );
-      final totalKcalActivities = userActivities
-          .map((activity) => activity.burnedKcal)
-          .toList()
-          .sum;
+      final totalKcalActivities = userActivities.map((activity) => activity.burnedKcal).toList().sum;
 
       final waterIntakes = await _getWaterIntakeUsecase.getTodayEntries(
         dayStartOffsetTotalMinutes: configData.dayStartOffsetTotalMinutes,
       );
-      final totalWaterMl = waterIntakes
-          .map((entry) => entry.amountMl)
-          .fold<int>(0, (sum, ml) => sum + ml);
+      final totalWaterMl = waterIntakes.map((entry) => entry.amountMl).fold<int>(0, (sum, ml) => sum + ml);
 
       final user = await _getUserUsecase.getUserData();
-      final totalKcalGoal = await _getKcalGoalUsecase.getKcalGoal(
-        userEntity: user,
-      );
-      final totalCarbsGoal = await _getMacroGoalUsecase.getCarbsGoal(
-        totalKcalGoal,
-      );
-      final totalFatsGoal = await _getMacroGoalUsecase.getFatsGoal(
-        totalKcalGoal,
-      );
-      final totalProteinsGoal = await _getMacroGoalUsecase.getProteinsGoal(
-        totalKcalGoal,
-      );
+      final totalKcalGoal = await _getKcalGoalUsecase.getKcalGoal(userEntity: user);
+      final totalCarbsGoal = await _getMacroGoalUsecase.getCarbsGoal(totalKcalGoal);
+      final totalFatsGoal = await _getMacroGoalUsecase.getFatsGoal(totalKcalGoal);
+      final totalProteinsGoal = await _getMacroGoalUsecase.getProteinsGoal(totalKcalGoal);
 
-      final totalKcalLeft = CalorieGoalCalc.getDailyKcalLeft(
-        totalKcalGoal,
-        totalKcalIntake,
-      );
+      final totalKcalLeft = CalorieGoalCalc.getDailyKcalLeft(totalKcalGoal, totalKcalIntake);
 
       // #150: derive recommended per-meal kcal targets from the saved share.
-      final breakfastKcalTarget = configData.targetKcalForMeal(
-        ConfigEntity.mealKeyBreakfast,
-        totalKcalGoal,
-      );
-      final lunchKcalTarget = configData.targetKcalForMeal(
-        ConfigEntity.mealKeyLunch,
-        totalKcalGoal,
-      );
-      final dinnerKcalTarget = configData.targetKcalForMeal(
-        ConfigEntity.mealKeyDinner,
-        totalKcalGoal,
-      );
-      final snackKcalTarget = configData.targetKcalForMeal(
-        ConfigEntity.mealKeySnack,
-        totalKcalGoal,
-      );
+      final breakfastKcalTarget = configData.targetKcalForMeal(ConfigEntity.mealKeyBreakfast, totalKcalGoal);
+      final lunchKcalTarget = configData.targetKcalForMeal(ConfigEntity.mealKeyLunch, totalKcalGoal);
+      final dinnerKcalTarget = configData.targetKcalForMeal(ConfigEntity.mealKeyDinner, totalKcalGoal);
+      final snackKcalTarget = configData.targetKcalForMeal(ConfigEntity.mealKeySnack, totalKcalGoal);
 
       emit(
         HomeLoadedState(
@@ -227,35 +181,25 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           lunchKcalTarget: lunchKcalTarget,
           dinnerKcalTarget: dinnerKcalTarget,
           snackKcalTarget: snackKcalTarget,
-          breakfastSharePct:
-              configData.mealKcalSharesPct[ConfigEntity.mealKeyBreakfast] ?? 0,
-          lunchSharePct:
-              configData.mealKcalSharesPct[ConfigEntity.mealKeyLunch] ?? 0,
-          dinnerSharePct:
-              configData.mealKcalSharesPct[ConfigEntity.mealKeyDinner] ?? 0,
-          snackSharePct:
-              configData.mealKcalSharesPct[ConfigEntity.mealKeySnack] ?? 0,
+          breakfastSharePct: configData.mealKcalSharesPct[ConfigEntity.mealKeyBreakfast] ?? 0,
+          lunchSharePct: configData.mealKcalSharesPct[ConfigEntity.mealKeyLunch] ?? 0,
+          dinnerSharePct: configData.mealKcalSharesPct[ConfigEntity.mealKeyDinner] ?? 0,
+          snackSharePct: configData.mealKcalSharesPct[ConfigEntity.mealKeySnack] ?? 0,
           userGender: user.gender,
           userCaloriesProfile: user.caloriesProfile,
           waterMlToday: totalWaterMl,
-          waterGoalMl: configData.effectiveDailyWaterGoalMl(
-            user.gender,
-            caloriesProfile: user.caloriesProfile,
-          ),
+          waterGoalMl: configData.effectiveDailyWaterGoalMl(user.gender, caloriesProfile: user.caloriesProfile),
           waterIntakes: waterIntakes,
         ),
       );
     });
   }
 
-  double getTotalKcal(List<IntakeEntity> intakeList) =>
-      intakeList.map((intake) => intake.totalKcal).toList().sum;
+  double getTotalKcal(List<IntakeEntity> intakeList) => intakeList.map((intake) => intake.totalKcal).toList().sum;
 
-  double getTotalCarbs(List<IntakeEntity> intakeList) =>
-      intakeList.map((intake) => intake.totalCarbsGram).toList().sum;
+  double getTotalCarbs(List<IntakeEntity> intakeList) => intakeList.map((intake) => intake.totalCarbsGram).toList().sum;
 
-  double getTotalFats(List<IntakeEntity> intakeList) =>
-      intakeList.map((intake) => intake.totalFatsGram).toList().sum;
+  double getTotalFats(List<IntakeEntity> intakeList) => intakeList.map((intake) => intake.totalFatsGram).toList().sum;
 
   double getTotalProteins(List<IntakeEntity> intakeList) =>
       intakeList.map((intake) => intake.totalProteinsGram).toList().sum;
@@ -264,18 +208,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     _addConfigUsecase.setConfigDisclaimer(acceptedDisclaimer);
   }
 
-  Future<void> updateIntakeItem(
-    String intakeId,
-    Map<String, dynamic> fields,
-  ) async {
+  Future<void> updateIntakeItem(String intakeId, Map<String, dynamic> fields) async {
     final dateTime = await _currentLogicalDay();
     // Get old intake values
     final oldIntakeObject = await _getIntakeUsecase.getIntakeById(intakeId);
     if (oldIntakeObject == null) return;
-    final newIntakeObject = await _updateIntakeUsecase.updateIntake(
-      intakeId,
-      fields,
-    );
+    final newIntakeObject = await _updateIntakeUsecase.updateIntake(intakeId, fields);
     if (newIntakeObject == null) return;
     if (oldIntakeObject.amount > newIntakeObject.amount) {
       // Amounts shrunk
@@ -285,13 +223,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       );
       await _addTrackedDayUseCase.removeDayMacrosTracked(
         dateTime,
-        carbsTracked:
-            oldIntakeObject.totalCarbsGram - newIntakeObject.totalCarbsGram,
-        fatTracked:
-            oldIntakeObject.totalFatsGram - newIntakeObject.totalFatsGram,
-        proteinTracked:
-            oldIntakeObject.totalProteinsGram -
-            newIntakeObject.totalProteinsGram,
+        carbsTracked: oldIntakeObject.totalCarbsGram - newIntakeObject.totalCarbsGram,
+        fatTracked: oldIntakeObject.totalFatsGram - newIntakeObject.totalFatsGram,
+        proteinTracked: oldIntakeObject.totalProteinsGram - newIntakeObject.totalProteinsGram,
       );
     } else if (newIntakeObject.amount > oldIntakeObject.amount) {
       // Amounts gained
@@ -301,13 +235,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       );
       await _addTrackedDayUseCase.addDayMacrosTracked(
         dateTime,
-        carbsTracked:
-            newIntakeObject.totalCarbsGram - oldIntakeObject.totalCarbsGram,
-        fatTracked:
-            newIntakeObject.totalFatsGram - oldIntakeObject.totalFatsGram,
-        proteinTracked:
-            newIntakeObject.totalProteinsGram -
-            oldIntakeObject.totalProteinsGram,
+        carbsTracked: newIntakeObject.totalCarbsGram - oldIntakeObject.totalCarbsGram,
+        fatTracked: newIntakeObject.totalFatsGram - oldIntakeObject.totalFatsGram,
+        proteinTracked: newIntakeObject.totalProteinsGram - oldIntakeObject.totalProteinsGram,
       );
     }
     _updateDiaryPage(dateTime);
@@ -316,10 +246,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> deleteIntakeItem(IntakeEntity intakeEntity) async {
     final dateTime = await _currentLogicalDay();
     await _deleteIntakeUsecase.deleteIntake(intakeEntity);
-    await _addTrackedDayUseCase.removeDayCaloriesTracked(
-      dateTime,
-      intakeEntity.totalKcal,
-    );
+    await _addTrackedDayUseCase.removeDayCaloriesTracked(dateTime, intakeEntity.totalKcal);
     await _addTrackedDayUseCase.removeDayMacrosTracked(
       dateTime,
       carbsTracked: intakeEntity.totalCarbsGram,
@@ -333,51 +260,38 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> deleteUserActivityItem(UserActivityEntity activityEntity) async {
     final dateTime = await _currentLogicalDay();
     await _deleteUserActivityUsecase.deleteUserActivity(activityEntity);
-    _addTrackedDayUseCase.reduceDayCalorieGoal(
-      dateTime,
-      activityEntity.burnedKcal,
-    );
+    await _addTrackedDayUseCase.reduceDayCalorieGoal(dateTime, activityEntity.burnedKcal);
 
     final carbsAmount = MacroCalc.getTotalCarbsGoal(activityEntity.burnedKcal);
     final fatAmount = MacroCalc.getTotalFatsGoal(activityEntity.burnedKcal);
-    final proteinAmount = MacroCalc.getTotalProteinsGoal(
-      activityEntity.burnedKcal,
-    );
+    final proteinAmount = MacroCalc.getTotalProteinsGoal(activityEntity.burnedKcal);
 
-    _addTrackedDayUseCase.reduceDayMacroGoals(
+    await _addTrackedDayUseCase.reduceDayMacroGoals(
       dateTime,
       carbsAmount: carbsAmount,
       fatAmount: fatAmount,
       proteinAmount: proteinAmount,
     );
     _updateDiaryPage(dateTime);
-    add(
-      const LoadItemsEvent(),
-    ); // #208: Reload home page to remove activity indicator
+    add(const LoadItemsEvent()); // #208: Reload home page to remove activity indicator
   }
 
-  Future<void> updateUserActivityItem(
-    UserActivityEntity activityEntity,
-    double newDuration,
-  ) async {
+  Future<void> updateUserActivityItem(UserActivityEntity activityEntity, double newDuration) async {
     final dateTime = await _currentLogicalDay();
-    final newActivity = await _updateUserActivityUsecase.updateUserActivity(
-      activityEntity,
-      newDuration,
-    );
+    final newActivity = await _updateUserActivityUsecase.updateUserActivity(activityEntity, newDuration);
     assert(newActivity != null);
     final kcalDiff = newActivity!.burnedKcal - activityEntity.burnedKcal;
     if (kcalDiff > 0) {
-      _addTrackedDayUseCase.increaseDayCalorieGoal(dateTime, kcalDiff);
-      _addTrackedDayUseCase.increaseDayMacroGoals(
+      await _addTrackedDayUseCase.increaseDayCalorieGoal(dateTime, kcalDiff);
+      await _addTrackedDayUseCase.increaseDayMacroGoals(
         dateTime,
         carbsAmount: MacroCalc.getTotalCarbsGoal(kcalDiff),
         fatAmount: MacroCalc.getTotalFatsGoal(kcalDiff),
         proteinAmount: MacroCalc.getTotalProteinsGoal(kcalDiff),
       );
     } else if (kcalDiff < 0) {
-      _addTrackedDayUseCase.reduceDayCalorieGoal(dateTime, kcalDiff.abs());
-      _addTrackedDayUseCase.reduceDayMacroGoals(
+      await _addTrackedDayUseCase.reduceDayCalorieGoal(dateTime, kcalDiff.abs());
+      await _addTrackedDayUseCase.reduceDayMacroGoals(
         dateTime,
         carbsAmount: MacroCalc.getTotalCarbsGoal(kcalDiff.abs()),
         fatAmount: MacroCalc.getTotalFatsGoal(kcalDiff.abs()),
@@ -429,8 +343,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   /// total-minutes value so the minute component (0-59) is honoured.
   Future<DateTime> _currentLogicalDay() async {
     final config = await _getConfigUsecase.getConfig();
-    return DayBoundaryCalc.currentLogicalDayMinutes(
-      config.dayStartOffsetTotalMinutes,
-    );
+    return DayBoundaryCalc.currentLogicalDayMinutes(config.dayStartOffsetTotalMinutes);
   }
 }
