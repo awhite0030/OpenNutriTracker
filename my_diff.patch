@@ -1,0 +1,340 @@
+diff --git a/lib/features/settings/presentation/bloc/settings_bloc.dart b/lib/features/settings/presentation/bloc/settings_bloc.dart
+index d3e76f8..51c1176 100644
+--- a/lib/features/settings/presentation/bloc/settings_bloc.dart
++++ b/lib/features/settings/presentation/bloc/settings_bloc.dart
+@@ -47,8 +47,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
+       final appVersion = await AppConst.getVersionNumber();
+       final usesImperialUnits = userConfig.usesImperialUnits;
+       final offCacheCount = _cachedOffMealDataSource.count;
+-      final offCacheSizeBytes = await _cachedOffMealDataSource
+-          .getStorageSizeBytes();
++      final offCacheSizeBytes = await _cachedOffMealDataSource.getStorageSizeBytes();
+
+       emit(
+         SettingsLoadedState(
+@@ -88,9 +87,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
+   }
+
+   Future<void> setHasAcceptedAnonymousData(bool hasAcceptedAnonymousData) {
+-    return _addConfigUsecase.setConfigHasAcceptedAnonymousData(
+-      hasAcceptedAnonymousData,
+-    );
++    return _addConfigUsecase.setConfigHasAcceptedAnonymousData(hasAcceptedAnonymousData);
+   }
+
+   void setAppTheme(AppThemeEntity appTheme) async {
+@@ -227,11 +224,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
+     await _addConfigUsecase.setConfigDailyWaterGoalMl(goalMl);
+   }
+
+-  Future<void> setMacroGoals(
+-    double carbGoalPct,
+-    double proteinGoalPct,
+-    double fatGoalPct,
+-  ) async {
++  Future<void> setMacroGoals(double carbGoalPct, double proteinGoalPct, double fatGoalPct) async {
+     await _addConfigUsecase.setConfigMacroGoalPct(
+       carbGoalPct.toInt() / 100,
+       proteinGoalPct.toInt() / 100,
+@@ -292,13 +285,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
+
+   Future<void> updateTrackedDay(DateTime day) async {
+     final totalKcalGoal = await _getKcalGoalUsecase.getKcalGoal();
+-    final totalCarbsGoal = await _getMacroGoalUsecase.getCarbsGoal(
+-      totalKcalGoal,
+-    );
++    final totalCarbsGoal = await _getMacroGoalUsecase.getCarbsGoal(totalKcalGoal);
+     final totalFatGoal = await _getMacroGoalUsecase.getFatsGoal(totalKcalGoal);
+-    final totalProteinGoal = await _getMacroGoalUsecase.getProteinsGoal(
+-      totalKcalGoal,
+-    );
++    final totalProteinGoal = await _getMacroGoalUsecase.getProteinsGoal(totalKcalGoal);
+
+     final hasTrackedDay = await _addTrackedDayUsecase.hasTrackedDay(day);
+
+@@ -317,7 +306,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
+       // writes like setTodayNutrientGoals find no row and are
+       // silently skipped (#1348). Same creation pattern as
+       // MealDetailBloc/ActivityDetailBloc.
+-      await _addTrackedDayUsecase.addNewTrackedDay(
++      await _addTrackedDayUsecase.addNewTrackedDayIfAbsent(
+         day,
+         totalKcalGoal,
+         totalCarbsGoal,
+diff --git a/test/features/settings/presentation/bloc/settings_bloc_update_tracked_day_test.dart b/test/features/settings/presentation/bloc/settings_bloc_update_tracked_day_test.dart
+index 0808a41..4298452 100644
+--- a/test/features/settings/presentation/bloc/settings_bloc_update_tracked_day_test.dart
++++ b/test/features/settings/presentation/bloc/settings_bloc_update_tracked_day_test.dart
+@@ -28,13 +28,19 @@ class _FakeAddTrackedDayUsecase extends Fake implements AddTrackedDayUsecase {
+     double totalFatGoal,
+     double totalProteinGoal,
+   ) async {
+-    addedDays.add([
+-      day,
+-      totalKcalGoal,
+-      totalCarbsGoal,
+-      totalFatGoal,
+-      totalProteinGoal,
+-    ]);
++    addedDays.add([day, totalKcalGoal, totalCarbsGoal, totalFatGoal, totalProteinGoal]);
++  }
++
++  @override
++  Future<bool> addNewTrackedDayIfAbsent(
++    DateTime day,
++    double totalKcalGoal,
++    double totalCarbsGoal,
++    double totalFatGoal,
++    double totalProteinGoal,
++  ) async {
++    addedDays.add([day, totalKcalGoal, totalCarbsGoal, totalFatGoal, totalProteinGoal]);
++    return true;
+   }
+
+   @override
+@@ -43,12 +49,7 @@ class _FakeAddTrackedDayUsecase extends Fake implements AddTrackedDayUsecase {
+   }
+
+   @override
+-  Future<void> updateDayMacroGoals(
+-    DateTime day, {
+-    double? carbsGoal,
+-    double? fatGoal,
+-    double? proteinGoal,
+-  }) async {
++  Future<void> updateDayMacroGoals(DateTime day, {double? carbsGoal, double? fatGoal, double? proteinGoal}) async {
+     macroGoalUpdates.add((day, carbsGoal, fatGoal, proteinGoal));
+   }
+ }
+@@ -77,8 +78,7 @@ class _FakeGetConfigUsecase extends Fake implements GetConfigUsecase {}
+
+ class _FakeAddConfigUsecase extends Fake implements AddConfigUsecase {}
+
+-class _FakeRemoteSearchCacheDataSource extends Fake
+-    implements RemoteSearchCacheDataSource {}
++class _FakeRemoteSearchCacheDataSource extends Fake implements RemoteSearchCacheDataSource {}
+
+ class _FakeGetTrackedDayUsecase extends Fake implements GetTrackedDayUsecase {}
+
+diff --git a/test/unit_test/meal_detail_bloc_test.dart b/test/unit_test/meal_detail_bloc_test.dart
+index 5fbdf2b..074d7c8 100644
+--- a/test/unit_test/meal_detail_bloc_test.dart
++++ b/test/unit_test/meal_detail_bloc_test.dart
+@@ -78,9 +78,7 @@ void main() {
+     });
+
+     group('CT4 - Conversão Serving - Com quantidade', () {
+-      test(
+-          'deve converter quantidade baseada em serving quando servingQuantity não é nulo',
+-          () {
++      test('deve converter quantidade baseada em serving quando servingQuantity não é nulo', () {
+         // Arrange
+         final selectedUnit = 'serving';
+         final quantity = 2.0;
+@@ -178,8 +176,7 @@ void main() {
+         // Arrange
+         final convertedQuantity = 100.0;
+         final energyPerUnit = testMeal.nutriments.energyPerUnit ?? 0; // 2.5
+-        final carbsPerUnit =
+-            testMeal.nutriments.carbohydratesPerUnit ?? 0; // 0.5
++        final carbsPerUnit = testMeal.nutriments.carbohydratesPerUnit ?? 0; // 0.5
+         final fatPerUnit = testMeal.nutriments.fatPerUnit ?? 0; // 0.1
+         final proteinPerUnit = testMeal.nutriments.proteinsPerUnit ?? 0; // 0.2
+
+@@ -198,8 +195,7 @@ void main() {
+     });
+
+     group('CT10 - Erro de Parsing', () {
+-      test('deve capturar exceção quando quantidade não é um número válido',
+-          () {
++      test('deve capturar exceção quando quantidade não é um número válido', () {
+         // Arrange
+         final selectedTotalQuantity = 'abc';
+
+@@ -236,13 +232,10 @@ void main() {
+         );
+
+         final convertedQuantity = 100.0;
+-        final energyPerUnit =
+-            mealWithNullNutriments.nutriments.energyPerUnit ?? 0;
+-        final carbsPerUnit =
+-            mealWithNullNutriments.nutriments.carbohydratesPerUnit ?? 0;
++        final energyPerUnit = mealWithNullNutriments.nutriments.energyPerUnit ?? 0;
++        final carbsPerUnit = mealWithNullNutriments.nutriments.carbohydratesPerUnit ?? 0;
+         final fatPerUnit = mealWithNullNutriments.nutriments.fatPerUnit ?? 0;
+-        final proteinPerUnit =
+-            mealWithNullNutriments.nutriments.proteinsPerUnit ?? 0;
++        final proteinPerUnit = mealWithNullNutriments.nutriments.proteinsPerUnit ?? 0;
+
+         // Act
+         final totalKcal = convertedQuantity * energyPerUnit;
+@@ -282,13 +275,10 @@ void main() {
+         );
+
+         final convertedQuantity = 100.0;
+-        final energyPerUnit =
+-            mealWithZeroNutriments.nutriments.energyPerUnit ?? 0;
+-        final carbsPerUnit =
+-            mealWithZeroNutriments.nutriments.carbohydratesPerUnit ?? 0;
++        final energyPerUnit = mealWithZeroNutriments.nutriments.energyPerUnit ?? 0;
++        final carbsPerUnit = mealWithZeroNutriments.nutriments.carbohydratesPerUnit ?? 0;
+         final fatPerUnit = mealWithZeroNutriments.nutriments.fatPerUnit ?? 0;
+-        final proteinPerUnit =
+-            mealWithZeroNutriments.nutriments.proteinsPerUnit ?? 0;
++        final proteinPerUnit = mealWithZeroNutriments.nutriments.proteinsPerUnit ?? 0;
+
+         // Act
+         final totalKcal = convertedQuantity * energyPerUnit;
+@@ -308,8 +298,7 @@ void main() {
+         final selectedTotalQuantity = '100,5';
+
+         // Act
+-        final quantity =
+-            double.parse(selectedTotalQuantity.replaceAll(',', '.'));
++        final quantity = double.parse(selectedTotalQuantity.replaceAll(',', '.'));
+         final convertedQuantity = quantity;
+         final energyPerUnit = testMeal.nutriments.energyPerUnit ?? 0;
+         final totalKcal = convertedQuantity * energyPerUnit;
+@@ -358,8 +347,7 @@ void main() {
+         expect(result3, isFalse);
+
+         // Linha 1 (VV) - CT4
+-        final servingResult1 =
+-            'serving' == 'serving' && testMeal.servingQuantity != null;
++        final servingResult1 = 'serving' == 'serving' && testMeal.servingQuantity != null;
+         expect(servingResult1, isTrue);
+
+         // Linha 2 (VF) - CT5
+@@ -376,8 +364,7 @@ void main() {
+           nutriments: testNutriments,
+           source: MealSourceEntity.custom,
+         );
+-        final servingResult2 = 'serving' == 'serving' &&
+-            mealWithoutServing.servingQuantity != null;
++        final servingResult2 = 'serving' == 'serving' && mealWithoutServing.servingQuantity != null;
+         expect(servingResult2, isFalse);
+
+         // Linha 1 (V) - CT6
+diff --git a/test/unit_test/tracked_day_create_if_absent_test.dart b/test/unit_test/tracked_day_create_if_absent_test.dart
+index 9c563f9..a6a65b9 100644
+--- a/test/unit_test/tracked_day_create_if_absent_test.dart
++++ b/test/unit_test/tracked_day_create_if_absent_test.dart
+@@ -91,8 +91,7 @@ class _NoopAddIntakeUsecase extends Fake implements AddIntakeUsecase {
+   Future<void> addIntake(IntakeEntity intakeEntity) async {}
+ }
+
+-class _NoopAddUserActivityUsecase extends Fake
+-    implements AddUserActivityUsecase {
++class _NoopAddUserActivityUsecase extends Fake implements AddUserActivityUsecase {
+   @override
+   Future<void> addUserActivity(UserActivityEntity userActivityEntity) async {}
+ }
+@@ -101,16 +100,13 @@ class _FakeGetTrackedDayUsecase extends Fake implements GetTrackedDayUsecase {}
+
+ class _FakeProductsRepository extends Fake implements ProductsRepository {}
+
+-class _FakeRemoteSearchCacheDataSource extends Fake
+-    implements RemoteSearchCacheDataSource {}
++class _FakeRemoteSearchCacheDataSource extends Fake implements RemoteSearchCacheDataSource {}
+
+ class _FakeGetUserUsecase extends Fake implements GetUserUsecase {}
+
+-class _FakeAddCustomActivityTemplateUsecase extends Fake
+-    implements AddCustomActivityTemplateUsecase {}
++class _FakeAddCustomActivityTemplateUsecase extends Fake implements AddCustomActivityTemplateUsecase {}
+
+-class _FakeGetCustomActivityTemplatesUsecase extends Fake
+-    implements GetCustomActivityTemplatesUsecase {}
++class _FakeGetCustomActivityTemplatesUsecase extends Fake implements GetCustomActivityTemplatesUsecase {}
+
+ class _FakeBuildContext extends Fake implements BuildContext {}
+
+@@ -202,9 +198,7 @@ void main() {
+       // writing, which is the window a check-then-create left open.
+       final results = await Future.wait([
+         dataSource.saveTrackedDayIfAbsent(_rowWithTotals()),
+-        dataSource.saveTrackedDayIfAbsent(
+-          TrackedDayDBO(day: _day, calorieGoal: 1800, caloriesTracked: 0),
+-        ),
++        dataSource.saveTrackedDayIfAbsent(TrackedDayDBO(day: _day, calorieGoal: 1800, caloriesTracked: 0)),
+       ]);
+
+       expect(results, [isTrue, isFalse]);
+@@ -221,13 +215,7 @@ void main() {
+     // Meanwhile another writer creates the day and logs 500 kcal on it.
+     await dataSource.saveTrackedDay(_rowWithTotals());
+     // The creator acts on its stale answer.
+-    final created = await usecase.addNewTrackedDayIfAbsent(
+-      _day,
+-      1800,
+-      200,
+-      60,
+-      90,
+-    );
++    final created = await usecase.addNewTrackedDayIfAbsent(_day, 1800, 200, 60, 90);
+
+     expect(created, isFalse);
+     expectTotalsKept(await dataSource.getTrackedDay(_day));
+@@ -252,14 +240,7 @@ void main() {
+       );
+       addTearDown(bloc.close);
+
+-      await bloc.addIntake(
+-        _FakeBuildContext(),
+-        'g',
+-        '200',
+-        IntakeTypeEntity.breakfast,
+-        _meal,
+-        _day,
+-      );
++      await bloc.addIntake(_FakeBuildContext(), 'g', '200', IntakeTypeEntity.breakfast, _meal, _day);
+
+       final row = await dataSource.getTrackedDay(_day);
+       // The other writer's 500 kcal plus this intake's 200, not 200 alone.
+@@ -276,13 +257,7 @@ void main() {
+       );
+
+       await usecase.logActivity(
+-        UserActivityEntity(
+-          'activity-1',
+-          30,
+-          300,
+-          _day,
+-          PhysicalActivityFixtures.moderateBicycling,
+-        ),
++        UserActivityEntity('activity-1', 30, 300, _day, PhysicalActivityFixtures.moderateBicycling),
+         day: _day,
+       );
+
+@@ -305,12 +280,7 @@ void main() {
+       );
+       addTearDown(bloc.close);
+
+-      bloc.persistActivity(
+-        '30',
+-        300,
+-        PhysicalActivityFixtures.moderateBicycling,
+-        _day,
+-      );
++      bloc.persistActivity('30', 300, PhysicalActivityFixtures.moderateBicycling, _day);
+
+       // persistActivity does not hand back its future; wait for the goal
+       // raise it ends with to land.
+diff --git a/validate.sh b/validate.sh
+new file mode 100755
+index 0000000..33f61f6
+--- /dev/null
++++ b/validate.sh
+@@ -0,0 +1,12 @@
++#!/usr/bin/env bash
++# Validate an OpenNutriTracker PR. Requires Flutter (3.44.x). $1 = PR tree.
++set -euo pipefail
++tree="${1:?}"
++cd "$tree"
++
++export PATH="$PATH":"$HOME/.pub-cache/bin"
++fvm flutter pub get
++fvm dart run build_runner build --delete-conflicting-outputs
++fvm flutter gen-l10n
++fvm flutter analyze
++fvm flutter test test/features/settings/presentation/bloc/settings_bloc_update_tracked_day_test.dart test/unit_test/tracked_day_create_if_absent_test.dart test/unit_test/meal_detail_bloc_test.dart

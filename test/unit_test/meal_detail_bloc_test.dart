@@ -78,9 +78,7 @@ void main() {
     });
 
     group('CT4 - Conversão Serving - Com quantidade', () {
-      test(
-          'deve converter quantidade baseada em serving quando servingQuantity não é nulo',
-          () {
+      test('deve converter quantidade baseada em serving quando servingQuantity não é nulo', () {
         // Arrange
         final selectedUnit = 'serving';
         final quantity = 2.0;
@@ -178,8 +176,7 @@ void main() {
         // Arrange
         final convertedQuantity = 100.0;
         final energyPerUnit = testMeal.nutriments.energyPerUnit ?? 0; // 2.5
-        final carbsPerUnit =
-            testMeal.nutriments.carbohydratesPerUnit ?? 0; // 0.5
+        final carbsPerUnit = testMeal.nutriments.carbohydratesPerUnit ?? 0; // 0.5
         final fatPerUnit = testMeal.nutriments.fatPerUnit ?? 0; // 0.1
         final proteinPerUnit = testMeal.nutriments.proteinsPerUnit ?? 0; // 0.2
 
@@ -198,8 +195,7 @@ void main() {
     });
 
     group('CT10 - Erro de Parsing', () {
-      test('deve capturar exceção quando quantidade não é um número válido',
-          () {
+      test('deve capturar exceção quando quantidade não é um número válido', () {
         // Arrange
         final selectedTotalQuantity = 'abc';
 
@@ -236,13 +232,10 @@ void main() {
         );
 
         final convertedQuantity = 100.0;
-        final energyPerUnit =
-            mealWithNullNutriments.nutriments.energyPerUnit ?? 0;
-        final carbsPerUnit =
-            mealWithNullNutriments.nutriments.carbohydratesPerUnit ?? 0;
+        final energyPerUnit = mealWithNullNutriments.nutriments.energyPerUnit ?? 0;
+        final carbsPerUnit = mealWithNullNutriments.nutriments.carbohydratesPerUnit ?? 0;
         final fatPerUnit = mealWithNullNutriments.nutriments.fatPerUnit ?? 0;
-        final proteinPerUnit =
-            mealWithNullNutriments.nutriments.proteinsPerUnit ?? 0;
+        final proteinPerUnit = mealWithNullNutriments.nutriments.proteinsPerUnit ?? 0;
 
         // Act
         final totalKcal = convertedQuantity * energyPerUnit;
@@ -282,13 +275,10 @@ void main() {
         );
 
         final convertedQuantity = 100.0;
-        final energyPerUnit =
-            mealWithZeroNutriments.nutriments.energyPerUnit ?? 0;
-        final carbsPerUnit =
-            mealWithZeroNutriments.nutriments.carbohydratesPerUnit ?? 0;
+        final energyPerUnit = mealWithZeroNutriments.nutriments.energyPerUnit ?? 0;
+        final carbsPerUnit = mealWithZeroNutriments.nutriments.carbohydratesPerUnit ?? 0;
         final fatPerUnit = mealWithZeroNutriments.nutriments.fatPerUnit ?? 0;
-        final proteinPerUnit =
-            mealWithZeroNutriments.nutriments.proteinsPerUnit ?? 0;
+        final proteinPerUnit = mealWithZeroNutriments.nutriments.proteinsPerUnit ?? 0;
 
         // Act
         final totalKcal = convertedQuantity * energyPerUnit;
@@ -308,8 +298,7 @@ void main() {
         final selectedTotalQuantity = '100,5';
 
         // Act
-        final quantity =
-            double.parse(selectedTotalQuantity.replaceAll(',', '.'));
+        final quantity = double.parse(selectedTotalQuantity.replaceAll(',', '.'));
         final convertedQuantity = quantity;
         final energyPerUnit = testMeal.nutriments.energyPerUnit ?? 0;
         final totalKcal = convertedQuantity * energyPerUnit;
@@ -358,8 +347,7 @@ void main() {
         expect(result3, isFalse);
 
         // Linha 1 (VV) - CT4
-        final servingResult1 =
-            'serving' == 'serving' && testMeal.servingQuantity != null;
+        final servingResult1 = 'serving' == 'serving' && testMeal.servingQuantity != null;
         expect(servingResult1, isTrue);
 
         // Linha 2 (VF) - CT5
@@ -376,8 +364,7 @@ void main() {
           nutriments: testNutriments,
           source: MealSourceEntity.custom,
         );
-        final servingResult2 = 'serving' == 'serving' &&
-            mealWithoutServing.servingQuantity != null;
+        final servingResult2 = 'serving' == 'serving' && mealWithoutServing.servingQuantity != null;
         expect(servingResult2, isFalse);
 
         // Linha 1 (V) - CT6

@@ -91,8 +91,7 @@ class _NoopAddIntakeUsecase extends Fake implements AddIntakeUsecase {
   Future<void> addIntake(IntakeEntity intakeEntity) async {}
 }
 
-class _NoopAddUserActivityUsecase extends Fake
-    implements AddUserActivityUsecase {
+class _NoopAddUserActivityUsecase extends Fake implements AddUserActivityUsecase {
   @override
   Future<void> addUserActivity(UserActivityEntity userActivityEntity) async {}
 }
@@ -101,16 +100,13 @@ class _FakeGetTrackedDayUsecase extends Fake implements GetTrackedDayUsecase {}
 
 class _FakeProductsRepository extends Fake implements ProductsRepository {}
 
-class _FakeRemoteSearchCacheDataSource extends Fake
-    implements RemoteSearchCacheDataSource {}
+class _FakeRemoteSearchCacheDataSource extends Fake implements RemoteSearchCacheDataSource {}
 
 class _FakeGetUserUsecase extends Fake implements GetUserUsecase {}
 
-class _FakeAddCustomActivityTemplateUsecase extends Fake
-    implements AddCustomActivityTemplateUsecase {}
+class _FakeAddCustomActivityTemplateUsecase extends Fake implements AddCustomActivityTemplateUsecase {}
 
-class _FakeGetCustomActivityTemplatesUsecase extends Fake
-    implements GetCustomActivityTemplatesUsecase {}
+class _FakeGetCustomActivityTemplatesUsecase extends Fake implements GetCustomActivityTemplatesUsecase {}
 
 class _FakeBuildContext extends Fake implements BuildContext {}
 
@@ -202,9 +198,7 @@ void main() {
       // writing, which is the window a check-then-create left open.
       final results = await Future.wait([
         dataSource.saveTrackedDayIfAbsent(_rowWithTotals()),
-        dataSource.saveTrackedDayIfAbsent(
-          TrackedDayDBO(day: _day, calorieGoal: 1800, caloriesTracked: 0),
-        ),
+        dataSource.saveTrackedDayIfAbsent(TrackedDayDBO(day: _day, calorieGoal: 1800, caloriesTracked: 0)),
       ]);
 
       expect(results, [isTrue, isFalse]);
@@ -221,13 +215,7 @@ void main() {
     // Meanwhile another writer creates the day and logs 500 kcal on it.
     await dataSource.saveTrackedDay(_rowWithTotals());
     // The creator acts on its stale answer.
-    final created = await usecase.addNewTrackedDayIfAbsent(
-      _day,
-      1800,
-      200,
-      60,
-      90,
-    );
+    final created = await usecase.addNewTrackedDayIfAbsent(_day, 1800, 200, 60, 90);
 
     expect(created, isFalse);
     expectTotalsKept(await dataSource.getTrackedDay(_day));
@@ -252,14 +240,7 @@ void main() {
       );
       addTearDown(bloc.close);
 
-      await bloc.addIntake(
-        _FakeBuildContext(),
-        'g',
-        '200',
-        IntakeTypeEntity.breakfast,
-        _meal,
-        _day,
-      );
+      await bloc.addIntake(_FakeBuildContext(), 'g', '200', IntakeTypeEntity.breakfast, _meal, _day);
 
       final row = await dataSource.getTrackedDay(_day);
       // The other writer's 500 kcal plus this intake's 200, not 200 alone.
@@ -276,13 +257,7 @@ void main() {
       );
 
       await usecase.logActivity(
-        UserActivityEntity(
-          'activity-1',
-          30,
-          300,
-          _day,
-          PhysicalActivityFixtures.moderateBicycling,
-        ),
+        UserActivityEntity('activity-1', 30, 300, _day, PhysicalActivityFixtures.moderateBicycling),
         day: _day,
       );
 
@@ -305,12 +280,7 @@ void main() {
       );
       addTearDown(bloc.close);
 
-      bloc.persistActivity(
-        '30',
-        300,
-        PhysicalActivityFixtures.moderateBicycling,
-        _day,
-      );
+      bloc.persistActivity('30', 300, PhysicalActivityFixtures.moderateBicycling, _day);
 
       // persistActivity does not hand back its future; wait for the goal
       // raise it ends with to land.
