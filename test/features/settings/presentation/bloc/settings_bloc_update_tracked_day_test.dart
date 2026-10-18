@@ -28,13 +28,19 @@ class _FakeAddTrackedDayUsecase extends Fake implements AddTrackedDayUsecase {
     double totalFatGoal,
     double totalProteinGoal,
   ) async {
-    addedDays.add([
-      day,
-      totalKcalGoal,
-      totalCarbsGoal,
-      totalFatGoal,
-      totalProteinGoal,
-    ]);
+    addedDays.add([day, totalKcalGoal, totalCarbsGoal, totalFatGoal, totalProteinGoal]);
+  }
+
+  @override
+  Future<bool> addNewTrackedDayIfAbsent(
+    DateTime day,
+    double totalKcalGoal,
+    double totalCarbsGoal,
+    double totalFatGoal,
+    double totalProteinGoal,
+  ) async {
+    addedDays.add([day, totalKcalGoal, totalCarbsGoal, totalFatGoal, totalProteinGoal]);
+    return true;
   }
 
   @override
@@ -43,12 +49,7 @@ class _FakeAddTrackedDayUsecase extends Fake implements AddTrackedDayUsecase {
   }
 
   @override
-  Future<void> updateDayMacroGoals(
-    DateTime day, {
-    double? carbsGoal,
-    double? fatGoal,
-    double? proteinGoal,
-  }) async {
+  Future<void> updateDayMacroGoals(DateTime day, {double? carbsGoal, double? fatGoal, double? proteinGoal}) async {
     macroGoalUpdates.add((day, carbsGoal, fatGoal, proteinGoal));
   }
 }
@@ -77,8 +78,7 @@ class _FakeGetConfigUsecase extends Fake implements GetConfigUsecase {}
 
 class _FakeAddConfigUsecase extends Fake implements AddConfigUsecase {}
 
-class _FakeRemoteSearchCacheDataSource extends Fake
-    implements RemoteSearchCacheDataSource {}
+class _FakeRemoteSearchCacheDataSource extends Fake implements RemoteSearchCacheDataSource {}
 
 class _FakeGetTrackedDayUsecase extends Fake implements GetTrackedDayUsecase {}
 
