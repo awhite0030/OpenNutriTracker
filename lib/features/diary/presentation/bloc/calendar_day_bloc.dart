@@ -63,10 +63,7 @@ class CalendarDayBloc extends Bloc<CalendarDayEvent, CalendarDayState> {
     });
   }
 
-  Future<void> _loadCalendarDay(
-    DateTime day,
-    Emitter<CalendarDayState> emit,
-  ) async {
+  Future<void> _loadCalendarDay(DateTime day, Emitter<CalendarDayState> emit) async {
     // #139: when the user has a configured day-start offset, the
     // intake/activity queries need to know about it so entries logged
     // before the boundary roll into the previous day's column. The
@@ -112,15 +109,13 @@ class CalendarDayBloc extends Bloc<CalendarDayEvent, CalendarDayState> {
     // and "0 / 0 kcal" reads as broken rather than helpful.
     final dailyKcalGoal = trackedDayEntity?.calorieGoal ?? 0;
     final breakfastKcalTarget = dailyKcalGoal > 0
-        ? configData.targetKcalForMeal(
-            ConfigEntity.mealKeyBreakfast, dailyKcalGoal)
+        ? configData.targetKcalForMeal(ConfigEntity.mealKeyBreakfast, dailyKcalGoal)
         : 0.0;
     final lunchKcalTarget = dailyKcalGoal > 0
         ? configData.targetKcalForMeal(ConfigEntity.mealKeyLunch, dailyKcalGoal)
         : 0.0;
     final dinnerKcalTarget = dailyKcalGoal > 0
-        ? configData.targetKcalForMeal(
-            ConfigEntity.mealKeyDinner, dailyKcalGoal)
+        ? configData.targetKcalForMeal(ConfigEntity.mealKeyDinner, dailyKcalGoal)
         : 0.0;
     final snackKcalTarget = dailyKcalGoal > 0
         ? configData.targetKcalForMeal(ConfigEntity.mealKeySnack, dailyKcalGoal)
@@ -156,16 +151,9 @@ class CalendarDayBloc extends Bloc<CalendarDayEvent, CalendarDayState> {
     await _addConfigUsecase.setDiarySortPreference(mealKey, sortIndex);
   }
 
-  Future<void> deleteIntakeItem(
-    BuildContext context,
-    IntakeEntity intakeEntity,
-    DateTime day,
-  ) async {
+  Future<void> deleteIntakeItem(BuildContext context, IntakeEntity intakeEntity, DateTime day) async {
     await _deleteIntakeUsecase.deleteIntake(intakeEntity);
-    await _addTrackedDayUsecase.removeDayCaloriesTracked(
-      day,
-      intakeEntity.totalKcal,
-    );
+    await _addTrackedDayUsecase.removeDayCaloriesTracked(day, intakeEntity.totalKcal);
     await _addTrackedDayUsecase.removeDayMacrosTracked(
       day,
       carbsTracked: intakeEntity.totalCarbsGram,
@@ -174,20 +162,13 @@ class CalendarDayBloc extends Bloc<CalendarDayEvent, CalendarDayState> {
     );
   }
 
-  Future<void> updateIntakeItem(
-    String intakeId,
-    Map<String, dynamic> fields,
-    DateTime day,
-  ) async {
+  Future<void> updateIntakeItem(String intakeId, Map<String, dynamic> fields, DateTime day) async {
     final oldIntake = await _getIntakeUsecase.getIntakeById(intakeId);
     assert(oldIntake != null);
     final newIntake = await _updateIntakeUsecase.updateIntake(intakeId, fields);
     assert(newIntake != null);
     if (oldIntake!.amount > newIntake!.amount) {
-      await _addTrackedDayUsecase.removeDayCaloriesTracked(
-        day,
-        oldIntake.totalKcal - newIntake.totalKcal,
-      );
+      await _addTrackedDayUsecase.removeDayCaloriesTracked(day, oldIntake.totalKcal - newIntake.totalKcal);
       await _addTrackedDayUsecase.removeDayMacrosTracked(
         day,
         carbsTracked: oldIntake.totalCarbsGram - newIntake.totalCarbsGram,
@@ -195,10 +176,7 @@ class CalendarDayBloc extends Bloc<CalendarDayEvent, CalendarDayState> {
         proteinTracked: oldIntake.totalProteinsGram - newIntake.totalProteinsGram,
       );
     } else if (newIntake.amount > oldIntake.amount) {
-      await _addTrackedDayUsecase.addDayCaloriesTracked(
-        day,
-        newIntake.totalKcal - oldIntake.totalKcal,
-      );
+      await _addTrackedDayUsecase.addDayCaloriesTracked(day, newIntake.totalKcal - oldIntake.totalKcal);
       await _addTrackedDayUsecase.addDayMacrosTracked(
         day,
         carbsTracked: newIntake.totalCarbsGram - oldIntake.totalCarbsGram,
@@ -208,21 +186,15 @@ class CalendarDayBloc extends Bloc<CalendarDayEvent, CalendarDayState> {
     }
   }
 
-  Future<void> deleteUserActivityItem(
-    BuildContext context,
-    UserActivityEntity activityEntity,
-    DateTime day,
-  ) async {
+  Future<void> deleteUserActivityItem(BuildContext context, UserActivityEntity activityEntity, DateTime day) async {
     await _deleteUserActivityUsecase.deleteUserActivity(activityEntity);
-    _addTrackedDayUsecase.reduceDayCalorieGoal(day, activityEntity.burnedKcal);
+    await _addTrackedDayUsecase.reduceDayCalorieGoal(day, activityEntity.burnedKcal);
 
     final carbsAmount = MacroCalc.getTotalCarbsGoal(activityEntity.burnedKcal);
     final fatAmount = MacroCalc.getTotalFatsGoal(activityEntity.burnedKcal);
-    final proteinAmount = MacroCalc.getTotalProteinsGoal(
-      activityEntity.burnedKcal,
-    );
+    final proteinAmount = MacroCalc.getTotalProteinsGoal(activityEntity.burnedKcal);
 
-    _addTrackedDayUsecase.reduceDayMacroGoals(
+    await _addTrackedDayUsecase.reduceDayMacroGoals(
       day,
       carbsAmount: carbsAmount,
       fatAmount: fatAmount,
@@ -231,15 +203,8 @@ class CalendarDayBloc extends Bloc<CalendarDayEvent, CalendarDayState> {
     _updateDiaryPage(day);
   }
 
-  Future<void> updateUserActivityItem(
-    UserActivityEntity activityEntity,
-    double newDuration,
-    DateTime day,
-  ) async {
-    final newActivity = await _updateUserActivityUsecase.updateUserActivity(
-      activityEntity,
-      newDuration,
-    );
+  Future<void> updateUserActivityItem(UserActivityEntity activityEntity, double newDuration, DateTime day) async {
+    final newActivity = await _updateUserActivityUsecase.updateUserActivity(activityEntity, newDuration);
     assert(newActivity != null);
     final kcalDiff = newActivity!.burnedKcal - activityEntity.burnedKcal;
     if (kcalDiff > 0) {
