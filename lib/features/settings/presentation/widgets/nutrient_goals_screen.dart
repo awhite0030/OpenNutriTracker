@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:opennutritracker/core/utils/custom_text_input_formatter.dart';
 import 'package:opennutritracker/core/domain/entity/user_entity.dart';
 import 'package:opennutritracker/core/domain/entity/user_gender_entity.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
@@ -537,7 +538,7 @@ class _NutrientRow extends StatelessWidget {
                     controller: controller,
                     keyboardType: TextInputType.numberWithOptions(decimal: decimalStep),
                     inputFormatters: decimalStep
-                        ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*'))]
+                        ? CustomTextInputFormatter.doubleOnly(maxDecimals: 1)
                         : [FilteringTextInputFormatter.digitsOnly],
                     textAlign: TextAlign.right,
                     decoration: InputDecoration(
