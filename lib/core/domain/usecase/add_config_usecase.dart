@@ -16,12 +16,8 @@ class AddConfigUsecase {
     await _configRepository.setConfigDisclaimer(hasAcceptedDisclaimer);
   }
 
-  Future<void> setConfigHasAcceptedAnonymousData(
-    bool hasAcceptedAnonymousData,
-  ) async {
-    await _configRepository.setConfigHasAcceptedAnonymousData(
-      hasAcceptedAnonymousData,
-    );
+  Future<void> setConfigHasAcceptedAnonymousData(bool hasAcceptedAnonymousData) async {
+    await _configRepository.setConfigHasAcceptedAnonymousData(hasAcceptedAnonymousData);
   }
 
   Future<void> setConfigHasAcceptedPolicy(bool hasAcceptedPolicy) async {
@@ -56,16 +52,8 @@ class AddConfigUsecase {
     await _configRepository.setConfigKcalAdjustment(kcalAdjustment);
   }
 
-  Future<void> setConfigMacroGoalPct(
-    double carbGoalPct,
-    double proteinGoalPct,
-    double fatPctGoal,
-  ) async {
-    await _configRepository.setUserMacroPct(
-      carbGoalPct,
-      proteinGoalPct,
-      fatPctGoal,
-    );
+  Future<void> setConfigMacroGoalPct(double carbGoalPct, double proteinGoalPct, double fatPctGoal) async {
+    await _configRepository.setUserMacroPct(carbGoalPct, proteinGoalPct, fatPctGoal);
   }
 
   Future<void> setConfigShowActivityTracking(bool show) async {
@@ -74,10 +62,6 @@ class AddConfigUsecase {
 
   Future<void> setConfigShowMealMacros(bool show) async {
     await _configRepository.setConfigShowMealMacros(show);
-  }
-
-  Future<void> setNotificationsEnabled(bool enabled) async {
-    await _configRepository.setNotificationsEnabled(enabled);
   }
 
   Future<void> setNotificationTime(int hour, int minute) async {
@@ -108,9 +92,7 @@ class AddConfigUsecase {
     await _configRepository.setDiarySortPreference(mealKey, sortIndex);
   }
 
-  Future<void> setConfigNutrientPanelVisibility(
-    Map<String, bool> visibility,
-  ) async {
+  Future<void> setConfigNutrientPanelVisibility(Map<String, bool> visibility) async {
     await _configRepository.setConfigNutrientPanelVisibility(visibility);
   }
 
