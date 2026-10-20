@@ -14,6 +14,8 @@ import 'package:opennutritracker/core/utils/locale_units.dart';
 import 'package:opennutritracker/core/utils/calc/calorie_goal_calc.dart';
 import 'package:opennutritracker/core/utils/calc/macro_calc.dart';
 import 'package:opennutritracker/core/utils/url_const.dart';
+import 'package:opennutritracker/core/utils/locator.dart';
+import 'package:opennutritracker/core/utils/daily_reminder_scheduler.dart';
 import 'package:opennutritracker/features/onboarding/domain/entity/user_data_mask_entity.dart';
 
 part 'onboarding_event.dart';
@@ -29,11 +31,8 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
   final AddConfigUsecase _addConfigUsecase;
   final GetConfigUsecase _getConfigUsecase;
 
-  OnboardingBloc(
-    this._addUserUsecase,
-    this._addConfigUsecase,
-    this._getConfigUsecase,
-  ) : super(OnboardingInitialState()) {
+  OnboardingBloc(this._addUserUsecase, this._addConfigUsecase, this._getConfigUsecase)
+    : super(OnboardingInitialState()) {
     on<LoadOnboardingEvent>((event, emit) async {
       emit(OnboardingLoadingState());
       await _seedUnitSelection();
@@ -84,14 +83,10 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
   Future<void> _seedFoodSourceSelection() async {
     if (await _getConfigUsecase.hasExplicitFoodSourceToggles()) {
       final config = await _getConfigUsecase.getConfig();
-      userSelection.foodSourceToggles = Map<String, bool>.from(
-        config.foodSourceToggles,
-      );
+      userSelection.foodSourceToggles = Map<String, bool>.from(config.foodSourceToggles);
       return;
     }
-    userSelection.foodSourceToggles = defaultFoodSourceToggles(
-      Platform.localeName,
-    );
+    userSelection.foodSourceToggles = defaultFoodSourceToggles(Platform.localeName);
   }
 
   Future<void> saveOnboardingData(
@@ -116,12 +111,8 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     // one, and telling a brand-new user that the document they just read has
     // changed is the small wrongness that makes the next notice trusted less
     // (#887).
-    await _addConfigUsecase.setConfigPolicyNoticeRevisionSeen(
-      URLConst.policyRevision,
-    );
-    await _addConfigUsecase.setConfigHasAcceptedAnonymousData(
-      hasAcceptedDataCollection,
-    );
+    await _addConfigUsecase.setConfigPolicyNoticeRevisionSeen(URLConst.policyRevision);
+    await _addConfigUsecase.setConfigHasAcceptedAnonymousData(hasAcceptedDataCollection);
     await _addConfigUsecase.setConfigUsesImperialHeightUnits(heightImperial);
     await _addConfigUsecase.setConfigBodyWeightUnit(bodyWeightUnit);
     // Food units are chosen explicitly during onboarding, so someone on feet
@@ -135,7 +126,7 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     if (foodSourceToggles.isNotEmpty) {
       await _addConfigUsecase.setConfigFoodSourceToggles(foodSourceToggles);
     }
-    await _addConfigUsecase.setNotificationsEnabled(dailyReminderEnabled);
+    await locator<DailyReminderScheduler>().setEnabled(dailyReminderEnabled, locale: null);
     await _addConfigUsecase.setConfigUseMaterialYou(useMaterialYou);
     await _addConfigUsecase.setConfigAccentColor(accentColor);
     // Defensive: real onboarding always starts from a wiped, un-onboarded

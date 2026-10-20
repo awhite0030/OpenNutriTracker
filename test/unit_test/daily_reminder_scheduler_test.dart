@@ -83,15 +83,7 @@ class _RecordingNotificationService extends NotificationService {
     // The real service cancels, then schedules, with a gap between.
     pending = null;
     await Future<void>.delayed(Duration.zero);
-    scheduled.add(
-      pending = {
-        'hour': hour,
-        'minute': minute,
-        'title': title,
-        'body': body,
-        'channelName': channelName,
-      },
-    );
+    scheduled.add(pending = {'hour': hour, 'minute': minute, 'title': title, 'body': body, 'channelName': channelName});
   }
 }
 
@@ -114,10 +106,7 @@ void main() {
     test('schedules the new language\'s text at the saved time', () async {
       final it = lookupS(const Locale('it'));
       // Without a translation the assertion below could pass on English.
-      expect(
-        it.notificationsDailyReminderBody,
-        isNot(lookupS(const Locale('en')).notificationsDailyReminderBody),
-      );
+      expect(it.notificationsDailyReminderBody, isNot(lookupS(const Locale('en')).notificationsDailyReminderBody));
 
       await DailyReminderScheduler(
         _Config(_config(enabled: true)),
@@ -150,15 +139,9 @@ void main() {
       await DailyReminderScheduler(
         _Config(_config(enabled: true)),
         notifications,
-      ).reschedule(
-        locale: null,
-        deviceLocales: const [Locale('fr'), Locale('de')],
-      );
+      ).reschedule(locale: null, deviceLocales: const [Locale('fr'), Locale('de')]);
 
-      expect(
-        notifications.scheduled.single['body'],
-        lookupS(const Locale('de')).notificationsDailyReminderBody,
-      );
+      expect(notifications.scheduled.single['body'], lookupS(const Locale('de')).notificationsDailyReminderBody);
     });
 
     test('turning reminders off during a refresh leaves none behind', () async {
@@ -197,10 +180,7 @@ void main() {
       // "Off" is saved before the OS is told, and the OS call fails: the
       // alarm survives a switch that now reads off.
       notifications.failNextCancel = true;
-      await expectLater(
-        scheduler.setEnabled(false, locale: const Locale('en')),
-        throwsStateError,
-      );
+      await expectLater(scheduler.setEnabled(false, locale: const Locale('en')), throwsStateError);
       expect(config.config.notificationsEnabled, isFalse);
       expect(notifications.pending, isNotNull);
 
@@ -215,10 +195,7 @@ void main() {
       final scheduler = DailyReminderScheduler(config, notifications);
 
       notifications.failNextSchedule = true;
-      await expectLater(
-        scheduler.setEnabled(true, locale: const Locale('en')),
-        throwsStateError,
-      );
+      await expectLater(scheduler.setEnabled(true, locale: const Locale('en')), throwsStateError);
 
       // No alarm, so the switch must not read on either.
       expect(notifications.pending, isNull);
@@ -230,47 +207,39 @@ void main() {
       expect(config.config.notificationsEnabled, isTrue);
     });
 
-    test(
-      'a refresh that fails is logged, not thrown, and the next one runs',
-      () async {
-        final config = _Config(_config(enabled: false));
-        final scheduler = DailyReminderScheduler(config, notifications);
-        final records = <LogRecord>[];
-        final sub = Logger.root.onRecord.listen(records.add);
-        addTearDown(sub.cancel);
+    test('a refresh that fails is logged, not thrown, and the next one runs', () async {
+      final config = _Config(_config(enabled: false));
+      final scheduler = DailyReminderScheduler(config, notifications);
+      final records = <LogRecord>[];
+      final sub = Logger.root.onRecord.listen(records.add);
+      addTearDown(sub.cancel);
 
-        // Start-up with reminders off still cancels, and a broken plugin
-        // must not keep the app from opening.
-        notifications.failNextCancel = true;
-        await scheduler.refresh(locale: const Locale('en'));
-        notifications.failInitialize = true;
-        config.config = _config(enabled: true);
-        await scheduler.refresh(locale: const Locale('en'));
+      // Start-up with reminders off still cancels, and a broken plugin
+      // must not keep the app from opening.
+      notifications.failNextCancel = true;
+      await scheduler.refresh(locale: const Locale('en'));
+      notifications.failInitialize = true;
+      config.config = _config(enabled: true);
+      await scheduler.refresh(locale: const Locale('en'));
 
-        expect(records.where((r) => r.level == Level.WARNING), hasLength(2));
+      expect(records.where((r) => r.level == Level.WARNING), hasLength(2));
 
-        notifications.failInitialize = false;
-        await scheduler.refresh(locale: const Locale('en'));
+      notifications.failInitialize = false;
+      await scheduler.refresh(locale: const Locale('en'));
 
-        expect(notifications.pending, isNotNull);
-      },
-    );
+      expect(notifications.pending, isNotNull);
+    });
 
     test('back to "System default" ends in the new device language', () async {
       // Android 13+: Settings starts clearing the per-app override without
       // waiting, so the first refresh still sees the old device list; the
       // corrected list arrives later as a platform locale event.
-      final scheduler = DailyReminderScheduler(
-        _Config(_config(enabled: true)),
-        notifications,
-      );
+      final scheduler = DailyReminderScheduler(_Config(_config(enabled: true)), notifications);
       var deviceLocales = const [Locale('it')];
       final refreshes = <Future<void>>[];
       final provider = LocaleProvider(
         locale: const Locale('it'),
-        onChanged: (locale) => refreshes.add(
-          scheduler.reschedule(locale: locale, deviceLocales: deviceLocales),
-        ),
+        onChanged: (locale) => refreshes.add(scheduler.reschedule(locale: locale, deviceLocales: deviceLocales)),
       );
 
       provider.updateLocale(null);
@@ -278,20 +247,14 @@ void main() {
       provider.systemLocalesChanged();
       await Future.wait(refreshes);
 
-      expect(
-        notifications.pending?['body'],
-        lookupS(const Locale('de')).notificationsDailyReminderBody,
-      );
+      expect(notifications.pending?['body'], lookupS(const Locale('de')).notificationsDailyReminderBody);
     });
   });
 
   group('LocaleProvider', () {
     test('reports a language change, including back to "System default"', () {
       final changes = <Locale?>[];
-      final provider = LocaleProvider(
-        locale: const Locale('en'),
-        onChanged: changes.add,
-      );
+      final provider = LocaleProvider(locale: const Locale('en'), onChanged: changes.add);
       expect(changes, isEmpty, reason: 'start-up schedules on its own');
 
       provider.updateLocale(const Locale('it'));

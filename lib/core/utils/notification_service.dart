@@ -17,8 +17,7 @@ class NotificationService {
   static const String _fastingChannelId = 'fasting_complete';
 
   final _log = Logger('NotificationService');
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
 
@@ -29,18 +28,13 @@ class NotificationService {
     final timeZone = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(timeZone.identifier));
 
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
+    const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
 
     await _plugin.initialize(settings: initSettings);
     _initialized = true;
@@ -49,24 +43,14 @@ class NotificationService {
 
   /// Requests the OS notification permission (Android 13+ / iOS).
   Future<bool> requestPermission() async {
-    final android = _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (android != null) {
       final granted = await android.requestNotificationsPermission();
       return granted ?? false;
     }
-    final ios = _plugin
-        .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin
-        >();
+    final ios = _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
     if (ios != null) {
-      final granted = await ios.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      final granted = await ios.requestPermissions(alert: true, badge: true, sound: true);
       return granted ?? false;
     }
     return false;
@@ -82,7 +66,6 @@ class NotificationService {
     required String channelDescription,
   }) async {
     await _ensureInitialized();
-    await _plugin.cancel(id: _dailyReminderId);
 
     final androidDetails = AndroidNotificationDetails(
       _channelId,
@@ -92,16 +75,9 @@ class NotificationService {
       priority: Priority.defaultPriority,
     );
     const iosDetails = DarwinNotificationDetails();
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    final scheduledDate = computeNextOccurrence(
-      tz.TZDateTime.now(tz.local),
-      hour,
-      minute,
-    );
+    final scheduledDate = computeNextOccurrence(tz.TZDateTime.now(tz.local), hour, minute);
 
     await _plugin.zonedSchedule(
       id: _dailyReminderId,
@@ -145,10 +121,7 @@ class NotificationService {
       priority: Priority.defaultPriority,
     );
     const iosDetails = DarwinNotificationDetails();
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     await _plugin.zonedSchedule(
       id: _fastingCompleteId,
@@ -191,19 +164,8 @@ class NotificationService {
   /// rolls forward to the next day. Pure function — extracted from
   /// [scheduleDailyReminder] so it can be unit-tested across timezones / DST
   /// transitions without touching the notification plugin.
-  static tz.TZDateTime computeNextOccurrence(
-    tz.TZDateTime now,
-    int hour,
-    int minute,
-  ) {
-    var scheduled = tz.TZDateTime(
-      now.location,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
+  static tz.TZDateTime computeNextOccurrence(tz.TZDateTime now, int hour, int minute) {
+    var scheduled = tz.TZDateTime(now.location, now.year, now.month, now.day, hour, minute);
     if (!scheduled.isAfter(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
