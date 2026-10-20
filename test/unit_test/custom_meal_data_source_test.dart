@@ -8,36 +8,30 @@ import '../helpers/hive_test_setup.dart';
 import '../helpers/fake_hive_db_provider.dart';
 
 MealNutrimentsDBO _emptyNutriments({double? kcal}) => MealNutrimentsDBO(
-      energyKcal100: kcal,
-      carbohydrates100: null,
-      fat100: null,
-      proteins100: null,
-      sugars100: null,
-      saturatedFat100: null,
-      fiber100: null,
-    );
+  energyKcal100: kcal,
+  carbohydrates100: null,
+  fat100: null,
+  proteins100: null,
+  sugars100: null,
+  saturatedFat100: null,
+  fiber100: null,
+);
 
-MealDBO _meal({
-  String? code,
-  String? name,
-  double? kcal,
-  String? brands,
-}) =>
-    MealDBO(
-      code: code,
-      name: name,
-      brands: brands,
-      thumbnailImageUrl: null,
-      mainImageUrl: null,
-      url: null,
-      mealQuantity: '100',
-      mealUnit: 'g',
-      servingQuantity: null,
-      servingUnit: 'g',
-      servingSize: null,
-      nutriments: _emptyNutriments(kcal: kcal),
-      source: MealSourceDBO.custom,
-    );
+MealDBO _meal({String? code, String? name, double? kcal, String? brands}) => MealDBO(
+  code: code,
+  name: name,
+  brands: brands,
+  thumbnailImageUrl: null,
+  mainImageUrl: null,
+  url: null,
+  mealQuantity: '100',
+  mealUnit: 'g',
+  servingQuantity: null,
+  servingUnit: 'g',
+  servingSize: null,
+  nutriments: _emptyNutriments(kcal: kcal),
+  source: MealSourceDBO.custom,
+);
 
 void main() {
   group('CustomMealDataSource', () {
@@ -51,8 +45,7 @@ void main() {
     });
 
     setUp(() async {
-      box = await Hive.openBox<MealDBO>(
-          'custom_meal_test_${DateTime.now().microsecondsSinceEpoch}');
+      box = await Hive.openBox<MealDBO>('custom_meal_test_${DateTime.now().microsecondsSinceEpoch}');
       ds = CustomMealDataSource(FakeHiveDBProvider(customMealBox: box));
     });
 
@@ -66,8 +59,7 @@ void main() {
       expect(ds.getAllCustomMeals().single.name, equals('Apple'));
     });
 
-    test('saveCustomMeal dedups by barcode (regression for re-import)',
-        () async {
+    test('saveCustomMeal dedups by barcode (regression for re-import)', () async {
       await ds.saveCustomMeal(_meal(code: '1234', name: 'Apple v1', kcal: 52));
       await ds.saveCustomMeal(_meal(code: '1234', name: 'Apple v2', kcal: 60));
 
@@ -86,12 +78,10 @@ void main() {
       final names = ds.getAllCustomMeals().map((m) => m.name).toSet();
       expect(names, equals({'Banana', 'Apple'}));
       final banana = ds.getAllCustomMeals().firstWhere((m) => m.name == 'Banana');
-      expect(banana.nutriments.energyKcal100, equals(95),
-          reason: 'most-recent save should win on dedup');
+      expect(banana.nutriments.energyKcal100, equals(95), reason: 'most-recent save should win on dedup');
     });
 
-    test(
-        'when a new no-barcode meal shares a name with a barcoded meal, '
+    test('when a new no-barcode meal shares a name with a barcoded meal, '
         'dedup matches by name and overwrites (documented quirk)', () async {
       await ds.saveCustomMeal(_meal(code: '1', name: 'Apple', kcal: 52));
       await ds.saveCustomMeal(_meal(code: null, name: 'Apple', kcal: 60));
@@ -102,15 +92,18 @@ void main() {
       expect(stored.nutriments.energyKcal100, equals(60));
     });
 
-    test(
-        'a new barcoded meal does NOT match an existing name-only meal: '
+    test('a new barcoded meal does NOT match an existing name-only meal: '
         'dedup is keyed on barcode when present', () async {
       await ds.saveCustomMeal(_meal(code: null, name: 'Apple', kcal: 52));
       await ds.saveCustomMeal(_meal(code: '1', name: 'Apple', kcal: 60));
 
-      expect(ds.getAllCustomMeals(), hasLength(2),
-          reason: 'incoming meal has a barcode, so it does not match the '
-              'name-only entry; both are kept');
+      expect(
+        ds.getAllCustomMeals(),
+        hasLength(2),
+        reason:
+            'incoming meal has a barcode, so it does not match the '
+            'name-only entry; both are kept',
+      );
     });
 
     test('deleteCustomMeal removes a meal by its barcode', () async {
@@ -123,8 +116,7 @@ void main() {
       expect(ds.getAllCustomMeals().single.code, equals('2'));
     });
 
-    test('deleteCustomMeal removes a name-keyed meal when barcode is null',
-        () async {
+    test('deleteCustomMeal removes a name-keyed meal when barcode is null', () async {
       await ds.saveCustomMeal(_meal(code: null, name: 'Apple'));
       await ds.saveCustomMeal(_meal(code: null, name: 'Banana'));
 
@@ -140,6 +132,19 @@ void main() {
       await ds.deleteCustomMeal('does-not-exist');
 
       expect(ds.getAllCustomMeals(), hasLength(1));
+    });
+
+    test('saveCustomMeal overrides old identity when oldMealDBO is provided', () async {
+      final oldMeal = _meal(code: '1', name: 'Old Name', kcal: 50);
+      await ds.saveCustomMeal(oldMeal);
+      final editedMeal = _meal(code: '2', name: 'New Name', kcal: 60);
+      await ds.saveCustomMeal(editedMeal, oldMealDBO: oldMeal);
+      final meals = ds.getAllCustomMeals();
+      expect(meals, hasLength(1));
+      final saved = meals.single;
+      expect(saved.code, equals('2'));
+      expect(saved.name, equals('New Name'));
+      expect(saved.nutriments.energyKcal100, equals(60));
     });
 
     test('getAllCustomMeals returns an empty list initially', () {
