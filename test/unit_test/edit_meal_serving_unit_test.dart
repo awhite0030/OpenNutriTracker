@@ -67,8 +67,7 @@ void main() {
       );
     }
 
-    test('serving unit is the selected unit, not the serving quantity text',
-        () {
+    test('serving unit is the selected unit, not the serving quantity text', () {
       final meal = build(servingQuantity: '50', unit: 'g');
       expect(meal.servingUnit, 'g');
       expect(meal.servingQuantity, 50);

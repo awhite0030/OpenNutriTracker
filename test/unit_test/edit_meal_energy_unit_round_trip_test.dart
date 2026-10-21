@@ -1,3 +1,4 @@
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opennutritracker/core/utils/calc/unit_calc.dart';
 
@@ -6,14 +7,12 @@ import 'package:opennutritracker/core/utils/calc/unit_calc.dart';
 /// plenty for a manually-entered field). Kept in test code so the
 /// rounding contract is explicit even though the production helper is
 /// a private method on the screen.
-double _kjToStoredKcal(double kj) =>
-    double.parse(UnitCalc.kjToKcal(kj).toStringAsFixed(1));
+double _kjToStoredKcal(double kj) => double.parse(UnitCalc.kjToKcal(kj).toStringAsFixed(1));
 
 /// Mirrors the rounding the edit-meal screen applies when it converts a
 /// stored kcal value into a kJ display string. Same one-decimal contract
 /// — the field is for humans, not for bit-exact storage.
-double _storedKcalToKjDisplay(double kcal) =>
-    double.parse(UnitCalc.kcalToKj(kcal).toStringAsFixed(1));
+double _storedKcalToKjDisplay(double kcal) => double.parse(UnitCalc.kcalToKj(kcal).toStringAsFixed(1));
 
 class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
 
@@ -54,9 +53,11 @@ void main() {
       for (final kjTyped in const [500.0, 1000.0, 2000.0, 2500.0, 8368.0]) {
         final storedKcal = _kjToStoredKcal(kjTyped);
         final redisplayed = _storedKcalToKjDisplay(storedKcal);
-        expect(redisplayed, closeTo(kjTyped, 0.5),
-            reason:
-                '$kjTyped kJ → $storedKcal kcal → $redisplayed kJ should round-trip cleanly');
+        expect(
+          redisplayed,
+          closeTo(kjTyped, 0.5),
+          reason: '$kjTyped kJ → $storedKcal kcal → $redisplayed kJ should round-trip cleanly',
+        );
       }
     });
 

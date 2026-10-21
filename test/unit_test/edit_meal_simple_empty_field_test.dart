@@ -1,3 +1,4 @@
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Regression test for the Simple-mode "empty field treated as zero" fix.
@@ -25,8 +26,7 @@ void main() {
     // The production helper is private to _EditMealScreenState. The
     // contract is stable enough to mirror here — anything that returns
     // a non-empty string for a non-empty input and "0" for empty / ws.
-    String simpleFieldOrZero(String text) =>
-        text.trim().isEmpty ? '0' : text;
+    String simpleFieldOrZero(String text) => text.trim().isEmpty ? '0' : text;
 
     test('empty string returns "0"', () {
       expect(simpleFieldOrZero(''), '0');
