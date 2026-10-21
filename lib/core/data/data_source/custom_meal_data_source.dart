@@ -9,11 +9,12 @@ class CustomMealDataSource {
 
   Box<MealDBO> get _customMealBox => _db.customMealBox;
 
-  Future<void> saveCustomMeal(MealDBO mealDBO) async {
+  Future<void> saveCustomMeal(MealDBO mealDBO, {MealDBO? oldMealDBO}) async {
+    final targetMealDBO = oldMealDBO ?? mealDBO;
     final existing = _customMealBox.values.cast<MealDBO?>().firstWhere(
         (m) =>
-            (mealDBO.code != null && m?.code == mealDBO.code) ||
-            (mealDBO.code == null && m?.name == mealDBO.name),
+            (targetMealDBO.code != null && m?.code == targetMealDBO.code) ||
+            (targetMealDBO.code == null && m?.name == targetMealDBO.name),
         orElse: () => null);
     if (existing != null) {
       await _customMealBox.put(existing.key, mealDBO);
