@@ -4,6 +4,7 @@ import 'package:opennutritracker/core/data/repository/config_repository.dart';
 import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
 import 'package:opennutritracker/features/edit_meal/presentation/bloc/edit_meal_bloc.dart';
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 
 /// Regression test for #495 — custom-food serving size.
 ///
@@ -31,6 +32,8 @@ class _FakeConfigRepository implements ConfigRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+
 void main() {
   group('createNewMealEntity serving unit (#495)', () {
     late EditMealBloc bloc;
@@ -40,6 +43,7 @@ void main() {
         _FakeGetConfigUsecase(),
         _FakeCustomMealDataSource(),
         _FakeConfigRepository(),
+        _FakeMergeCustomMealsUseCase(),
       );
     });
 

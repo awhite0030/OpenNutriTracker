@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:opennutritracker/features/edit_meal/presentation/bloc/edit_meal_bloc.dart';
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 
 /// Regression test for the Simple-mode multiply-by-100 bug.
 ///
@@ -16,6 +17,8 @@ import 'package:opennutritracker/features/edit_meal/presentation/bloc/edit_meal_
 /// baseQuantity, so `factorTo100g` resolves to 1 and the entered values
 /// land in the per-100g fields verbatim. These tests pin the scale
 /// factor so the bug can't quietly come back.
+class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+
 void main() {
   group('factorTo100gFromBase (#232 regression)', () {
     test('"100" returns a factor of 1 — values round-trip unchanged', () {

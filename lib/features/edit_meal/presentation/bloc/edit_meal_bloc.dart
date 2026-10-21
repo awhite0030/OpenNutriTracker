@@ -4,6 +4,7 @@ import 'package:opennutritracker/core/data/data_source/custom_meal_data_source.d
 import 'package:opennutritracker/core/data/dbo/meal_dbo.dart';
 import 'package:opennutritracker/core/data/repository/config_repository.dart';
 import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 import 'package:opennutritracker/core/utils/extensions.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_nutriments_entity.dart';
@@ -50,8 +51,9 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
   final GetConfigUsecase _getConfigUsecase;
   final CustomMealDataSource _customMealDataSource; // #267
   final ConfigRepository _configRepository;
+  final MergeCustomMealsUseCase _mergeCustomMealsUseCase;
 
-  EditMealBloc(this._getConfigUsecase, this._customMealDataSource, this._configRepository)
+  EditMealBloc(this._getConfigUsecase, this._customMealDataSource, this._configRepository, this._mergeCustomMealsUseCase)
       : super(EditMealInitial()) {
     on<InitializeEditMealEvent>((event, emit) async {
       emit(EditMealLoadingState());
@@ -158,7 +160,18 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
   }
 
   /// Persist custom meal template so it appears in Recent Meals before first log (#267)
-  Future<void> saveCustomMeal(MealEntity mealEntity) async {
+  Future<int> saveCustomMeal(MealEntity mealEntity, {MealEntity? oldMealEntity}) async {
     await _customMealDataSource.saveCustomMeal(MealDBO.fromMealEntity(mealEntity));
+
+    final newKey = mealEntity.code ?? mealEntity.name;
+    final oldKey = oldMealEntity?.code ?? oldMealEntity?.name;
+    if (oldKey != null &&
+        oldMealEntity?.source == MealSourceEntity.custom &&
+        oldKey != newKey &&
+        newKey != null) {
+      final result = await _mergeCustomMealsUseCase.merge(loserKey: oldKey, winnerKey: newKey);
+      return result.rewrittenIntakeCount;
+    }
+    return 0;
   }
 }

@@ -25,6 +25,7 @@ import 'package:opennutritracker/features/add_meal/domain/entity/meal_nutriments
 import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/edit_meal/presentation/bloc/edit_meal_bloc.dart';
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 import 'package:opennutritracker/features/edit_meal/presentation/edit_meal_screen.dart';
 import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
 import 'package:opennutritracker/features/meal_detail/meal_detail_screen.dart';
@@ -53,6 +54,8 @@ import '../../../helpers/test_l10n.dart';
 ///
 /// Only the main screen is stubbed, because all these unwinds want from it
 /// is a route named `main` to survive.
+class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+
 void main() {
   final getIt = GetIt.instance;
   final loggedIntakes = <IntakeEntity>[];
