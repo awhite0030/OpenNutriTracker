@@ -18,7 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// the source of truth for that food's macros — leaving a field blank
 /// should mean "this food has zero of this" (oil, plain meat, egg
 /// whites), not "I don't know". This test pins the coercion contract.
-class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+
 
 void main() {
   group('Simple-mode empty-field coercion', () {

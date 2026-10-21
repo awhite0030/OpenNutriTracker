@@ -32,7 +32,10 @@ class _FakeConfigRepository implements ConfigRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+class _FakeMergeCustomMealsUseCase implements MergeCustomMealsUseCase {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   group('createNewMealEntity serving unit (#495)', () {

@@ -15,7 +15,7 @@ double _kjToStoredKcal(double kj) =>
 double _storedKcalToKjDisplay(double kcal) =>
     double.parse(UnitCalc.kcalToKj(kcal).toStringAsFixed(1));
 
-class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+
 
 void main() {
   group('edit-meal manual energy entry, kJ ↔ kcal round trip (#177 follow-up)', () {

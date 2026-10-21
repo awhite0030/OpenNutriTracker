@@ -54,7 +54,10 @@ import '../../../helpers/test_l10n.dart';
 ///
 /// Only the main screen is stubbed, because all these unwinds want from it
 /// is a route named `main` to survive.
-class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+class _FakeMergeCustomMealsUseCase implements MergeCustomMealsUseCase {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   final getIt = GetIt.instance;
@@ -106,6 +109,7 @@ void main() {
         _FakeGetConfigUsecase(),
         _FakeCustomMealDataSource(),
         _FakeConfigRepository(),
+        _FakeMergeCustomMealsUseCase(),
       ),
     );
     getIt.registerLazySingleton<GetConfigUsecase>(_FakeGetConfigUsecase.new);
