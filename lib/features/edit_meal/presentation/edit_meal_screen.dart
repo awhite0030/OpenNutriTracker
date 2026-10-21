@@ -898,13 +898,32 @@ class _EditMealScreenState extends State<EditMealScreen> {
       // Persist custom meal template (#267). Skipped for one-off entries
       // (#249) when the user has turned off "Save for next time" — the
       // intake itself is still logged below, but no template is kept.
+      int rewrittenCount = 0;
       final shouldPersistTemplate = _editOnly || _saveForLater;
       if (newMealEntity.source == MealSourceEntity.custom &&
           shouldPersistTemplate) {
-        await _editMealBloc.saveCustomMeal(newMealEntity);
+        rewrittenCount = await _editMealBloc.saveCustomMeal(newMealEntity, oldMealEntity: _mealEntity);
       }
 
       if (!mounted) return;
+      if (rewrittenCount > 0) {
+        final s = S.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              rewrittenCount == 1
+                  ? s.customMealsMergeSuccessSnackbarOne(
+                      newMealEntity.name ?? newMealEntity.code ?? '',
+                    )
+                  : s.customMealsMergeSuccessSnackbarOther(
+                      rewrittenCount,
+                      newMealEntity.name ?? newMealEntity.code ?? '',
+                    ),
+            ),
+          ),
+        );
+      }
+
       if (_editOnly) {
         Navigator.of(context).pop();
       } else {
