@@ -24,13 +24,8 @@ class _FakeGetWeightLogUsecase extends Fake implements GetWeightLogUsecase {
   Future<List<WeightLogEntity>> getAllEntries() async => List.of(_entries);
 
   @override
-  Future<List<WeightLogEntity>> getEntriesInRange(
-    DateTime from,
-    DateTime to,
-  ) async {
-    return _entries
-        .where((e) => !e.date.isBefore(from) && !e.date.isAfter(to))
-        .toList();
+  Future<List<WeightLogEntity>> getEntriesInRange(DateTime from, DateTime to) async {
+    return _entries.where((e) => !e.date.isBefore(from) && !e.date.isAfter(to)).toList();
   }
 }
 
@@ -39,10 +34,9 @@ class _FakeAddWeightLogUsecase extends Fake implements AddWeightLogUsecase {
   Future<void> addEntry(WeightLogEntity entry) async {}
 }
 
-class _FakeDeleteWeightLogUsecase extends Fake
-    implements DeleteWeightLogUsecase {
+class _FakeDeleteWeightLogUsecase extends Fake implements DeleteWeightLogUsecase {
   @override
-  Future<void> deleteEntry(DateTime date) async {}
+  Future<void> deleteEntry(WeightLogEntity entry) async {}
 }
 
 class _FakeConfigRepository extends Fake implements ConfigRepository {
@@ -76,9 +70,7 @@ Widget _buildScreen(List<WeightLogEntity> entries) {
 
 void main() {
   group('WeightHistoryScreen chart', () {
-    testWidgets('shows the empty-state copy when there are no entries', (
-      tester,
-    ) async {
+    testWidgets('shows the empty-state copy when there are no entries', (tester) async {
       await tester.pumpWidget(_wrap(_buildScreen(const [])));
       await tester.pumpAndSettle();
 
@@ -87,32 +79,20 @@ void main() {
       expect(find.byType(LineChart), findsNothing);
     });
 
-    testWidgets('shows the chart empty-state when there is only one entry', (
-      tester,
-    ) async {
+    testWidgets('shows the chart empty-state when there is only one entry', (tester) async {
       final today = DateTime.now();
-      final entries = [
-        WeightLogEntity(
-          date: DateTime(today.year, today.month, today.day),
-          weightKg: 72.0,
-        ),
-      ];
+      final entries = [WeightLogEntity(date: DateTime(today.year, today.month, today.day), weightKg: 72.0)];
 
       await tester.pumpWidget(_wrap(_buildScreen(entries)));
       await tester.pumpAndSettle();
 
       // 1 entry: the list shows the row, the chart slot shows the nudge.
-      expect(
-        find.byKey(const Key('weightHistoryChartEmptyState')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('weightHistoryChartEmptyState')), findsOneWidget);
       expect(find.text(l10nEn.weightHistoryChartEmptyState), findsOneWidget);
       expect(find.byType(LineChart), findsNothing);
     });
 
-    testWidgets('renders the chart when there are three entries', (
-      tester,
-    ) async {
+    testWidgets('renders the chart when there are three entries', (tester) async {
       final today = DateTime.now();
       DateTime day(int daysAgo) {
         final d = today.subtract(Duration(days: daysAgo));
@@ -130,10 +110,7 @@ void main() {
 
       expect(find.byKey(const Key('weightHistoryChart')), findsOneWidget);
       expect(find.byType(LineChart), findsOneWidget);
-      expect(
-        find.byKey(const Key('weightHistoryChartEmptyState')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('weightHistoryChartEmptyState')), findsNothing);
     });
 
     testWidgets('default 30d hides an older point (showing empty state), '
@@ -155,10 +132,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Default selected is 30d: only 1 point (today) is in window, so chart shows empty state.
-      expect(
-        find.byKey(const Key('weightHistoryChartEmptyState')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const Key('weightHistoryChartEmptyState')), findsOneWidget);
       expect(find.byKey(const Key('weightHistoryChart')), findsNothing);
 
       // Tap 60d segment: should now include the 45-day-old point, showing the chart.
@@ -168,10 +142,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('weightHistoryChart')), findsOneWidget);
-      expect(
-        find.byKey(const Key('weightHistoryChartEmptyState')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('weightHistoryChartEmptyState')), findsNothing);
 
       // Tap All segment: should show chart for all history including 200-day-old point.
       final buttonAll = find.text(l10nEn.allItemsLabel);
@@ -180,10 +151,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('weightHistoryChart')), findsOneWidget);
-      expect(
-        find.byKey(const Key('weightHistoryChartEmptyState')),
-        findsNothing,
-      );
+      expect(find.byKey(const Key('weightHistoryChartEmptyState')), findsNothing);
     });
   });
 
@@ -192,12 +160,7 @@ void main() {
     final recorder = ReloadRecorder()..register();
     addTearDown(locator.reset);
     final today = DateTime.now();
-    final entries = [
-      WeightLogEntity(
-        date: DateTime(today.year, today.month, today.day),
-        weightKg: 72.0,
-      ),
-    ];
+    final entries = [WeightLogEntity(date: DateTime(today.year, today.month, today.day), weightKg: 72.0)];
 
     await tester.pumpWidget(_wrap(_buildScreen(entries)));
     await tester.pumpAndSettle();

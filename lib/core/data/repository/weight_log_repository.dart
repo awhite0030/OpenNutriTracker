@@ -24,10 +24,7 @@ class WeightLogRepository {
     return _weightLogDataSource.allEntries();
   }
 
-  Future<List<WeightLogEntity>> getEntriesInRange(
-    DateTime from,
-    DateTime to,
-  ) async {
+  Future<List<WeightLogEntity>> getEntriesInRange(DateTime from, DateTime to) async {
     final dbos = await _weightLogDataSource.entriesInRange(from, to);
     return dbos.map(WeightLogEntity.fromWeightLogDBO).toList();
   }
@@ -37,7 +34,7 @@ class WeightLogRepository {
     return dbo == null ? null : WeightLogEntity.fromWeightLogDBO(dbo);
   }
 
-  Future<void> deleteEntry(DateTime date) async {
-    await _weightLogDataSource.deleteEntry(date);
+  Future<void> deleteEntryByKey(String? key, DateTime fallbackDate) async {
+    await _weightLogDataSource.deleteEntryByKey(key, fallbackDate);
   }
 }

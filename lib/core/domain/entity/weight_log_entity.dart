@@ -5,21 +5,14 @@ class WeightLogEntity extends Equatable {
   final DateTime date;
   final double weightKg;
   final String? note;
+  final String? storageKey;
 
-  const WeightLogEntity({
-    required this.date,
-    required this.weightKg,
-    this.note,
-  });
+  const WeightLogEntity({required this.date, required this.weightKg, this.note, this.storageKey});
 
   factory WeightLogEntity.fromWeightLogDBO(WeightLogDBO dbo) {
-    return WeightLogEntity(
-      date: dbo.date,
-      weightKg: dbo.weightKg,
-      note: dbo.note,
-    );
+    return WeightLogEntity(date: dbo.date, weightKg: dbo.weightKg, note: dbo.note, storageKey: dbo.key as String?);
   }
 
   @override
-  List<Object?> get props => [date, weightKg, note];
+  List<Object?> get props => [date, weightKg, note, storageKey];
 }
