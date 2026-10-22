@@ -47,14 +47,21 @@ class WeightHistoryScreen extends StatefulWidget {
 }
 
 class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
-  late final GetWeightLogUsecase _getUsecase = widget.getUsecase ?? locator<GetWeightLogUsecase>();
-  late final AddWeightLogUsecase _addUsecase = widget.addUsecase ?? locator<AddWeightLogUsecase>();
-  late final DeleteWeightLogUsecase _deleteUsecase = widget.deleteUsecase ?? locator<DeleteWeightLogUsecase>();
-  late final ConfigRepository _configRepository = widget.configRepository ?? locator<ConfigRepository>();
+  late final GetWeightLogUsecase _getUsecase =
+      widget.getUsecase ?? locator<GetWeightLogUsecase>();
+  late final AddWeightLogUsecase _addUsecase =
+      widget.addUsecase ?? locator<AddWeightLogUsecase>();
+  late final DeleteWeightLogUsecase _deleteUsecase =
+      widget.deleteUsecase ?? locator<DeleteWeightLogUsecase>();
+  late final ConfigRepository _configRepository =
+      widget.configRepository ?? locator<ConfigRepository>();
   // Optional in tests so the harness doesn't need to register the
   // user usecase in the locator just to render the chart.
   late final GetUserUsecase? _getUserUsecase =
-      widget.getUserUsecase ?? (locator.isRegistered<GetUserUsecase>() ? locator<GetUserUsecase>() : null);
+      widget.getUserUsecase ??
+      (locator.isRegistered<GetUserUsecase>()
+          ? locator<GetUserUsecase>()
+          : null);
 
   bool _loading = true;
   BodyWeightUnit _bodyWeightUnit = BodyWeightUnit.kg;
@@ -99,11 +106,15 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
       case _ChartRange.all:
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
-        final nonFutureEntries = _entries.where((e) => !e.date.isAfter(today)).toList();
+        final nonFutureEntries = _entries
+            .where((e) => !e.date.isAfter(today))
+            .toList();
         if (nonFutureEntries.isEmpty) {
           return 30;
         }
-        final oldestDate = nonFutureEntries.map((e) => e.date).reduce((a, b) => a.isBefore(b) ? a : b);
+        final oldestDate = nonFutureEntries
+            .map((e) => e.date)
+            .reduce((a, b) => a.isBefore(b) ? a : b);
         // Calendar days, not elapsed 24-hour spans: across a spring-forward
         // `difference().inDays` comes out one short and the chart window
         // would start the day after the oldest entry (#1207).
@@ -127,11 +138,26 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               segments: [
-                const ButtonSegment(value: _ChartRange.days30, label: Text('30d')),
-                const ButtonSegment(value: _ChartRange.days60, label: Text('60d')),
-                const ButtonSegment(value: _ChartRange.days180, label: Text('180d')),
-                const ButtonSegment(value: _ChartRange.days365, label: Text('365d')),
-                ButtonSegment(value: _ChartRange.all, label: Text(S.of(context).allItemsLabel)),
+                const ButtonSegment(
+                  value: _ChartRange.days30,
+                  label: Text('30d'),
+                ),
+                const ButtonSegment(
+                  value: _ChartRange.days60,
+                  label: Text('60d'),
+                ),
+                const ButtonSegment(
+                  value: _ChartRange.days180,
+                  label: Text('180d'),
+                ),
+                const ButtonSegment(
+                  value: _ChartRange.days365,
+                  label: Text('365d'),
+                ),
+                ButtonSegment(
+                  value: _ChartRange.all,
+                  label: Text(S.of(context).allItemsLabel),
+                ),
               ],
               selected: {_selectedRange},
               onSelectionChanged: (set) {
@@ -208,17 +234,28 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
       lbLabel: S.of(context).lbsLabel,
       stLabel: S.of(context).stLabel,
     );
-    final dateLabel = DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag()).format(entry.date);
+    final dateLabel = DateFormat.yMMMd(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(entry.date);
 
     return ListTile(
       title: Text(displayStr),
-      subtitle: Text(entry.note?.isNotEmpty == true ? '$dateLabel  •  ${entry.note}' : dateLabel),
-      trailing: IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _onDelete(entry)),
+      subtitle: Text(
+        entry.note?.isNotEmpty == true
+            ? '$dateLabel  •  ${entry.note}'
+            : dateLabel,
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.delete_outline),
+        onPressed: () => _onDelete(entry),
+      ),
     );
   }
 
   Future<void> _onAddEntry() async {
-    final initialWeightKg = _entries.isNotEmpty ? _entries.first.weightKg : 70.0;
+    final initialWeightKg = _entries.isNotEmpty
+        ? _entries.first.weightKg
+        : 70.0;
     final result = await showDialog<_NewWeightEntry>(
       context: context,
       builder: (context) => _AddWeightEntryDialog(
@@ -241,7 +278,7 @@ class _WeightHistoryScreenState extends State<WeightHistoryScreen> {
   }
 
   Future<void> _onDelete(WeightLogEntity entry) async {
-    await _deleteUsecase.deleteEntry(entry);
+    await _deleteUsecase.deleteEntry(entry.date);
     await _load();
     reloadDiaryAndTrends();
   }
@@ -260,7 +297,11 @@ class _AddWeightEntryDialog extends StatefulWidget {
   final double initialWeightKg;
   final BodyWeightUnit bodyWeightUnit;
 
-  const _AddWeightEntryDialog({required this.initialDate, required this.initialWeightKg, required this.bodyWeightUnit});
+  const _AddWeightEntryDialog({
+    required this.initialDate,
+    required this.initialWeightKg,
+    required this.bodyWeightUnit,
+  });
 
   @override
   State<_AddWeightEntryDialog> createState() => _AddWeightEntryDialogState();
@@ -306,12 +347,20 @@ class _AddWeightEntryDialogState extends State<_AddWeightEntryDialog> {
       return;
     }
     final note = _noteController.text.trim();
-    Navigator.of(context).pop(_NewWeightEntry(date: _date, weightKg: kg, note: note.isEmpty ? null : note));
+    Navigator.of(context).pop(
+      _NewWeightEntry(
+        date: _date,
+        weightKg: kg,
+        note: note.isEmpty ? null : note,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag()).format(_date);
+    final dateLabel = DateFormat.yMMMd(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(_date);
 
     return AlertDialog(
       title: Text(S.of(context).weightHistoryAddEntry),
@@ -337,14 +386,22 @@ class _AddWeightEntryDialogState extends State<_AddWeightEntryDialog> {
             const SizedBox(height: 8),
             TextField(
               controller: _noteController,
-              decoration: InputDecoration(labelText: S.of(context).weightHistoryNoteLabel),
+              decoration: InputDecoration(
+                labelText: S.of(context).weightHistoryNoteLabel,
+              ),
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(S.of(context).dialogCancelLabel)),
-        TextButton(onPressed: _submit, child: Text(S.of(context).dialogOKLabel)),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(S.of(context).dialogCancelLabel),
+        ),
+        TextButton(
+          onPressed: _submit,
+          child: Text(S.of(context).dialogOKLabel),
+        ),
       ],
     );
   }

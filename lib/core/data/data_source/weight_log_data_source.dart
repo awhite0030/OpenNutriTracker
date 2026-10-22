@@ -23,24 +23,32 @@ class WeightLogDataSource {
 
   Future<void> addAllEntries(List<WeightLogDBO> entries) async {
     log.fine('Adding ${entries.length} weight log entries');
-    await _weightLogBox.putAll({for (final entry in entries) entry.date.toParsedDay(): entry});
+    await _weightLogBox.putAll({
+      for (final entry in entries) entry.date.toParsedDay(): entry,
+    });
   }
 
   Future<List<WeightLogDBO>> allEntries() async {
     return _weightLogBox.values.toList();
   }
 
-  Future<List<WeightLogDBO>> entriesInRange(DateTime from, DateTime to) async {
-    return _weightLogBox.values.where((entry) => !entry.date.isBefore(from) && !entry.date.isAfter(to)).toList();
+  Future<List<WeightLogDBO>> entriesInRange(
+    DateTime from,
+    DateTime to,
+  ) async {
+    return _weightLogBox.values
+        .where(
+          (entry) => !entry.date.isBefore(from) && !entry.date.isAfter(to),
+        )
+        .toList();
   }
 
   Future<WeightLogDBO?> getEntry(DateTime date) async {
     return _weightLogBox.get(date.toParsedDay());
   }
 
-  Future<void> deleteEntryByKey(String? key, DateTime fallbackDate) async {
-    final effectiveKey = key ?? fallbackDate.toParsedDay();
-    log.fine('Deleting weight log entry for key $effectiveKey');
-    await _weightLogBox.delete(effectiveKey);
+  Future<void> deleteEntry(DateTime date) async {
+    log.fine('Deleting weight log entry for $date');
+    await _weightLogBox.delete(date.toParsedDay());
   }
 }
