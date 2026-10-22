@@ -14,14 +14,11 @@ import 'package:opennutritracker/features/add_meal/domain/usecase/search_product
 import 'package:opennutritracker/features/add_meal/presentation/add_meal_screen.dart';
 import 'package:opennutritracker/features/add_meal/presentation/add_meal_type.dart';
 import 'package:opennutritracker/features/add_meal/presentation/bloc/add_meal_bloc.dart';
-import 'package:opennutritracker/features/add_meal/presentation/bloc/favourite_meal_bloc.dart';
-import 'package:opennutritracker/features/add_meal/presentation/bloc/favourite_toggle_bloc.dart';
 import 'package:opennutritracker/features/add_meal/presentation/bloc/food_bloc.dart';
 import 'package:opennutritracker/features/add_meal/presentation/bloc/products_bloc.dart';
 import 'package:opennutritracker/features/add_meal/presentation/bloc/recent_meal_bloc.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 
-import '../../../helpers/fake_favourites.dart';
 import '../../../helpers/test_l10n.dart';
 
 /// Counts reads of recent history: each one copies and sorts the whole
@@ -56,8 +53,6 @@ class _FakeGetConfigUsecase implements GetConfigUsecase {
 class _FakeSearch implements SearchProductsUseCase {
   final List<String> offQueries = [];
   final List<String> fdcQueries = [];
-  List<MealEntity> products = const [];
-  List<MealEntity> food = const [];
 
   @override
   Future<SearchProductsResult> searchOFFProductsByString(
@@ -65,7 +60,7 @@ class _FakeSearch implements SearchProductsUseCase {
     bool skipRemote = false,
   }) async {
     offQueries.add(searchString);
-    return SearchProductsResult(meals: products, remoteSourceEmpty: true);
+    return const SearchProductsResult(meals: [], remoteSourceEmpty: true);
   }
 
   @override
@@ -75,7 +70,7 @@ class _FakeSearch implements SearchProductsUseCase {
     bool forResolution = false,
   }) async {
     fdcQueries.add(searchString);
-    return SearchProductsResult(meals: food, remoteSourceEmpty: true);
+    return const SearchProductsResult(meals: [], remoteSourceEmpty: true);
   }
 
   @override
@@ -103,28 +98,10 @@ IntakeEntity _intake(String name) => IntakeEntity(
   dateTime: DateTime(2026, 10, 1),
 );
 
-MealEntity _meal(String name, MealSourceEntity source) => MealEntity(
-  code: name,
-  name: name,
-  url: null,
-  mealQuantity: null,
-  mealUnit: 'g',
-  servingQuantity: null,
-  servingUnit: 'g',
-  servingSize: null,
-  nutriments: MealNutrimentsEntity.empty(),
-  source: source,
-);
-
-Finder _withIdentifier(String identifier) => find.byWidgetPredicate(
-  (widget) => widget is Semantics && widget.properties.identifier == identifier,
-);
-
 final getIt = GetIt.instance;
 
 late _FakeGetIntakeUsecase _intakeUsecase;
 late _FakeSearch _search;
-FakeFavourites? _favourites;
 
 Future<void> _register(List<IntakeEntity> recent) async {
   await getIt.reset();
@@ -136,15 +113,6 @@ Future<void> _register(List<IntakeEntity> recent) async {
   getIt.registerFactory<FoodBloc>(() => FoodBloc(_search, config));
   getIt.registerFactory<RecentMealBloc>(
     () => RecentMealBloc(_intakeUsecase, config),
-  );
-  // #1307: the screen's Favourites source and the stars on its cards.
-  await _favourites?.dispose();
-  final favourites = _favourites = FakeFavourites();
-  getIt.registerFactory<FavouriteMealBloc>(
-    () => FavouriteMealBloc(favourites.get, config),
-  );
-  getIt.registerFactory<FavouriteToggleBloc>(
-    () => FavouriteToggleBloc(favourites.get, favourites.toggle),
   );
 }
 
@@ -224,33 +192,6 @@ void main() {
   group('AddMealScreen sticky Recent search', () {
     tearDown(() async => getIt.reset());
 
-    testWidgets('each meal result list identifies its parent surface', (
-      tester,
-    ) async {
-      await _register([_intake('Apple')]);
-      _search
-        ..products = [_meal('Product', MealSourceEntity.off)]
-        ..food = [_meal('Food', MealSourceEntity.fdc)];
-      await tester.pumpWidget(_app());
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, 'ap');
-      await tester.pumpAndSettle();
-
-      expect(_withIdentifier('add-meal-all-list'), findsOneWidget);
-
-      await tester.tap(find.text(l10nEn.searchProductsPage));
-      await tester.pumpAndSettle();
-      expect(_withIdentifier('add-meal-products-list'), findsOneWidget);
-
-      await tester.tap(find.text(l10nEn.searchFoodPage));
-      await tester.pumpAndSettle();
-      expect(_withIdentifier('add-meal-food-list'), findsOneWidget);
-
-      await tester.tap(find.text(l10nEn.recentlyAddedLabel));
-      await tester.pumpAndSettle();
-      expect(_withIdentifier('add-meal-recent-list'), findsOneWidget);
-    });
-
     testWidgets(
         'Search all is offered only once the query is long enough to search, '
         'and typing never re-reads recent history', (tester) async {
@@ -261,7 +202,6 @@ void main() {
       // Explicitly pick Recent so typing stays there (#576).
       await tester.tap(find.text(l10nEn.recentlyAddedLabel));
       await tester.pumpAndSettle();
-      expect(_withIdentifier('add-meal-recent-list'), findsOneWidget);
       final readsBeforeTyping = _intakeUsecase.recentReads;
 
       // One character: All would refuse to search it, so no CTA.

@@ -9,14 +9,12 @@ import 'package:hive_ce/hive.dart';
 import 'package:opennutritracker/core/data/data_source/custom_activity_template_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/config_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/custom_meal_data_source.dart';
-import 'package:opennutritracker/core/data/data_source/favourite_meal_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/intake_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/recipe_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/tracked_day_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/user_activity_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/weight_log_data_source.dart';
 import 'package:opennutritracker/core/data/dbo/config_dbo.dart';
-import 'package:opennutritracker/core/data/dbo/favourite_meal_dbo.dart';
 import 'package:opennutritracker/core/data/dbo/intake_dbo.dart';
 import 'package:opennutritracker/core/data/dbo/intake_type_dbo.dart';
 import 'package:opennutritracker/core/data/dbo/meal_dbo.dart';
@@ -28,7 +26,6 @@ import 'package:opennutritracker/core/data/dbo/weight_log_dbo.dart';
 import 'package:opennutritracker/core/data/data_source/custom_activity_template_dbo.dart';
 import 'package:opennutritracker/core/data/repository/config_repository.dart';
 import 'package:opennutritracker/core/data/repository/custom_activity_template_repository.dart';
-import 'package:opennutritracker/core/data/repository/favourite_meal_repository.dart';
 import 'package:opennutritracker/core/data/repository/intake_repository.dart';
 import 'package:opennutritracker/core/data/repository/recipe_repository.dart';
 import 'package:opennutritracker/core/data/repository/tracked_day_repository.dart';
@@ -134,18 +131,6 @@ class _StubConfigRepository extends ConfigRepository {
 
   @override
   Future<ConfigDBO> getConfigDBO() async => ConfigDBO.empty();
-}
-
-class _StubFavouriteMealRepository extends FavouriteMealRepository {
-  _StubFavouriteMealRepository()
-    : super(
-        FavouriteMealDataSource(FakeHiveDBProvider()),
-        CustomMealDataSource(FakeHiveDBProvider()),
-        RecipeDataSource(FakeHiveDBProvider()),
-      );
-
-  @override
-  Future<List<FavouriteMealDBO>> getAllFavouritesDBO() async => [];
 }
 
 MealDBO _meal({required String id, String? localImagePath}) {
@@ -271,7 +256,6 @@ void main() {
               _StubWeightLogRepository(),
               _StubTemplateRepository(),
               ConfigRepository(configs),
-              _StubFavouriteMealRepository(),
             ).assembleArchive(
               format: format,
               userActivityJsonFileName: 'user_activity.json',
@@ -359,7 +343,6 @@ void main() {
         _StubWeightLogRepository(),
         _StubTemplateRepository(),
         _StubConfigRepository(),
-        _StubFavouriteMealRepository(),
       );
 
       final archive = await usecase.assembleArchive(
@@ -430,7 +413,6 @@ void main() {
       _StubWeightLogRepository(),
       _StubTemplateRepository(),
       _StubConfigRepository(),
-      _StubFavouriteMealRepository(),
     );
 
     final archive = await usecase.assembleArchive(

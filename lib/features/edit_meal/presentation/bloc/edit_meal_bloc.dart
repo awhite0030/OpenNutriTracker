@@ -3,12 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:opennutritracker/core/data/data_source/custom_meal_data_source.dart';
 import 'package:opennutritracker/core/data/dbo/meal_dbo.dart';
 import 'package:opennutritracker/core/data/repository/config_repository.dart';
-import 'package:opennutritracker/core/data/repository/favourite_meal_repository.dart';
 import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
-import 'package:opennutritracker/core/utils/barcode_validator.dart';
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 import 'package:opennutritracker/core/utils/extensions.dart';
-import 'package:opennutritracker/core/utils/id_generator.dart';
-import 'package:opennutritracker/core/utils/tracked_day_lock.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_nutriments_entity.dart';
 
@@ -35,24 +32,6 @@ double factorTo100gFromBase(String baseQuantity) {
   return (parsed != null && parsed.isFinite && parsed > 0) ? (100 / parsed) : 1;
 }
 
-/// The code an edited meal is saved with, given the Barcode field.
-///
-/// `null` keeps the old code. A typed or scanned barcode replaces it. An
-/// empty string is a blanked field: it clears the barcode a custom meal had,
-/// and the meal gets a fresh internal id in its place, the kind
-/// `MealEntity.empty()` gives a new custom meal, so it stays identified by a
-/// code rather than falling back to its name. A code the field never showed
-/// (an internal id) and an Open Food Facts or FDC product's code are kept.
-String? codeAfterEdit(MealEntity oldMealEntity, String? barcodeOverride) {
-  final oldCode = oldMealEntity.code;
-  if (barcodeOverride == null) return oldCode;
-  if (barcodeOverride.isNotEmpty) return barcodeOverride;
-  final hadBarcode = oldMealEntity.source == MealSourceEntity.custom &&
-      oldCode != null &&
-      isBarcodeFormatValid(oldCode);
-  return hadBarcode ? IdGenerator.getUniqueID() : oldCode;
-}
-
 /// Custom meal form view mode (#232). Persisted on ConfigDBO so the form
 /// remembers which view the user prefers between sessions.
 enum CustomMealFormMode {
@@ -72,26 +51,20 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
   final GetConfigUsecase _getConfigUsecase;
   final CustomMealDataSource _customMealDataSource; // #267
   final ConfigRepository _configRepository;
-  final FavouriteMealRepository _favouriteMealRepository; // #1307
+  final MergeCustomMealsUseCase _mergeCustomMealsUseCase;
 
   EditMealBloc(
     this._getConfigUsecase,
     this._customMealDataSource,
     this._configRepository,
-    this._favouriteMealRepository,
-  )
-      : super(EditMealInitial()) {
+    this._mergeCustomMealsUseCase,
+  ) : super(EditMealInitial()) {
     on<InitializeEditMealEvent>((event, emit) async {
       emit(EditMealLoadingState());
 
       final config = await _getConfigUsecase.getConfig();
-      final mode = CustomMealFormMode.fromString(
-        await _configRepository.getCustomMealFormMode(),
-      );
-      emit(EditMealLoadedState(
-        usesImperialUnits: config.usesImperialFoodUnits,
-        formMode: mode,
-      ));
+      final mode = CustomMealFormMode.fromString(await _configRepository.getCustomMealFormMode());
+      emit(EditMealLoadedState(usesImperialUnits: config.usesImperialFoodUnits, formMode: mode));
     });
   }
 
@@ -133,8 +106,7 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       return nutrimentValue != null ? nutrimentValue * factorTo100g : null;
     }
 
-    double? fromTextOrOld(String? text, double? oldValue) =>
-        multiplyIfNotNull(text?.toDoubleOrNull() ?? oldValue);
+    double? fromTextOrOld(String? text, double? oldValue) => multiplyIfNotNull(text?.toDoubleOrNull() ?? oldValue);
 
     final newMealNutriments = MealNutrimentsEntity(
       energyKcal100: multiplyIfNotNull(kcalText.toDoubleOrNull()),
@@ -158,7 +130,7 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       // from the originating OFF/FDC record, but only when the override
       // was actually supplied. Empty-string is treated as "clear" so a
       // user can erase a stored code by blanking the field.
-      code: codeAfterEdit(oldMealEntity, barcodeOverride),
+      code: barcodeOverride ?? oldMealEntity.code,
       name: nameText.toStringOrNull(),
       brands: brandsText.toStringOrNull(),
       url: oldMealEntity.url,
@@ -179,38 +151,20 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       // #64 follow-up: a freshly-picked local photo wins over what was
       // on the old entity; a clear flag means the user removed the
       // photo and the slug should be wiped from the saved meal.
-      localImagePath: clearLocalImagePath
-          ? null
-          : (localImagePathOverride ?? oldMealEntity.localImagePath),
+      localImagePath: clearLocalImagePath ? null : (localImagePathOverride ?? oldMealEntity.localImagePath),
     );
   }
 
   /// Persist custom meal template so it appears in Recent Meals before first log (#267)
-  ///
-  /// [previous] is the meal as it was before the edit: its library entry is
-  /// the one replaced, even when the edit changed the barcode or the name
-  /// the meal is found by (#1403). A favourite on it, in any profile, takes
-  /// the edited version, and moves to its key when the edit changed its
-  /// identity, so it stays starred (#1307). Another library entry that
-  /// already had the new identity is dropped by the save; a favourite on it
-  /// is keyed by that identity, so it now resolves to the edited meal, and a
-  /// profile that starred both keeps one entry, starred at the earlier time.
-  ///
-  /// The save and the move run as one step under the tracked-day lock, so a
-  /// profile switch cannot land between them and swap the favourites box
-  /// mid-way. Not tied to the profile the edit began on: the library is
-  /// shared and the move covers every profile, so a switch queued behind it
-  /// just waits rather than dropping the user's save.
-  Future<void> saveCustomMeal(
-    MealEntity mealEntity, {
-    MealEntity? previous,
-  }) => withTrackedDayLock(() async {
-    await _customMealDataSource.saveCustomMeal(
-      MealDBO.fromMealEntity(mealEntity),
-      previous: previous == null ? null : MealDBO.fromMealEntity(previous),
-    );
-    if (previous != null) {
-      await _favouriteMealRepository.moveFavourite(previous, mealEntity);
+  Future<int> saveCustomMeal(MealEntity mealEntity, {MealEntity? oldMealEntity}) async {
+    await _customMealDataSource.saveCustomMeal(MealDBO.fromMealEntity(mealEntity));
+
+    final newKey = mealEntity.code ?? mealEntity.name;
+    final oldKey = oldMealEntity?.code ?? oldMealEntity?.name;
+    if (oldKey != null && oldMealEntity?.source == MealSourceEntity.custom && oldKey != newKey && newKey != null) {
+      final result = await _mergeCustomMealsUseCase.merge(loserKey: oldKey, winnerKey: newKey);
+      return result.rewrittenIntakeCount;
     }
-  });
+    return 0;
+  }
 }

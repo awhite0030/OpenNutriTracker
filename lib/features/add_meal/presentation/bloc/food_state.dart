@@ -23,11 +23,6 @@ class FoodLoadedState extends FoodState {
   /// hint below any custom-meal matches.
   final bool remoteSourceEmpty;
 
-  /// True when the remote FDC source threw (timeout, rate limit, network)
-  /// rather than answering — the use case still returns local matches, so
-  /// this is a loaded state, but the "All" view flags the gap.
-  final bool remoteSourceFailed;
-
   /// The raw search input these results answer — see
   /// ProductsLoadedState.query for how the UI uses it.
   final String query;
@@ -36,13 +31,12 @@ class FoodLoadedState extends FoodState {
     required this.food,
     this.usesImperialUnits = false,
     this.remoteSourceEmpty = false,
-    this.remoteSourceFailed = false,
     this.query = '',
   });
 
   @override
   List<Object?> get props =>
-      [food, usesImperialUnits, remoteSourceEmpty, remoteSourceFailed, query];
+      [food, usesImperialUnits, remoteSourceEmpty, query];
 }
 
 class FoodFailedState extends FoodState {

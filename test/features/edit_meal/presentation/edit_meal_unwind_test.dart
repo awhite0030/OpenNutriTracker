@@ -5,7 +5,6 @@ import 'package:get_it/get_it.dart';
 import 'package:opennutritracker/core/data/data_source/custom_meal_data_source.dart';
 import 'package:opennutritracker/core/data/data_source/remote_search_cache_data_source.dart';
 import 'package:opennutritracker/core/data/repository/config_repository.dart';
-import 'package:opennutritracker/core/data/repository/favourite_meal_repository.dart';
 import 'package:opennutritracker/core/domain/entity/app_theme_entity.dart';
 import 'package:opennutritracker/core/domain/entity/config_entity.dart';
 import 'package:opennutritracker/core/domain/entity/intake_entity.dart';
@@ -23,10 +22,10 @@ import 'package:opennutritracker/core/utils/energy_unit_provider.dart';
 import 'package:opennutritracker/core/utils/navigation_options.dart';
 import 'package:opennutritracker/features/add_meal/data/repository/products_repository.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_nutriments_entity.dart';
-import 'package:opennutritracker/features/add_meal/presentation/bloc/favourite_toggle_bloc.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/edit_meal/presentation/bloc/edit_meal_bloc.dart';
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 import 'package:opennutritracker/features/edit_meal/presentation/edit_meal_screen.dart';
 import 'package:opennutritracker/features/home/presentation/bloc/home_bloc.dart';
 import 'package:opennutritracker/features/meal_detail/meal_detail_screen.dart';
@@ -34,7 +33,6 @@ import 'package:opennutritracker/features/meal_detail/presentation/bloc/meal_det
 import 'package:opennutritracker/generated/l10n.dart';
 import 'package:provider/provider.dart';
 
-import '../../../helpers/fake_favourites.dart';
 import '../../../helpers/test_l10n.dart';
 
 /// End-to-end cover for the black screen after logging a recipe.
@@ -56,6 +54,8 @@ import '../../../helpers/test_l10n.dart';
 ///
 /// Only the main screen is stubbed, because all these unwinds want from it
 /// is a route named `main` to survive.
+class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+
 void main() {
   final getIt = GetIt.instance;
   final loggedIntakes = <IntakeEntity>[];
@@ -106,17 +106,12 @@ void main() {
         _FakeGetConfigUsecase(),
         _FakeCustomMealDataSource(),
         _FakeConfigRepository(),
-        _FakeFavouriteMealRepository(),
+        _FakeMergeCustomMealsUseCase(),
       ),
     );
     getIt.registerLazySingleton<GetConfigUsecase>(_FakeGetConfigUsecase.new);
     getIt.registerLazySingleton<GetIntakeUsecase>(_FakeGetIntakeUsecase.new);
     getIt.registerLazySingleton<CacheManager>(_FakeCacheManager.new);
-    // #1307: the detail page's star.
-    final favourites = FakeFavourites();
-    getIt.registerFactory<FavouriteToggleBloc>(
-      () => FavouriteToggleBloc(favourites.get, favourites.toggle),
-    );
     getIt.registerLazySingleton<HomeBloc>(_FakeHomeBloc.new);
     getIt.registerLazySingleton<DiaryBloc>(_FakeDiaryBloc.new);
     getIt.registerLazySingleton<CalendarDayBloc>(_FakeCalendarDayBloc.new);
@@ -158,12 +153,7 @@ void main() {
             routeFor(
               RouteSettings(
                 name: NavigationOptions.mealDetailRoute,
-                arguments: MealDetailScreenArguments(
-                  recipe.toMealEntity(),
-                  IntakeTypeEntity.dinner,
-                  day,
-                  false,
-                ),
+                arguments: MealDetailScreenArguments(recipe.toMealEntity(), IntakeTypeEntity.dinner, day, false),
               ),
             ),
           ],
@@ -176,75 +166,57 @@ void main() {
     return navigatorKey.currentState!;
   }
 
-  testWidgets(
-    'logging a recipe through Edit Meal leaves the main screen standing',
-    (tester) async {
-      final navigator = await pumpRecipeLogStack(tester);
-      expect(find.text(recipe.name), findsWidgets);
+  testWidgets('logging a recipe through Edit Meal leaves the main screen standing', (tester) async {
+    final navigator = await pumpRecipeLogStack(tester);
+    expect(find.text(recipe.name), findsWidgets);
 
-      // The meal-detail edit pencil. It passes no `editOnly`, so Edit Meal
-      // opens on the create-and-log save path rather than the `pop()` one the
-      // recipe/custom-meal list entry points get.
-      await tester.tap(find.byIcon(Icons.edit_rounded));
-      await tester.pumpAndSettle();
-      expect(find.text(l10nEn.editMealLabel), findsOneWidget);
+    // The meal-detail edit pencil. It passes no `editOnly`, so Edit Meal
+    // opens on the create-and-log save path rather than the `pop()` one the
+    // recipe/custom-meal list entry points get.
+    await tester.tap(find.byIcon(Icons.edit_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text(l10nEn.editMealLabel), findsOneWidget);
 
-      await tester.tap(
-        find.widgetWithText(FilledButton, l10nEn.buttonSaveLabel),
-      );
-      await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, l10nEn.buttonSaveLabel));
+    await tester.pumpAndSettle();
 
-      // The save lands on a fresh meal detail either way — the regression is
-      // what it leaves underneath.
-      expect(find.text(l10nEn.editMealLabel), findsNothing);
-      expect(
-        navigator.canPop(),
-        isTrue,
-        reason: 'main must survive the Edit Meal unwind',
-      );
+    // The save lands on a fresh meal detail either way — the regression is
+    // what it leaves underneath.
+    expect(find.text(l10nEn.editMealLabel), findsNothing);
+    expect(navigator.canPop(), isTrue, reason: 'main must survive the Edit Meal unwind');
 
-      await tester.tap(find.widgetWithText(FilledButton, l10nEn.addLabel));
-      await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, l10nEn.addLabel));
+    await tester.pumpAndSettle();
 
-      // The intake is written whatever the navigator does — that is why the
-      // bug reads as "my food was logged and then the app went black".
-      expect(loggedIntakes, hasLength(1));
-      expect(loggedIntakes.single.type, IntakeTypeEntity.dinner);
+    // The intake is written whatever the navigator does — that is why the
+    // bug reads as "my food was logged and then the app went black".
+    expect(loggedIntakes, hasLength(1));
+    expect(loggedIntakes.single.type, IntakeTypeEntity.dinner);
 
-      expect(find.text('${NavigationOptions.mainRoute}-stub'), findsOneWidget);
-      expect(
-        find.byType(Scaffold),
-        findsWidgets,
-        reason: 'an empty navigator renders as a black screen',
-      );
-    },
-  );
+    expect(find.text('${NavigationOptions.mainRoute}-stub'), findsOneWidget);
+    expect(find.byType(Scaffold), findsWidgets, reason: 'an empty navigator renders as a black screen');
+  });
 }
 
 class _FakeGetConfigUsecase implements GetConfigUsecase {
   @override
-  Future<ConfigEntity> getConfig() async =>
-      const ConfigEntity(true, true, false, AppThemeEntity.system);
+  Future<ConfigEntity> getConfig() async => const ConfigEntity(true, true, false, AppThemeEntity.system);
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeConfigRepository implements ConfigRepository {
   @override
-  Future<String?> getCustomMealFormMode() async =>
-      CustomMealFormMode.simple.name;
+  Future<String?> getCustomMealFormMode() async => CustomMealFormMode.simple.name;
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeCustomMealDataSource implements CustomMealDataSource {
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeAddIntakeUsecase implements AddIntakeUsecase {
@@ -258,8 +230,7 @@ class _FakeAddIntakeUsecase implements AddIntakeUsecase {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeAddTrackedDayUsecase implements AddTrackedDayUsecase {
@@ -278,46 +249,40 @@ class _FakeAddTrackedDayUsecase implements AddTrackedDayUsecase {
   }) async {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeGetKcalGoalUsecase implements GetKcalGoalUsecase {
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeGetMacroGoalUsecase implements GetMacroGoalUsecase {
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeGetTrackedDayUsecase implements GetTrackedDayUsecase {
   @override
-  Future<TrackedDayEntity?> getTrackedDay(DateTime day) async =>
-      TrackedDayEntity(
-        day: day,
-        calorieGoal: 2200,
-        caloriesTracked: 800,
-        carbsGoal: 250,
-        carbsTracked: 100,
-        fatGoal: 70,
-        fatTracked: 30,
-        proteinGoal: 120,
-        proteinTracked: 50,
-      );
+  Future<TrackedDayEntity?> getTrackedDay(DateTime day) async => TrackedDayEntity(
+    day: day,
+    calorieGoal: 2200,
+    caloriesTracked: 800,
+    carbsGoal: 250,
+    carbsTracked: 100,
+    fatGoal: 70,
+    fatTracked: 30,
+    proteinGoal: 120,
+    proteinTracked: 50,
+  );
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeProductsRepository implements ProductsRepository {
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeRemoteSearchCacheDataSource implements RemoteSearchCacheDataSource {
@@ -325,8 +290,7 @@ class _FakeRemoteSearchCacheDataSource implements RemoteSearchCacheDataSource {
   Future<void> touch(String barcode) async {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeGetIntakeUsecase implements GetIntakeUsecase {
@@ -338,8 +302,7 @@ class _FakeGetIntakeUsecase implements GetIntakeUsecase {
   }) async => [];
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 /// The three refresh blocs the intake sheet pokes on its way out. They only
@@ -349,8 +312,7 @@ class _FakeHomeBloc implements HomeBloc {
   void add(HomeEvent event) {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeDiaryBloc implements DiaryBloc {
@@ -358,8 +320,7 @@ class _FakeDiaryBloc implements DiaryBloc {
   void add(DiaryEvent event) {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 class _FakeCalendarDayBloc implements CalendarDayBloc {
@@ -367,8 +328,7 @@ class _FakeCalendarDayBloc implements CalendarDayBloc {
   void add(CalendarDayEvent event) {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }
 
 /// The meal screens render a [CachedNetworkImage] for non-custom meals; an
@@ -383,11 +343,5 @@ class _FakeCacheManager implements CacheManager {
   }) => const Stream<FileResponse>.empty();
 
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
-}
-
-class _FakeFavouriteMealRepository implements FavouriteMealRepository {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError('Unexpected call: ${invocation.memberName}');
 }

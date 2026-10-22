@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opennutritracker/core/data/data_source/custom_meal_data_source.dart';
 import 'package:opennutritracker/core/data/repository/config_repository.dart';
-import 'package:opennutritracker/core/data/repository/favourite_meal_repository.dart';
 import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
 import 'package:opennutritracker/features/edit_meal/presentation/bloc/edit_meal_bloc.dart';
+import 'package:opennutritracker/core/domain/usecase/merge_custom_meals_usecase.dart';
 
 /// Regression test for #495 — custom-food serving size.
 ///
@@ -32,6 +32,8 @@ class _FakeConfigRepository implements ConfigRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _FakeMergeCustomMealsUseCase extends Fake implements MergeCustomMealsUseCase {}
+
 void main() {
   group('createNewMealEntity serving unit (#495)', () {
     late EditMealBloc bloc;
@@ -41,7 +43,7 @@ void main() {
         _FakeGetConfigUsecase(),
         _FakeCustomMealDataSource(),
         _FakeConfigRepository(),
-        _FakeFavouriteMealRepository(),
+        _FakeMergeCustomMealsUseCase(),
       );
     });
 
@@ -65,8 +67,7 @@ void main() {
       );
     }
 
-    test('serving unit is the selected unit, not the serving quantity text',
-        () {
+    test('serving unit is the selected unit, not the serving quantity text', () {
       final meal = build(servingQuantity: '50', unit: 'g');
       expect(meal.servingUnit, 'g');
       expect(meal.servingQuantity, 50);
@@ -85,9 +86,4 @@ void main() {
       expect(meal.servingUnit, 'g/ml');
     });
   });
-}
-
-class _FakeFavouriteMealRepository implements FavouriteMealRepository {
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

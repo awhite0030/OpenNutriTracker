@@ -23,9 +23,6 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
   /// restart-cancelled runs never block a retype of the same query.
   String? _completedQuery;
 
-  /// See [ProductsBloc]: only the latest search run of any event may emit.
-  int _generation = 0;
-
   FoodBloc(this._searchProductUseCase, this._getConfigUsecase)
       : super(FoodInitial()) {
     on<LoadFoodEvent>(
@@ -35,15 +32,29 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
       (event, emit) => _loadFood(event.searchString, emit),
       transformer: debounceRestartable(searchDebounceDuration),
     );
-    // Retry re-runs the last query through the normal path, so the result
-    // carries the unit preference and provider-failure flag like any other
-    // search. Blank to the spinner first: Retry needs visible feedback even
-    // when the failed results are still on screen.
     on<RefreshFoodEvent>((event, emit) async {
-      if (_searchString.trim().length >= minQueryLength) {
-        emit(FoodLoadingState());
+      if (_searchString.trim().isEmpty) {
+        _completedQuery = null;
+        emit(FoodInitial());
+        return;
       }
-      await _loadFood(_searchString, emit, force: true);
+      emit(FoodLoadingState());
+      try {
+        final result = await _searchProductUseCase.searchFDCFoodByString(
+          _searchString,
+        );
+        if (emit.isDone) return;
+        emit(FoodLoadedState(
+          food: result.meals,
+          remoteSourceEmpty: result.remoteSourceEmpty,
+          query: _searchString,
+        ));
+        _completedQuery = _searchString;
+      } catch (error) {
+        log.severe(error);
+        _completedQuery = null;
+        emit(FoodFailedState());
+      }
     });
   }
 
@@ -56,9 +67,6 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     bool force = false,
   }) async {
     if (searchString.trim().length < minQueryLength) {
-      // Supersedes any search still in flight: its results would replace
-      // the reset below.
-      _generation++;
       _searchString = searchString;
       _completedQuery = null;
       if (state is! FoodInitial) emit(FoodInitial());
@@ -67,9 +75,6 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
     if (!force && searchString == _completedQuery) {
       return;
     }
-    // Bumped only for a run that actually searches: a skipped duplicate
-    // must not orphan the in-flight run it deferred to.
-    final run = ++_generation;
     _searchString = searchString;
     // See ProductsBloc: keep visible results during a refinement, but an
     // empty list blanks to the spinner rather than a premature "no results".
@@ -82,20 +87,17 @@ class FoodBloc extends Bloc<FoodEvent, FoodState> {
         searchString,
       );
       final config = await _getConfigUsecase.getConfig();
-      // See ProductsBloc: a newer run of any event type supersedes this one.
-      if (emit.isDone || run != _generation) return;
+      if (emit.isDone) return;
       emit(
         FoodLoadedState(
           food: result.meals,
           usesImperialUnits: config.usesImperialFoodUnits,
           remoteSourceEmpty: result.remoteSourceEmpty,
-          remoteSourceFailed: result.remoteSourceFailed,
           query: searchString,
         ),
       );
       _completedQuery = searchString;
     } catch (error) {
-      if (run != _generation) return;
       log.severe(error);
       _completedQuery = null;
       if (!emit.isDone) emit(FoodFailedState());

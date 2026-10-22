@@ -12,7 +12,6 @@ import 'package:opennutritracker/core/utils/navigation_options.dart';
 import 'package:opennutritracker/features/add_meal/data/dto/sp/sp_const.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
 import 'package:opennutritracker/features/add_meal/presentation/add_meal_type.dart';
-import 'package:opennutritracker/features/add_meal/presentation/widgets/favourite_toggle_button.dart';
 import 'package:opennutritracker/features/add_meal/util/food_emoji_resolver.dart';
 import 'package:opennutritracker/features/meal_detail/meal_detail_screen.dart';
 import 'package:opennutritracker/generated/l10n.dart';
@@ -22,7 +21,6 @@ class MealItemCard extends StatelessWidget {
   final AddMealType addMealType;
   final MealEntity mealEntity;
   final bool usesImperialUnits;
-  final String? favouriteSemanticsIdentifier;
 
   const MealItemCard({
     super.key,
@@ -30,7 +28,6 @@ class MealItemCard extends StatelessWidget {
     required this.mealEntity,
     required this.addMealType,
     required this.usesImperialUnits,
-    this.favouriteSemanticsIdentifier,
   });
 
   @override
@@ -64,9 +61,9 @@ class MealItemCard extends StatelessWidget {
                     TextSpan(
                       text: mealEntity.name ?? "?",
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: palette.textStrong,
-                      ),
+                            fontWeight: FontWeight.w700,
+                            color: palette.textStrong,
+                          ),
                       children: [
                         TextSpan(
                           text: ' ${mealEntity.brands ?? ""}',
@@ -85,13 +82,6 @@ class MealItemCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: Dimens.spacing8),
-            // A builder row leaves the identifier out and its list carries
-            // one (AGENTS.md, "Dynamic lists"); the add-item sheet's fixed
-            // recent rows pass their own.
-            FavouriteToggleButton(
-              meal: mealEntity,
-              semanticsIdentifier: favouriteSemanticsIdentifier,
-            ),
             Semantics(
               identifier: 'meal-item-add',
               child: IconButton(
@@ -185,9 +175,7 @@ class MealItemCard extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Flexible too: on a narrow phone the chip alone can be wider
-          // than the column the favourite star leaves it.
-          Flexible(child: chip),
+          chip,
           const SizedBox(width: Dimens.spacing8),
           Flexible(child: quantity),
         ],
@@ -222,12 +210,10 @@ class MealItemCard extends StatelessWidget {
       ),
       child: Text(
         label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w700,
-        ),
+              color: foreground,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }

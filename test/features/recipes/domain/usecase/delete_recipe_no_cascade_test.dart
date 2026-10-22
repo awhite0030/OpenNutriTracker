@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opennutritracker/core/data/repository/favourite_meal_repository.dart';
 import 'package:opennutritracker/core/data/repository/recipe_repository.dart';
 import 'package:opennutritracker/core/domain/entity/intake_entity.dart';
 import 'package:opennutritracker/core/domain/entity/intake_type_entity.dart';
@@ -26,15 +25,6 @@ class _FakeRecipeRepository implements RecipeRepository {
   Future<void> deleteRecipe(String id) async {
     store.remove(id);
   }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('Unexpected call: ${invocation.memberName}');
-}
-
-class _NoFavourites implements FavouriteMealRepository {
-  @override
-  Future<void> keepLatestRecipeSnapshot(String recipeId) async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -92,7 +82,7 @@ void main() {
       final beforeMealCode = loggedIntake.meal.code;
 
       // Delete the recipe.
-      final useCase = DeleteRecipeUseCase(repo, _NoFavourites());
+      final useCase = DeleteRecipeUseCase(repo);
       await useCase.delete(recipe.id);
 
       // Recipe is gone from the repository.

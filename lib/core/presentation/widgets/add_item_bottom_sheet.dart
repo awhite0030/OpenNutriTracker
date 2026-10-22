@@ -247,14 +247,12 @@ class AddItemBottomSheet extends StatelessWidget {
                     ),
               ),
             ),
-            for (final (index, intake) in recent.indexed)
+            for (final intake in recent)
               MealItemCard(
                 day: day,
                 mealEntity: intake.meal,
                 addMealType: AddMealExtension.fromIntakeTypeEntity(intake.type),
                 usesImperialUnits: usesImperialUnits,
-                favouriteSemanticsIdentifier:
-                    'add-item-recent-favourite-${index + 1}',
               ),
             const Divider(indent: 16, endIndent: 16),
           ],

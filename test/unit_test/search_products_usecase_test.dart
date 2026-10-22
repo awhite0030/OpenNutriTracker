@@ -369,7 +369,6 @@ void main() {
 
         expect(result.meals, [customMatch]);
         expect(result.remoteSourceEmpty, isTrue);
-        expect(result.remoteSourceFailed, isTrue);
       },
     );
 
@@ -388,7 +387,6 @@ void main() {
 
         expect(result.meals, [customMatch]);
         expect(result.remoteSourceEmpty, isTrue);
-        expect(result.remoteSourceFailed, isTrue);
       },
     );
 
@@ -403,7 +401,6 @@ void main() {
 
         expect(result.meals, isEmpty);
         expect(result.remoteSourceEmpty, isTrue);
-        expect(result.remoteSourceFailed, isTrue);
       },
     );
 
@@ -423,9 +420,6 @@ void main() {
 
         expect(result.meals, [customMatch]);
         expect(result.remoteSourceEmpty, isTrue);
-        // A genuine zero-row answer is not a provider failure: the "All"
-        // view must keep the two apart.
-        expect(result.remoteSourceFailed, isFalse);
       },
     );
 
