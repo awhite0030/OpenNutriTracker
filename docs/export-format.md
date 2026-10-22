@@ -30,6 +30,7 @@ next to its CSV counterpart will not find one.
 | `custom_activity_templates.json` | Saved custom activities — name and typical kcal.         |
 | `goal_settings.json`             | The profile's goal settings. See [below](#goal_settingsjson). |
 | `user_favourites.json`           | The starred foods and meals, each with a meal snapshot. See [below](#user_favouritesjson). |
+| `health_tombstones.json`         | Deleted health-imported workouts. See [below](#health_tombstonesjson). |
 | `tracked_day_boundary.json`      | The day boundary the tracked days are keyed by. See [below](#tracked_day_boundaryjson--tracked_day_boundarycsv). |
 
 **CSV bundle**
@@ -225,6 +226,23 @@ Array of per-day calorie/macro totals:
     "proteinTracked": 95.0
   }
 ]
+```
+
+### `health_tombstones.json`
+
+An object containing a mapping of external IDs of deleted health-imported workouts to their start times.
+
+Added in [#1422](https://github.com/simonoppowa/OpenNutriTracker/issues/1422) so deletions
+survive a backup restore. Absent if the user has never deleted an imported workout.
+
+```jsonc
+{
+  "version": 1,
+  "tombstones": {
+    "9D0F3C2B-1E4A-4B8C-9D0F-3C2B1E4A4B8C": "2026-05-13T18:00:00.000",
+    "B8A7F6E5-D4C3-B2A1-B8A7-F6E5D4C3B2A1": "2026-05-14T09:30:00.000"
+  }
+}
 ```
 
 ### `goal_settings.json`

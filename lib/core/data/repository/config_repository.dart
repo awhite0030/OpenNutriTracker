@@ -19,12 +19,8 @@ class ConfigRepository {
     await _configDataSource.setConfigDisclaimer(hasAcceptedDisclaimer);
   }
 
-  Future<void> setConfigHasAcceptedAnonymousData(
-    bool hasAcceptedAnonymousData,
-  ) async {
-    await _configDataSource.setConfigAcceptedAnonymousData(
-      hasAcceptedAnonymousData,
-    );
+  Future<void> setConfigHasAcceptedAnonymousData(bool hasAcceptedAnonymousData) async {
+    await _configDataSource.setConfigAcceptedAnonymousData(hasAcceptedAnonymousData);
   }
 
   Future<void> setConfigHasAcceptedPolicy(bool hasAcceptedPolicy) async {
@@ -45,9 +41,7 @@ class ConfigRepository {
   }
 
   Future<void> setConfigAppTheme(AppThemeEntity appTheme) async {
-    await _configDataSource.setConfigAppTheme(
-      AppThemeDBO.fromAppThemeEntity(appTheme),
-    );
+    await _configDataSource.setConfigAppTheme(AppThemeDBO.fromAppThemeEntity(appTheme));
   }
 
   Future<ConfigEntity> getConfig() async {
@@ -176,9 +170,7 @@ class ConfigRepository {
     await _configDataSource.setDiarySortPreference(mealKey, sortIndex);
   }
 
-  Future<void> setConfigNutrientPanelVisibility(
-    Map<String, bool> visibility,
-  ) async {
+  Future<void> setConfigNutrientPanelVisibility(Map<String, bool> visibility) async {
     await _configDataSource.setConfigNutrientPanelVisibility(visibility);
   }
 
@@ -222,14 +214,12 @@ class ConfigRepository {
     await _configDataSource.setConfigHealthLastImportAt(importedAt);
   }
 
-  Future<void> addConfigHealthDeletedWorkout(
-    String externalId,
-    DateTime startedAt,
-  ) async {
-    await _configDataSource.addConfigHealthDeletedWorkout(
-      externalId,
-      startedAt,
-    );
+  Future<void> addConfigHealthDeletedWorkout(String externalId, DateTime startedAt) async {
+    await _configDataSource.addConfigHealthDeletedWorkout(externalId, startedAt);
+  }
+
+  Future<void> addConfigHealthDeletedWorkouts(Map<String, DateTime> tombstones) async {
+    await _configDataSource.addConfigHealthDeletedWorkouts(tombstones);
   }
 
   Future<void> pruneConfigHealthDeletedWorkouts(DateTime cutoff) async {

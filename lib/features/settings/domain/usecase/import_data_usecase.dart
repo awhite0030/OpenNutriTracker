@@ -25,6 +25,7 @@ import 'package:opennutritracker/core/utils/tracked_day_lock.dart';
 import 'package:opennutritracker/core/utils/user_image_storage.dart';
 import 'package:opennutritracker/features/settings/domain/export_import_failure.dart';
 import 'package:opennutritracker/features/settings/domain/goal_settings_backup.dart';
+import 'package:opennutritracker/features/settings/domain/health_tombstones_backup.dart';
 import 'package:opennutritracker/features/settings/domain/tracked_day_boundary_record.dart';
 
 /// Opens the system file picker for a single file of any type and resolves
@@ -97,6 +98,7 @@ class ImportDataUsecase {
     String customActivityTemplateJsonFileName, {
     String goalSettingsJsonFileName = 'goal_settings.json',
     String favouriteJsonFileName = 'user_favourites.json',
+    String healthTombstonesJsonFileName = 'health_tombstones.json',
   }) async {
     final startedOn = ProfileStamp.now();
     final archive = await _pickAndDecodeArchive();
@@ -120,10 +122,7 @@ class ImportDataUsecase {
       IntakeDBO.fromJson,
     ).map(OffMicronutrientRepair.repairIntake).toList();
 
-    final trackedDayDBOs = _decodeJsonList(
-      _requireEntry(archive, trackedDayJsonFileName),
-      TrackedDayDBO.fromJson,
-    );
+    final trackedDayDBOs = _decodeJsonList(_requireEntry(archive, trackedDayJsonFileName), TrackedDayDBO.fromJson);
 
     // Recipes, the weight log and Custom activity templates (#70
     // follow-up) are optional so zips from older versions still import.
@@ -131,15 +130,10 @@ class ImportDataUsecase {
     final recipeFile = archive.findFile(recipeJsonFileName);
     final recipeDBOs = recipeFile == null
         ? null
-        : _decodeJsonList(
-            recipeFile,
-            RecipeDBO.fromJson,
-          ).map(OffMicronutrientRepair.repairRecipe).toList();
+        : _decodeJsonList(recipeFile, RecipeDBO.fromJson).map(OffMicronutrientRepair.repairRecipe).toList();
 
     final weightLogFile = archive.findFile(weightLogJsonFileName);
-    final weightLogDBOs = weightLogFile == null
-        ? null
-        : _decodeJsonList(weightLogFile, WeightLogDBO.fromJson);
+    final weightLogDBOs = weightLogFile == null ? null : _decodeJsonList(weightLogFile, WeightLogDBO.fromJson);
 
     final templateFile = archive.findFile(customActivityTemplateJsonFileName);
     final templateDBOs = templateFile == null
@@ -150,9 +144,7 @@ class ImportDataUsecase {
     // Their meal snapshots are always stamped with the current
     // `dataVersion`, so they need no Open Food Facts repair.
     final favouriteFile = archive.findFile(favouriteJsonFileName);
-    final favouriteDBOs = favouriteFile == null
-        ? null
-        : _decodeJsonList(favouriteFile, FavouriteMealDBO.fromJson);
+    final favouriteDBOs = favouriteFile == null ? null : _decodeJsonList(favouriteFile, FavouriteMealDBO.fromJson);
 
     // The profile's goal settings (#1363), absent from zips written before
     // they were exported. Checked here with everything else, so a bad
@@ -163,9 +155,17 @@ class ImportDataUsecase {
         : ExportImportFailure.guardSync(
             ExportImportFailureReason.unreadableOrWrongFormat,
             'Could not parse ${goalSettingsFile.name}',
-            () => GoalSettingsBackup.fromJson(
-              _decodeFinite(utf8.decode(goalSettingsFile.content as List<int>)),
-            ),
+            () => GoalSettingsBackup.fromJson(_decodeFinite(utf8.decode(goalSettingsFile.content as List<int>))),
+          );
+
+    final healthTombstonesFile = archive.findFile(healthTombstonesJsonFileName);
+    final healthTombstones = healthTombstonesFile == null
+        ? null
+        : ExportImportFailure.guardSync(
+            ExportImportFailureReason.unreadableOrWrongFormat,
+            'Could not parse ${healthTombstonesFile.name}',
+            () =>
+                HealthTombstonesBackup.fromJson(_decodeFinite(utf8.decode(healthTombstonesFile.content as List<int>))),
           );
 
     final keyedBy = _decodeBoundary(
@@ -174,12 +174,7 @@ class ImportDataUsecase {
     );
 
     final imported = await withTrackedDayLockOnProfile(() async {
-      await _writeEntriesAndRows(
-        userActivityDBOs,
-        intakeDBOs,
-        trackedDayDBOs,
-        keyedBy,
-      );
+      await _writeEntriesAndRows(userActivityDBOs, intakeDBOs, trackedDayDBOs, keyedBy);
       if (recipeDBOs != null) {
         await _recipeRepository.addAllRecipeDBOs(recipeDBOs);
       }
@@ -187,9 +182,7 @@ class ImportDataUsecase {
         await _weightLogRepository.addAllEntries(weightLogDBOs);
       }
       if (templateDBOs != null) {
-        await _customActivityTemplateRepository.upsertAllTemplateDBOs(
-          templateDBOs,
-        );
+        await _customActivityTemplateRepository.upsertAllTemplateDBOs(templateDBOs);
       }
       if (favouriteDBOs != null) {
         // Upsert by identity while retaining favourites not in this backup.
@@ -205,21 +198,18 @@ class ImportDataUsecase {
           dailyWaterGoalMl: goalSettings.dailyWaterGoalMl,
         );
       }
+      if (healthTombstones != null) {
+        await _configRepository.addConfigHealthDeletedWorkouts(healthTombstones.tombstones);
+      }
 
-      final recipeDir = await UserImageStorage.ensureDirectory(
-        UserImageKind.recipe,
-      );
-      final mealDir = await UserImageStorage.ensureDirectory(
-        UserImageKind.meal,
-      );
+      final recipeDir = await UserImageStorage.ensureDirectory(UserImageKind.recipe);
+      final mealDir = await UserImageStorage.ensureDirectory(UserImageKind.meal);
       for (final entry in archive.files) {
         if (!entry.isFile) continue;
         final sanitized = UserImageStorage.sanitizeRelative(entry.name);
         if (sanitized == null) continue;
         final parts = sanitized.split('/');
-        final targetDir = parts[0] == UserImageKind.recipe.subdir
-            ? recipeDir
-            : mealDir;
+        final targetDir = parts[0] == UserImageKind.recipe.subdir ? recipeDir : mealDir;
         final destPath = '${targetDir.path}/${parts[1]}';
         final destFile = File(destPath);
         await destFile.writeAsBytes(entry.content as List<int>, flush: true);
@@ -269,12 +259,7 @@ class ImportDataUsecase {
     );
 
     final imported = await withTrackedDayLockOnProfile(
-      () => _writeEntriesAndRows(
-        activityDBOs,
-        intakeDBOs,
-        trackedDayDBOs,
-        keyedBy,
-      ).then((_) => true),
+      () => _writeEntriesAndRows(activityDBOs, intakeDBOs, trackedDayDBOs, keyedBy).then((_) => true),
       startedOn: startedOn,
     );
     return imported ?? false;
@@ -330,10 +315,7 @@ class ImportDataUsecase {
   Future<Archive> _pickAndDecodeArchive() async {
     final result = await _pickFile();
     if (result == null) {
-      throw const ExportImportFailure(
-        ExportImportFailureReason.cancelled,
-        'The user dismissed the file picker',
-      );
+      throw const ExportImportFailure(ExportImportFailureReason.cancelled, 'The user dismissed the file picker');
     }
     final path = result.path;
     if (path == null) {
@@ -369,19 +351,13 @@ class ImportDataUsecase {
   /// Decodes one archive entry holding a JSON array of [T] objects. A
   /// decode or `fromJson` failure is reported as wrong format rather than
   /// escaping as a bare `FormatException` / `TypeError`.
-  List<T> _decodeJsonList<T>(
-    ArchiveFile entry,
-    T Function(Map<String, dynamic>) fromJson,
-  ) {
+  List<T> _decodeJsonList<T>(ArchiveFile entry, T Function(Map<String, dynamic>) fromJson) {
     return ExportImportFailure.guardSync(
       ExportImportFailureReason.unreadableOrWrongFormat,
       'Could not parse ${entry.name}',
       () {
         final jsonString = utf8.decode(entry.content as List<int>);
-        return (_decodeFinite(jsonString) as List)
-            .cast<Map<String, dynamic>>()
-            .map(fromJson)
-            .toList();
+        return (_decodeFinite(jsonString) as List).cast<Map<String, dynamic>>().map(fromJson).toList();
       },
     );
   }
