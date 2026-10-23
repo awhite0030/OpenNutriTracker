@@ -48,9 +48,7 @@ class ConfigDataSource {
   ConfigDBO _readMerged() {
     final app = _appBox.get(_configKey);
     final profile = _profileBox.get(_configKey);
-    final merged = app != null
-        ? ConfigDBO.fromJson(app.toJson())
-        : ConfigDBO.empty();
+    final merged = app != null ? ConfigDBO.fromJson(app.toJson()) : ConfigDBO.empty();
     if (profile != null) {
       merged.userKcalAdjustment = profile.userKcalAdjustment;
       merged.userCarbGoalPct = profile.userCarbGoalPct;
@@ -98,15 +96,11 @@ class ConfigDataSource {
   /// synchronous step closes it.
   Future<void> _writeBoth(ConfigDBO config) async {
     final app = _appBox.put(_configKey, ConfigDBO.fromJson(config.toJson()));
-    final profile = _profileBox.put(
-      _configKey,
-      ConfigDBO.fromJson(config.toJson()),
-    );
+    final profile = _profileBox.put(_configKey, ConfigDBO.fromJson(config.toJson()));
     await Future.wait([app, profile]);
   }
 
-  Future<bool> configInitialized() async =>
-      _appBox.containsKey(_configKey) && _profileBox.containsKey(_configKey);
+  Future<bool> configInitialized() async => _appBox.containsKey(_configKey) && _profileBox.containsKey(_configKey);
 
   Future<void> initializeConfig() async {
     if (!_appBox.containsKey(_configKey)) {
@@ -144,12 +138,8 @@ class ConfigDataSource {
     await _update((c) => c.hasAcceptedDisclaimer = hasAcceptedDisclaimer);
   }
 
-  Future<void> setConfigAcceptedAnonymousData(
-    bool hasAcceptedAnonymousData,
-  ) async {
-    await _update(
-      (c) => c.hasAcceptedSendAnonymousData = hasAcceptedAnonymousData,
-    );
+  Future<void> setConfigAcceptedAnonymousData(bool hasAcceptedAnonymousData) async {
+    await _update((c) => c.hasAcceptedSendAnonymousData = hasAcceptedAnonymousData);
   }
 
   Future<void> setConfigAcceptedPolicy(bool hasAcceptedPolicy) async {
@@ -193,8 +183,7 @@ class ConfigDataSource {
     await _update((c) => c.bodyWeightUnitIndex = index);
   }
 
-  Future<double> getKcalAdjustment() async =>
-      _readMerged().userKcalAdjustment ?? 0;
+  Future<double> getKcalAdjustment() async => _readMerged().userKcalAdjustment ?? 0;
 
   Future<void> setConfigKcalAdjustment(double kcalAdjustment) async {
     await _update((c) => c.userKcalAdjustment = kcalAdjustment);
@@ -274,8 +263,7 @@ class ConfigDataSource {
     await _update((c) => c.mealKcalSharesPct = Map<String, int>.from(shares));
   }
 
-  Future<String?> getCustomMealFormMode() async =>
-      _readMerged().customMealFormMode;
+  Future<String?> getCustomMealFormMode() async => _readMerged().customMealFormMode;
 
   Future<void> setCustomMealFormMode(String mode) async {
     await _update((c) => c.customMealFormMode = mode);
@@ -299,14 +287,10 @@ class ConfigDataSource {
     });
   }
 
-  Future<void> setConfigNutrientPanelVisibility(
-    Map<String, bool> visibility,
-  ) async {
+  Future<void> setConfigNutrientPanelVisibility(Map<String, bool> visibility) async {
     // Persist a defensive copy — a caller-owned map mutating later would
     // otherwise silently change the saved value.
-    await _update(
-      (c) => c.nutrientPanelVisibility = Map<String, bool>.from(visibility),
-    );
+    await _update((c) => c.nutrientPanelVisibility = Map<String, bool>.from(visibility));
   }
 
   Future<void> setConfigDayStartOffsetHours(int hours) async {
@@ -359,9 +343,7 @@ class ConfigDataSource {
       c.userCarbGoalPct = carbGoalPct;
       c.userProteinGoalPct = proteinGoalPct;
       c.userFatGoalPct = fatGoalPct;
-      c.mealKcalSharesPct = mealKcalSharesPct == null
-          ? null
-          : Map<String, int>.from(mealKcalSharesPct);
+      c.mealKcalSharesPct = mealKcalSharesPct == null ? null : Map<String, int>.from(mealKcalSharesPct);
       c.dailyWaterGoalMl = dailyWaterGoalMl;
     });
   }
@@ -420,14 +402,24 @@ class ConfigDataSource {
   /// tombstone stops being useful when the *workout* falls out of range, not
   /// when the deletion does. Writes a fresh map so Hive sees a distinct object
   /// reference on save.
-  Future<void> addConfigHealthDeletedWorkout(
-    String externalId,
-    DateTime startedAt,
-  ) async {
+  Future<void> addConfigHealthDeletedWorkout(String externalId, DateTime startedAt) async {
+    await addConfigHealthDeletedWorkouts({externalId: startedAt});
+  }
+
+  Future<void> addConfigHealthDeletedWorkouts(Map<String, DateTime> tombstones) async {
+    if (tombstones.isEmpty) return;
     await _update((c) {
       final current = _mergedDeletedWorkouts(c);
-      if (current[externalId] == startedAt) return;
-      c.healthDeletedWorkouts = {...current, externalId: startedAt};
+      bool changed = false;
+      final next = Map<String, DateTime>.from(current);
+      for (final entry in tombstones.entries) {
+        if (next[entry.key] != entry.value) {
+          next[entry.key] = entry.value;
+          changed = true;
+        }
+      }
+      if (!changed && c.healthDeletedExternalIds == null) return;
+      c.healthDeletedWorkouts = next;
       c.healthDeletedExternalIds = null;
     });
   }
@@ -478,6 +470,5 @@ class ConfigDataSource {
   /// (#1317).
   ConfigDBO getConfigNow() => _readMerged();
 
-  Future<bool> getHasAcceptedAnonymousData() async =>
-      _readMerged().hasAcceptedSendAnonymousData;
+  Future<bool> getHasAcceptedAnonymousData() async => _readMerged().hasAcceptedSendAnonymousData;
 }
