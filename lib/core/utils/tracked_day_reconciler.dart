@@ -14,12 +14,7 @@ import 'package:opennutritracker/core/utils/tracked_day_total_repair.dart';
 final _log = Logger('TrackedDayReconciler');
 
 /// The goals a tracked-day row starts from before its activities raise it.
-typedef TrackedDayGoals = ({
-  double kcal,
-  double? carbs,
-  double? fat,
-  double? protein,
-});
+typedef TrackedDayGoals = ({double kcal, double? carbs, double? fat, double? protein});
 
 /// Below this a total counts as zero: summing the same entries in another
 /// order must not rewrite a row on every launch.
@@ -40,15 +35,9 @@ double _finiteOrZero(double value) => value.isFinite ? value : 0;
 /// The key of the row for the day the Diary lists [activity] under at
 /// [offsetMinutes], or at [importOffsetMinutes] for an imported workout
 /// when that is given; see [reconcileTrackedDays].
-String _activityKey(
-  UserActivityDBO activity,
-  int offsetMinutes,
-  int? importOffsetMinutes,
-) => DayBoundaryCalc.dayKeyOf(
+String _activityKey(UserActivityDBO activity, int offsetMinutes, int? importOffsetMinutes) => DayBoundaryCalc.dayKeyOf(
   activity.date,
-  importOffsetMinutes != null && activity.externalId != null
-      ? importOffsetMinutes
-      : offsetMinutes,
+  importOffsetMinutes != null && activity.externalId != null ? importOffsetMinutes : offsetMinutes,
   clockReading: activity.externalId != null,
 );
 
@@ -59,13 +48,8 @@ String _activityKey(
 ///
 /// Imported workouts go by [importOffsetMinutes] instead when it is
 /// given; see [reconcileTrackedDays].
-Map<String, _ListedDay> _listedDays(
-  HiveDBProvider db,
-  int offsetMinutes, {
-  int? importOffsetMinutes,
-}) {
-  String keyOf(DateTime moment) =>
-      DayBoundaryCalc.dayKeyOf(moment, offsetMinutes);
+Map<String, _ListedDay> _listedDays(HiveDBProvider db, int offsetMinutes, {int? importOffsetMinutes}) {
+  String keyOf(DateTime moment) => DayBoundaryCalc.dayKeyOf(moment, offsetMinutes);
 
   final days = <String, _ListedDay>{};
   for (final dbo in db.intakeBox.values) {
@@ -78,20 +62,14 @@ Map<String, _ListedDay> _listedDays(
   }
   for (final activity in db.userActivityBox.values) {
     final key = _activityKey(activity, offsetMinutes, importOffsetMinutes);
-    days.putIfAbsent(key, _ListedDay.new).burned += _finiteOrZero(
-      activity.burnedKcal,
-    );
+    days.putIfAbsent(key, _ListedDay.new).burned += _finiteOrZero(activity.burnedKcal);
   }
   return days;
 }
 
 /// The energy [activities] burned, by the key of the row for the day each
 /// is listed under, by the [_activityKey] rule.
-Map<String, double> _burnedByDay(
-  Iterable<UserActivityDBO> activities,
-  int offsetMinutes, {
-  int? importOffsetMinutes,
-}) {
+Map<String, double> _burnedByDay(Iterable<UserActivityDBO> activities, int offsetMinutes, {int? importOffsetMinutes}) {
   final burned = <String, double>{};
   for (final activity in activities) {
     final key = _activityKey(activity, offsetMinutes, importOffsetMinutes);
@@ -101,8 +79,7 @@ Map<String, double> _burnedByDay(
 }
 
 /// True unless [stored] is [value] within [_epsilon]; NaN never is.
-bool _differs(double? stored, double value) =>
-    !(((stored ?? 0) - value).abs() <= _epsilon);
+bool _differs(double? stored, double value) => !(((stored ?? 0) - value).abs() <= _epsilon);
 
 bool _hasConsumed(TrackedDayDBO row) =>
     _differs(row.caloriesTracked, 0) ||
@@ -187,39 +164,32 @@ Future<int> reconcileTrackedDays(
   final listed = _listedDays(db, offsetMinutes);
   final previousImports = previousImportOffsetMinutes ?? previousOffsetMinutes;
   final listedBefore =
-      previousOffsetMinutes == null ||
-          (previousOffsetMinutes == offsetMinutes &&
-              previousImports == offsetMinutes)
+      previousOffsetMinutes == null || (previousOffsetMinutes == offsetMinutes && previousImports == offsetMinutes)
       ? null
-      : _listedDays(
-          db,
-          previousOffsetMinutes,
-          importOffsetMinutes: previousImports,
-        );
+      : _listedDays(db, previousOffsetMinutes, importOffsetMinutes: previousImports);
   // What each row was keyed by: the previous boundary, or for a row
   // outside [previousKeys] the current one.
   Map<String, _ListedDay>? before(Object? key) =>
       previousKeys == null || previousKeys.contains(key) ? listedBefore : null;
   // The burned energy each row's goal includes as it stands.
-  double burnedOn(String key) => creditedBurned != null
-      ? creditedBurned[key] ?? 0
-      : (before(key) ?? listed)[key]?.burned ?? 0;
+  double burnedOn(String key) =>
+      creditedBurned != null ? creditedBurned[key] ?? 0 : (before(key) ?? listed)[key]?.burned ?? 0;
   final movesCredit = listedBefore != null || creditedBurned != null;
 
   final written = <dynamic, TrackedDayDBO>{};
   final removed = <dynamic>[];
   final existing = rows.toMap();
+
+  final existingLogicalKeys = <String, dynamic>{};
+  for (final entry in existing.entries) {
+    existingLogicalKeys[DayBoundaryCalc.dayKeyOf(entry.value.day, offsetMinutes)] = entry.key;
+  }
+
   // New rows first: they read the goals of the existing rows, which the
   // loop below changes in place.
   for (final MapEntry(:key, value: day) in listed.entries) {
-    if (existing.containsKey(key)) continue;
-    final row = _newRow(
-      DateTime.parse(key),
-      day,
-      existing,
-      burnedOn,
-      currentGoals,
-    );
+    if (existingLogicalKeys.containsKey(key)) continue;
+    final row = _newRow(DateTime.parse(key), day, existing, burnedOn, currentGoals);
     if (row == null) {
       _log.warning('No goal to create the tracked day of $key from');
       continue;
@@ -228,42 +198,73 @@ Future<int> reconcileTrackedDays(
   }
 
   for (final MapEntry(:key, value: row) in existing.entries) {
-    final day = listed[key];
+    final logicalKey = DayBoundaryCalc.dayKeyOf(row.day, offsetMinutes);
+    final logicalKeyBefore = previousOffsetMinutes == null
+        ? logicalKey
+        : DayBoundaryCalc.dayKeyOf(row.day, previousOffsetMinutes);
+
+    final day = listed[logicalKey];
     if (day == null) {
-      if (_hasConsumed(row) || before(key)?[key] != null) removed.add(key);
+      if (_hasConsumed(row) || before(key)?[logicalKeyBefore] != null) removed.add(key);
       continue;
     }
+
+    bool moved = false;
+    TrackedDayDBO activeRow = row;
+    if (key != logicalKey) {
+      removed.add(key);
+      moved = true;
+      activeRow = TrackedDayDBO(
+        day: row.day,
+        calorieGoal: row.calorieGoal,
+        caloriesTracked: row.caloriesTracked,
+        carbsGoal: row.carbsGoal,
+        carbsTracked: row.carbsTracked,
+        fatGoal: row.fatGoal,
+        fatTracked: row.fatTracked,
+        proteinGoal: row.proteinGoal,
+        proteinTracked: row.proteinTracked,
+        fibreGoal: row.fibreGoal,
+        satFatGoal: row.satFatGoal,
+        sugarsGoal: row.sugarsGoal,
+        sodiumGoal: row.sodiumGoal,
+        calciumGoal: row.calciumGoal,
+        ironGoal: row.ironGoal,
+        potassiumGoal: row.potassiumGoal,
+        vitaminDGoal: row.vitaminDGoal,
+        vitaminB12Goal: row.vitaminB12Goal,
+        magnesiumGoal: row.magnesiumGoal,
+      );
+    }
+
     var changed = false;
-    if (_differs(row.caloriesTracked, day.kcal) ||
-        _differs(row.carbsTracked, day.carbs) ||
-        _differs(row.fatTracked, day.fat) ||
-        _differs(row.proteinTracked, day.protein)) {
-      row
+    if (_differs(activeRow.caloriesTracked, day.kcal) ||
+        _differs(activeRow.carbsTracked, day.carbs) ||
+        _differs(activeRow.fatTracked, day.fat) ||
+        _differs(activeRow.proteinTracked, day.protein)) {
+      activeRow
         ..caloriesTracked = day.kcal
         ..carbsTracked = day.carbs
         ..fatTracked = day.fat
         ..proteinTracked = day.protein;
       changed = true;
     }
-    final burnedMoved = day.burned - burnedOn(key);
+    // For moved rows, we use the logical key under the previous boundary to find its previously credited burned calories,
+    // because that's what was mapped into `before(key)` logically. Wait, `burnedOn` looks up `creditedBurned`
+    // or `before(key)`. Since `creditedBurned` and `before` are keyed by logical keys, we must use `logicalKeyBefore`.
+    final burnedMoved = day.burned - burnedOn(logicalKeyBefore);
     if (movesCredit && burnedMoved.abs() > _epsilon) {
-      row
+      activeRow
         ..calorieGoal += burnedMoved
-        ..carbsGoal =
-            (row.carbsGoal ?? 0) + MacroCalc.getTotalCarbsGoal(burnedMoved)
-        ..fatGoal = (row.fatGoal ?? 0) + MacroCalc.getTotalFatsGoal(burnedMoved)
-        ..proteinGoal =
-            (row.proteinGoal ?? 0) +
-            MacroCalc.getTotalProteinsGoal(burnedMoved);
+        ..carbsGoal = (activeRow.carbsGoal ?? 0) + MacroCalc.getTotalCarbsGoal(burnedMoved)
+        ..fatGoal = (activeRow.fatGoal ?? 0) + MacroCalc.getTotalFatsGoal(burnedMoved)
+        ..proteinGoal = (activeRow.proteinGoal ?? 0) + MacroCalc.getTotalProteinsGoal(burnedMoved);
       changed = true;
     }
-    if (changed) written[key] = row;
+    if (changed || moved) written[logicalKey] = activeRow;
   }
 
-  final writes = [
-    if (written.isNotEmpty) rows.putAll(written),
-    if (removed.isNotEmpty) rows.deleteAll(removed),
-  ];
+  final writes = [if (written.isNotEmpty) rows.putAll(written), if (removed.isNotEmpty) rows.deleteAll(removed)];
   return Future.wait(writes).then((_) => written.length + removed.length);
 }
 
@@ -282,8 +283,7 @@ TrackedDayDBO? _newRow(
   // 25 hours apart, which would break the tie between rows a day either
   // side.
   int dayNumber(DateTime day) =>
-      DateTime.utc(day.year, day.month, day.day).millisecondsSinceEpoch ~/
-      Duration.millisecondsPerDay;
+      DateTime.utc(day.year, day.month, day.day).millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
   final target = dayNumber(date);
   String? nearestKey;
   int? nearestDistance;
@@ -304,22 +304,17 @@ TrackedDayDBO? _newRow(
   TrackedDayGoals? base = currentGoals;
   if (nearest != null) {
     final burned = burnedOn(nearestKey!);
-    double? less(double? goal, double amount) =>
-        goal == null ? null : goal - amount;
+    double? less(double? goal, double amount) => goal == null ? null : goal - amount;
     base = (
       kcal: nearest.calorieGoal - burned,
       carbs: less(nearest.carbsGoal, MacroCalc.getTotalCarbsGoal(burned)),
       fat: less(nearest.fatGoal, MacroCalc.getTotalFatsGoal(burned)),
-      protein: less(
-        nearest.proteinGoal,
-        MacroCalc.getTotalProteinsGoal(burned),
-      ),
+      protein: less(nearest.proteinGoal, MacroCalc.getTotalProteinsGoal(burned)),
     );
   }
   if (base == null) return null;
 
-  double? more(double? goal, double amount) =>
-      goal == null ? null : goal + amount;
+  double? more(double? goal, double amount) => goal == null ? null : goal + amount;
   return TrackedDayDBO(
     day: date,
     calorieGoal: base.kcal + day.burned,
@@ -345,10 +340,7 @@ TrackedDayDBO? _newRow(
 
 int _offsetMinutesNow(ConfigDataSource configDataSource) {
   final config = ConfigEntity.fromConfigDBO(configDataSource.getConfigNow());
-  return DayBoundaryCalc.totalMinutesOf(
-    config.dayStartOffsetHours,
-    config.dayStartOffsetMinutes,
-  );
+  return DayBoundaryCalc.totalMinutesOf(config.dayStartOffsetHours, config.dayStartOffsetMinutes);
 }
 
 /// Runs [reconcileTrackedDays] at the configured boundary (#1317), moving
@@ -381,9 +373,7 @@ Future<int> ensureTrackedDaysMatchEntries(
   Future<TrackedDayGoals> Function()? currentGoals,
 }) async {
   TrackedDayGoals? goals;
-  if (currentGoals != null &&
-      db.trackedDayBox.isEmpty &&
-      (db.intakeBox.isNotEmpty || db.userActivityBox.isNotEmpty)) {
+  if (currentGoals != null && db.trackedDayBox.isEmpty && (db.intakeBox.isNotEmpty || db.userActivityBox.isNotEmpty)) {
     try {
       goals = await currentGoals();
     } catch (e, stack) {
@@ -401,9 +391,7 @@ Future<int> ensureTrackedDaysMatchEntries(
       previousImportOffsetMinutes: recordedBy == null ? offset : null,
       currentGoals: goals,
     );
-    final recorded = recordedBy == offset
-        ? null
-        : configDataSource.setConfigTrackedDaysOffsetMinutes(offset);
+    final recorded = recordedBy == offset ? null : configDataSource.setConfigTrackedDaysOffsetMinutes(offset);
     final changed = await rowsWritten;
     await recorded;
     return changed;
@@ -428,9 +416,7 @@ Future<int> ensureTrackedDaysMatchEntries(
 /// before the boundary a second time. Must run inside the tracked-day
 /// lock that emptied the rows, so nothing is written between the two.
 Future<void> recordTrackedDayBoundary(ConfigDataSource configDataSource) =>
-    configDataSource.setConfigTrackedDaysOffsetMinutes(
-      _offsetMinutesNow(configDataSource),
-    );
+    configDataSource.setConfigTrackedDaysOffsetMinutes(_offsetMinutesNow(configDataSource));
 
 /// The tracked-day repairs every profile activation runs — startup and a
 /// profile switch — before anything reads the rows (#1317, #1254).
@@ -447,11 +433,7 @@ Future<void> ensureTrackedDaysRepaired(
   ConfigDataSource configDataSource, {
   Future<TrackedDayGoals> Function()? currentGoals,
 }) async {
-  await ensureTrackedDaysMatchEntries(
-    db,
-    configDataSource,
-    currentGoals: currentGoals,
-  );
+  await ensureTrackedDaysMatchEntries(db, configDataSource, currentGoals: currentGoals);
   await ensureTrackedDayTotalsFinite(db, configDataSource);
 }
 
@@ -494,14 +476,9 @@ Future<int> restoreTrackedDays(
   // Keyed like the upsert: a repeated id is stored once, as its last
   // occurrence, and a blank id gets its own id from the import.
   final stored = <Object, UserActivityDBO>{
-    for (final (index, activity) in importedActivities.indexed)
-      isBlankId(activity.id) ? index : activity.id: activity,
+    for (final (index, activity) in importedActivities.indexed) isBlankId(activity.id) ? index : activity.id: activity,
   };
-  final archiveCredit = _burnedByDay(
-    stored.values,
-    keyedBy,
-    importOffsetMinutes: importKeyedBy,
-  );
+  final archiveCredit = _burnedByDay(stored.values, keyedBy, importOffsetMinutes: importKeyedBy);
   final rowsWritten = reconcileTrackedDays(
     db,
     offsetMinutes: offset,
@@ -531,23 +508,12 @@ Future<int> restoreTrackedDays(
 /// keep the boundary their rows are keyed by on record, and
 /// [ensureTrackedDaysMatchEntries] moves them from it when they are next
 /// activated.
-Future<void> moveDayBoundary(
-  HiveDBProvider db,
-  ConfigDataSource configDataSource,
-  int hours,
-  int minutes,
-) => withTrackedDayLock(() {
-  final before = _offsetMinutesNow(configDataSource);
-  final configWritten = configDataSource.setConfigDayStartOffset(
-    hours,
-    minutes,
-  );
-  final after = _offsetMinutesNow(configDataSource);
-  final rowsWritten = reconcileTrackedDays(
-    db,
-    offsetMinutes: after,
-    previousOffsetMinutes: before,
-  );
-  final recorded = configDataSource.setConfigTrackedDaysOffsetMinutes(after);
-  return Future.wait([configWritten, rowsWritten, recorded]);
-});
+Future<void> moveDayBoundary(HiveDBProvider db, ConfigDataSource configDataSource, int hours, int minutes) =>
+    withTrackedDayLock(() {
+      final before = _offsetMinutesNow(configDataSource);
+      final configWritten = configDataSource.setConfigDayStartOffset(hours, minutes);
+      final after = _offsetMinutesNow(configDataSource);
+      final rowsWritten = reconcileTrackedDays(db, offsetMinutes: after, previousOffsetMinutes: before);
+      final recorded = configDataSource.setConfigTrackedDaysOffsetMinutes(after);
+      return Future.wait([configWritten, rowsWritten, recorded]);
+    });
