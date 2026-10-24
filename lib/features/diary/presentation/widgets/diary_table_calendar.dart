@@ -35,15 +35,13 @@ class DiaryTableCalendar extends StatefulWidget {
 /// equals a heading's height by coincidence — it is `labelSmall`'s line
 /// height today — and scaling it lands fractionally short at some scales
 /// (20.8 against the 21.0 wanted at 1.3x), which clips just as surely.
-double _weekdayRowHeight(BuildContext context, TextStyle style) =>
-    (TextPainter(
-      // Any single line measures the same: the height comes from the font's
-      // metrics, not from which glyphs are in it.
-      text: TextSpan(text: 'Mon', style: style),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-    )..layout())
-        .height;
+double _weekdayRowHeight(BuildContext context, TextStyle style) => (TextPainter(
+  // Any single line measures the same: the height comes from the font's
+  // metrics, not from which glyphs are in it.
+  text: TextSpan(text: 'Mon', style: style),
+  textDirection: Directionality.of(context),
+  textScaler: MediaQuery.textScalerOf(context),
+)..layout()).height;
 
 class _DiaryTableCalendarState extends State<DiaryTableCalendar> {
   @override
@@ -52,41 +50,25 @@ class _DiaryTableCalendarState extends State<DiaryTableCalendar> {
     final palette = isDark ? AppPalette.dark : AppPalette.light;
     final accent = Theme.of(context).colorScheme.primary;
     final textTheme = Theme.of(context).textTheme;
-    final weekdayStyle =
-        textTheme.labelSmall?.copyWith(color: palette.textMuted) ??
-            const TextStyle();
+    final weekdayStyle = textTheme.labelSmall?.copyWith(color: palette.textMuted) ?? const TextStyle();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Dimens.spacing16,
-        Dimens.spacing8,
-        Dimens.spacing16,
-        Dimens.spacing4,
-      ),
+      padding: const EdgeInsets.fromLTRB(Dimens.spacing16, Dimens.spacing8, Dimens.spacing16, Dimens.spacing4),
       child: AppCard(
-        padding: const EdgeInsets.fromLTRB(
-          Dimens.spacing8,
-          Dimens.spacing12,
-          Dimens.spacing8,
-          Dimens.spacing12,
-        ),
+        padding: const EdgeInsets.fromLTRB(Dimens.spacing8, Dimens.spacing12, Dimens.spacing8, Dimens.spacing12),
         child: TableCalendar(
+          locale: Localizations.localeOf(context).toString(),
           headerStyle: HeaderStyle(
             titleCentered: true,
             formatButtonVisible: false,
-            titleTextStyle: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: palette.textStrong,
-                ) ??
+            titleTextStyle:
+                textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: palette.textStrong) ??
                 const TextStyle(),
             leftChevronIcon: Icon(Icons.chevron_left_rounded, color: palette.textMuted, size: 26),
             rightChevronIcon: Icon(Icons.chevron_right_rounded, color: palette.textMuted, size: 26),
             headerPadding: const EdgeInsets.symmetric(vertical: Dimens.spacing8),
           ),
-          daysOfWeekStyle: DaysOfWeekStyle(
-            weekdayStyle: weekdayStyle,
-            weekendStyle: weekdayStyle,
-          ),
+          daysOfWeekStyle: DaysOfWeekStyle(weekdayStyle: weekdayStyle, weekendStyle: weekdayStyle),
           // The package default is a flat 16.0, and `labelSmall` is 11sp on a
           // 1.45 line height — exactly 16 logical pixels. So the row has no
           // slack at all at the default text size, and every step above it
@@ -111,24 +93,19 @@ class _DiaryTableCalendarState extends State<DiaryTableCalendar> {
             defaultTextStyle: textTheme.bodyMedium?.copyWith(color: palette.textStrong) ?? const TextStyle(),
             weekendTextStyle: textTheme.bodyMedium?.copyWith(color: palette.textStrong) ?? const TextStyle(),
             outsideTextStyle: textTheme.bodyMedium?.copyWith(color: palette.textMuted) ?? const TextStyle(),
-            todayTextStyle: textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: accent,
-                ) ??
-                const TextStyle(),
+            todayTextStyle:
+                textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700, color: accent) ?? const TextStyle(),
             todayDecoration: BoxDecoration(
               border: Border.all(color: accent, width: 2.0),
               shape: BoxShape.circle,
             ),
-            selectedTextStyle: textTheme.bodyMedium?.copyWith(
+            selectedTextStyle:
+                textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: Theme.of(context).colorScheme.onPrimary,
                 ) ??
                 const TextStyle(),
-            selectedDecoration: BoxDecoration(
-              color: accent,
-              shape: BoxShape.circle,
-            ),
+            selectedDecoration: BoxDecoration(color: accent, shape: BoxShape.circle),
           ),
           selectedDayPredicate: (day) => isSameDay(widget.selectedDate, day),
           calendarBuilders: CalendarBuilders(
