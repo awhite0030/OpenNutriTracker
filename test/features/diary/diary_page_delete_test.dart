@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:opennutritracker/core/data/data_source/config_data_source.dart';
@@ -127,6 +128,10 @@ TrackedDayDBO _row(DateTime day, {required double goal, double kcal = 0}) =>
     );
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting();
+  });
+
   final locator = GetIt.instance;
   var boxTag = 0;
 

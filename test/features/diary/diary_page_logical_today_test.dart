@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get_it/get_it.dart';
 import 'package:opennutritracker/core/domain/entity/app_theme_entity.dart';
 import 'package:opennutritracker/core/domain/entity/config_entity.dart';
@@ -9,6 +10,7 @@ import 'package:opennutritracker/core/domain/usecase/get_tracked_day_usecase.dar
 import 'package:opennutritracker/core/utils/calc/day_boundary_calc.dart';
 import 'package:opennutritracker/features/activity_detail/presentation/bloc/activity_detail_bloc.dart';
 import 'package:opennutritracker/features/diary/diary_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/calendar_day_bloc.dart';
 import 'package:opennutritracker/features/diary/presentation/bloc/diary_bloc.dart';
 import 'package:opennutritracker/features/diary/presentation/widgets/diary_table_calendar.dart';
@@ -31,21 +33,13 @@ class _Config extends Fake implements GetConfigUsecase {
   int dayStartOffsetHours = 22;
 
   @override
-  Future<ConfigEntity> getConfig() async => ConfigEntity(
-    true,
-    true,
-    false,
-    AppThemeEntity.system,
-    dayStartOffsetHours: dayStartOffsetHours,
-  );
+  Future<ConfigEntity> getConfig() async =>
+      ConfigEntity(true, true, false, AppThemeEntity.system, dayStartOffsetHours: dayStartOffsetHours);
 }
 
 class _NoTrackedDays extends Fake implements GetTrackedDayUsecase {
   @override
-  Future<List<TrackedDayEntity>> getTrackedDaysByRange(
-    DateTime start,
-    DateTime end,
-  ) async => [];
+  Future<List<TrackedDayEntity>> getTrackedDaysByRange(DateTime start, DateTime end) async => [];
 }
 
 /// Records which days the page asks for; the day view itself stays on
@@ -72,6 +66,10 @@ class _FakeMealDetailBloc extends Fake implements MealDetailBloc {}
 class _FakeActivityDetailBloc extends Fake implements ActivityDetailBloc {}
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting();
+  });
+
   final locator = GetIt.instance;
   late _Config config;
   late DiaryBloc diaryBloc;
@@ -109,7 +107,12 @@ void main() {
       ..registerSingleton<ActivityDetailBloc>(_FakeActivityDetailBloc());
     await tester.pumpWidget(
       const MaterialApp(
-        localizationsDelegates: [S.delegate],
+        localizationsDelegates: [
+          S.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         supportedLocales: S.supportedLocales,
         home: Scaffold(body: DiaryPage()),
       ),
@@ -127,15 +130,13 @@ void main() {
     await pumpFrames(tester);
   }
 
-  testWidgets('opens on the logical day, with the today marker on it', (
-    tester,
-  ) async {
+  testWidgets('opens on the logical day, with the today marker on it', (tester) async {
     await pumpDiary(tester);
 
     expect(calendar(tester).selectedDate, _logicalToday);
     expect(calendar(tester).currentDate, _logicalToday);
-    final table = tester.widget<TableCalendar<dynamic>>(
-      find.byWidgetPredicate((w) => w is TableCalendar),
+    final table = tester.widget<TableCalendar>(
+      find.byWidgetPredicate((w) => w.runtimeType.toString().startsWith("TableCalendar<")),
     );
     expect(table.currentDay, _logicalToday);
     expect(calendarDayBloc.loadedDays, [_logicalToday]);
@@ -151,9 +152,7 @@ void main() {
     expect(calendarDayBloc.loadedDays.last, _calendarToday);
   });
 
-  testWidgets('a picked day stays picked when the boundary moves', (
-    tester,
-  ) async {
+  testWidgets('a picked day stays picked when the boundary moves', (tester) async {
     await pumpDiary(tester);
     final picked = DateTime.utc(2026, 10, 3);
     calendar(tester).onDateSelected(picked, const {});
