@@ -70,26 +70,16 @@ class WeightTrendChart extends StatelessWidget {
     // the y/m/d constructor, not `subtract(Duration)`: a Duration is fixed
     // 24-hour spans, so with an autumn fall-back inside the window it lands
     // an hour past local midnight and drops that day's entry (#1207).
-    final windowStart = DateTime(
-      today.year,
-      today.month,
-      today.day - (windowDays - 1),
-    );
+    final windowStart = DateTime(today.year, today.month, today.day - (windowDays - 1));
     // x = whole calendar days since the window start, so today sits at
     // x = windowDays - 1 and a day is one unit even when a DST transition
     // makes it 23 or 25 hours long. Every consumer of the x axis (dots,
     // date labels) goes through this pair so they cannot drift apart.
-    int dayIndex(DateTime date) =>
-        CalendarDayCalc.daysBetween(windowStart, date);
+    int dayIndex(DateTime date) => CalendarDayCalc.daysBetween(windowStart, date);
     DateTime dayAt(int x) => DateUtils.addDaysToDate(windowStart, x);
 
-    final inWindow =
-        entries
-            .where(
-              (e) => !e.date.isBefore(windowStart) && !e.date.isAfter(today),
-            )
-            .toList()
-          ..sort((a, b) => a.date.compareTo(b.date));
+    final inWindow = entries.where((e) => !e.date.isBefore(windowStart) && !e.date.isAfter(today)).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
 
     if (inWindow.length < 2) {
       return Padding(
@@ -101,9 +91,7 @@ class WeightTrendChart extends StatelessWidget {
             child: Text(
               S.of(context).weightHistoryChartEmptyState,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
         ),
@@ -111,8 +99,7 @@ class WeightTrendChart extends StatelessWidget {
     }
 
     final spots = <FlSpot>[
-      for (final entry in inWindow)
-        FlSpot(dayIndex(entry.date).toDouble(), _toChartY(entry.weightKg)),
+      for (final entry in inWindow) FlSpot(dayIndex(entry.date).toDouble(), _toChartY(entry.weightKg)),
     ];
 
     // Compute the moving average against the *full* log and clip to the
@@ -120,12 +107,9 @@ class WeightTrendChart extends StatelessWidget {
     // predating the window rather than lagging one window-length behind.
     final maSpots = <FlSpot>[
       if (movingAverageWindowDays != null)
-        for (final point
-            in WeightMovingAverage(windowDays: movingAverageWindowDays!)
-                .compute(entries)
-                .where((p) =>
-                    !p.date.isBefore(windowStart) &&
-                    !p.date.isAfter(today)))
+        for (final point in WeightMovingAverage(
+          windowDays: movingAverageWindowDays!,
+        ).compute(entries).where((p) => !p.date.isBefore(windowStart) && !p.date.isAfter(today)))
           FlSpot(dayIndex(point.date).toDouble(), _toChartY(point.weightKg)),
     ];
 
@@ -145,18 +129,12 @@ class WeightTrendChart extends StatelessWidget {
     // Only draw the dashed reference when the target sits within (or just
     // adjacent to) the auto y-range, so a far-off target doesn't autoscale
     // the chart away from the recorded weights.
-    final showTargetLine =
-        targetY != null &&
-        targetY >= (minY - yPadding) &&
-        targetY <= (maxY + yPadding);
+    final showTargetLine = targetY != null && targetY >= (minY - yPadding) && targetY <= (maxY + yPadding);
 
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final dateFormat = DateFormat.MMMd(localeTag);
     // ~5 evenly spaced date labels regardless of window length.
-    final labelInterval = (windowDays / 5)
-        .ceilToDouble()
-        .clamp(1.0, double.infinity)
-        .toDouble();
+    final labelInterval = (windowDays / 5).ceilToDouble().clamp(1.0, double.infinity).toDouble();
 
     return Padding(
       key: const Key('weightHistoryChart'),
@@ -172,22 +150,21 @@ class WeightTrendChart extends StatelessWidget {
             gridData: const FlGridData(show: false),
             borderData: FlBorderData(show: false),
             titlesData: FlTitlesData(
-              topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
+              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   reservedSize: 40,
-                  getTitlesWidget: (value, meta) => Text(
-                    value.toStringAsFixed(
-                      bodyWeightUnit == BodyWeightUnit.st ? 1 : 0,
-                    ),
-                    style: theme.textTheme.labelSmall,
-                  ),
+                  getTitlesWidget: (value, meta) {
+                    final int decimals;
+                    if (bodyWeightUnit == BodyWeightUnit.st) {
+                      decimals = 1;
+                    } else {
+                      decimals = meta.appliedInterval < 1 ? 1 : 0;
+                    }
+                    return Text(value.toStringAsFixed(decimals), style: theme.textTheme.labelSmall);
+                  },
                 ),
               ),
               bottomTitles: AxisTitles(
@@ -199,10 +176,7 @@ class WeightTrendChart extends StatelessWidget {
                     final day = dayAt(value.toInt());
                     return Padding(
                       padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        dateFormat.format(day),
-                        style: theme.textTheme.labelSmall,
-                      ),
+                      child: Text(dateFormat.format(day), style: theme.textTheme.labelSmall),
                     );
                   },
                 ),
@@ -229,11 +203,7 @@ class WeightTrendChart extends StatelessWidget {
                 dotData: FlDotData(
                   show: true,
                   getDotPainter: (spot, percent, bar, index) =>
-                      FlDotCirclePainter(
-                        radius: 3,
-                        color: lineColor,
-                        strokeWidth: 0,
-                      ),
+                      FlDotCirclePainter(radius: 3, color: lineColor, strokeWidth: 0),
                 ),
               ),
               // Moving-average overlay (#1119): dashed, no dots, thinner
