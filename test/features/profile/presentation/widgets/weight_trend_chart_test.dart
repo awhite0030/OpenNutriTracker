@@ -22,8 +22,7 @@ import 'package:opennutritracker/generated/l10n.dart';
 // reruns this file under Europe/Berlin, on CI too, so they execute. The
 // first group runs everywhere.
 
-WeightLogEntity _entry(DateTime date, double weightKg) =>
-    WeightLogEntity(date: date, weightKg: weightKg);
+WeightLogEntity _entry(DateTime date, double weightKg) => WeightLogEntity(date: date, weightKg: weightKg);
 
 /// One entry per calendar day from [first] to [last] inclusive, built with
 /// the y/m/d constructor (the form every user-facing write site uses; the
@@ -41,11 +40,9 @@ List<WeightLogEntity> _dailyEntries(DateTime first, DateTime last) {
 
 /// Hours in the local calendar day that starts at [day]'s midnight: 24
 /// normally, 25 on an autumn fall-back day, 23 on a spring-forward day.
-int _hoursIn(DateTime day) =>
-    DateTime(day.year, day.month, day.day + 1).difference(day).inHours;
+int _hoursIn(DateTime day) => DateTime(day.year, day.month, day.day + 1).difference(day).inHours;
 
-String? _skipUnless(DateTime day, int hours, String what) =>
-    _hoursIn(day) == hours
+String? _skipUnless(DateTime day, int hours, String what) => _hoursIn(day) == hours
     ? null
     : 'no $what on $day in zone ${day.timeZoneName}; '
           'run `just test_dst` (TZ=Europe/Berlin)';
@@ -115,16 +112,10 @@ void _expectCalendarWindow(
   // The raw readings are the first series; the moving-average overlay
   // (#1119) follows it.
   final spots = data.lineBarsData.first.spots;
-  expect(
-    spots,
-    hasLength(windowDays),
-    reason: 'every entry in the last $windowDays calendar days is drawn',
-  );
-  expect(
-    spots.map((s) => s.x).toList(),
-    [for (var i = 0; i < windowDays; i++) i.toDouble()],
-    reason: 'one integer x per calendar day, no gap and no doubled day',
-  );
+  expect(spots, hasLength(windowDays), reason: 'every entry in the last $windowDays calendar days is drawn');
+  expect(spots.map((s) => s.x).toList(), [
+    for (var i = 0; i < windowDays; i++) i.toDouble(),
+  ], reason: 'one integer x per calendar day, no gap and no doubled day');
   // Each moving-average point is anchored on an entry's date, in order,
   // dropping only leading entries with too few samples, so its x values
   // are the tail of the raw ones, including across a 23- or 25-hour day.
@@ -150,120 +141,142 @@ void main() {
   });
 
   group('calendar window (any zone)', () {
-    testWidgets(
-      'draws every entry of the last windowDays calendar days, one x per '
-      'day, and drops the day before the window and the future',
-      (tester) async {
-        final today = DateTime(2026, 6, 15);
-        WeightTrendChart.clock = () => DateTime(2026, 6, 15, 14, 30);
-        const windowDays = 30;
-        final windowStart = DateTime(2026, 5, 17);
+    testWidgets('draws every entry of the last windowDays calendar days, one x per '
+        'day, and drops the day before the window and the future', (tester) async {
+      final today = DateTime(2026, 6, 15);
+      WeightTrendChart.clock = () => DateTime(2026, 6, 15, 14, 30);
+      const windowDays = 30;
+      final windowStart = DateTime(2026, 5, 17);
 
-        final entries = [
-          _entry(DateTime(2026, 5, 16), 99), // the day before the window
-          ..._dailyEntries(windowStart, today),
-          _entry(DateTime(2026, 6, 16), 99), // tomorrow
-        ];
+      final entries = [
+        _entry(DateTime(2026, 5, 16), 99), // the day before the window
+        ..._dailyEntries(windowStart, today),
+        _entry(DateTime(2026, 6, 16), 99), // tomorrow
+      ];
 
-        final data = await _pumpChart(
-          tester,
-          entries: entries,
-          windowDays: windowDays,
-        );
+      final data = await _pumpChart(tester, entries: entries, windowDays: windowDays);
 
-        _expectCalendarWindow(
-          data,
-          windowStart: windowStart,
-          today: today,
-          windowDays: windowDays,
-          checkDay: DateTime(2026, 6, 1),
-          checkX: 15,
-        );
-        expect(
-          data.lineBarsData.first.spots.map((s) => s.y),
-          isNot(contains(99.0)),
-          reason: 'entries outside the window are not drawn',
-        );
-      },
-    );
+      _expectCalendarWindow(
+        data,
+        windowStart: windowStart,
+        today: today,
+        windowDays: windowDays,
+        checkDay: DateTime(2026, 6, 1),
+        checkX: 15,
+      );
+      expect(
+        data.lineBarsData.first.spots.map((s) => s.y),
+        isNot(contains(99.0)),
+        reason: 'entries outside the window are not drawn',
+      );
+    });
   });
 
-  group(
-    'window spanning an autumn fall-back',
-    () {
-      // Europe/Berlin fell back on 2025-10-26. Pinning today to 2025-11-10
-      // puts that day inside a 30-day window (2025-10-12 .. 2025-11-10).
-      final today = DateTime(2025, 11, 10);
-      final windowStart = DateTime(2025, 10, 12);
-      final transition = DateTime(2025, 10, 26);
-      const windowDays = 30;
+  group('window spanning an autumn fall-back', () {
+    // Europe/Berlin fell back on 2025-10-26. Pinning today to 2025-11-10
+    // puts that day inside a 30-day window (2025-10-12 .. 2025-11-10).
+    final today = DateTime(2025, 11, 10);
+    final windowStart = DateTime(2025, 10, 12);
+    final transition = DateTime(2025, 10, 26);
+    const windowDays = 30;
 
-      testWidgets(
-        'keeps the entry on the window-start day and on the 25-hour day, '
-        'with one x per calendar day and labels on their days',
-        (tester) async {
-          WeightTrendChart.clock = () => DateTime(2025, 11, 10, 9);
-          final entries = _dailyEntries(windowStart, today);
+    testWidgets('keeps the entry on the window-start day and on the 25-hour day, '
+        'with one x per calendar day and labels on their days', (tester) async {
+      WeightTrendChart.clock = () => DateTime(2025, 11, 10, 9);
+      final entries = _dailyEntries(windowStart, today);
 
-          final data = await _pumpChart(
-            tester,
-            entries: entries,
-            windowDays: windowDays,
-          );
+      final data = await _pumpChart(tester, entries: entries, windowDays: windowDays);
 
-          _expectCalendarWindow(
-            data,
-            windowStart: windowStart,
-            today: today,
-            windowDays: windowDays,
-            checkDay: transition,
-            checkX: 14,
-          );
-          // The label after the transition: `windowStart + Duration` would
-          // land at 23:00 the evening before and print Oct 29 here.
-          expect(_bottomLabel(data, 18), _mmmd(DateTime(2025, 10, 30)));
-        },
+      _expectCalendarWindow(
+        data,
+        windowStart: windowStart,
+        today: today,
+        windowDays: windowDays,
+        checkDay: transition,
+        checkX: 14,
       );
-    },
-    skip: _skipUnless(DateTime(2025, 10, 26), 25, 'autumn fall-back'),
-  );
+      // The label after the transition: `windowStart + Duration` would
+      // land at 23:00 the evening before and print Oct 29 here.
+      expect(_bottomLabel(data, 18), _mmmd(DateTime(2025, 10, 30)));
+    });
+  }, skip: _skipUnless(DateTime(2025, 10, 26), 25, 'autumn fall-back'));
 
-  group(
-    'window spanning a spring-forward',
-    () {
-      // Europe/Berlin springs forward on 2026-03-29. Pinning today to
-      // 2026-04-10 puts that day inside a 30-day window (2026-03-12 ..
-      // 2026-04-10).
-      final today = DateTime(2026, 4, 10);
-      final windowStart = DateTime(2026, 3, 12);
-      final transition = DateTime(2026, 3, 29);
-      const windowDays = 30;
+  group('window spanning a spring-forward', () {
+    // Europe/Berlin springs forward on 2026-03-29. Pinning today to
+    // 2026-04-10 puts that day inside a 30-day window (2026-03-12 ..
+    // 2026-04-10).
+    final today = DateTime(2026, 4, 10);
+    final windowStart = DateTime(2026, 3, 12);
+    final transition = DateTime(2026, 3, 29);
+    const windowDays = 30;
 
-      testWidgets('still maps one x per calendar day across the 23-hour day', (
-        tester,
-      ) async {
-        WeightTrendChart.clock = () => DateTime(2026, 4, 10, 9);
-        final entries = _dailyEntries(windowStart, today);
+    testWidgets('still maps one x per calendar day across the 23-hour day', (tester) async {
+      WeightTrendChart.clock = () => DateTime(2026, 4, 10, 9);
+      final entries = _dailyEntries(windowStart, today);
 
-        final data = await _pumpChart(
-          tester,
-          entries: entries,
-          windowDays: windowDays,
-        );
+      final data = await _pumpChart(tester, entries: entries, windowDays: windowDays);
 
-        _expectCalendarWindow(
-          data,
-          windowStart: windowStart,
-          today: today,
-          windowDays: windowDays,
-          checkDay: transition,
-          checkX: 17,
-        );
-        // A wall-clock `difference().inDays` from the calendar window
-        // start would put every dot after the transition one step left.
-        expect(_bottomLabel(data, 24), _mmmd(DateTime(2026, 4, 5)));
-      });
-    },
-    skip: _skipUnless(DateTime(2026, 3, 29), 23, 'spring-forward'),
-  );
+      _expectCalendarWindow(
+        data,
+        windowStart: windowStart,
+        today: today,
+        windowDays: windowDays,
+        checkDay: transition,
+        checkX: 17,
+      );
+      // A wall-clock `difference().inDays` from the calendar window
+      // start would put every dot after the transition one step left.
+      expect(_bottomLabel(data, 24), _mmmd(DateTime(2026, 4, 5)));
+    });
+  }, skip: _skipUnless(DateTime(2026, 3, 29), 23, 'spring-forward'));
+
+  group('tick labels', () {
+    testWidgets('shows one decimal place when the weight range is narrow (interval < 1)', (tester) async {
+      WeightTrendChart.clock = () => DateTime(2026, 1, 3);
+      final entries = [_entry(DateTime(2026, 1, 1), 62.0), _entry(DateTime(2026, 1, 2), 62.8)];
+      final data = await _pumpChart(tester, entries: entries, windowDays: 30);
+      final titles = data.titlesData.leftTitles.sideTitles;
+
+      final widget = titles.getTitlesWidget(
+        62.2,
+        TitleMeta(
+          min: data.minY,
+          max: data.maxY,
+          parentAxisSize: 400,
+          axisPosition: 0,
+          appliedInterval: 0.2, // Simulate narrow interval
+          sideTitles: titles,
+          formattedValue: '62.2',
+          axisSide: AxisSide.left,
+          rotationQuarterTurns: 0,
+        ),
+      );
+      final text = ((widget as Text).data!);
+      expect(text, '62.2', reason: 'Should format with one decimal place for narrow ranges');
+    });
+
+    testWidgets('shows zero decimal places when the weight range is wide (interval >= 1)', (tester) async {
+      WeightTrendChart.clock = () => DateTime(2026, 1, 3);
+      final entries = [_entry(DateTime(2026, 1, 1), 60.0), _entry(DateTime(2026, 1, 2), 80.0)];
+      final data = await _pumpChart(tester, entries: entries, windowDays: 30);
+      final titles = data.titlesData.leftTitles.sideTitles;
+
+      final widget = titles.getTitlesWidget(
+        65.0,
+        TitleMeta(
+          min: data.minY,
+          max: data.maxY,
+          parentAxisSize: 400,
+          axisPosition: 0,
+          appliedInterval: 5.0, // Simulate wide interval
+          sideTitles: titles,
+          formattedValue: '65',
+          axisSide: AxisSide.left,
+          rotationQuarterTurns: 0,
+        ),
+      );
+      final text = ((widget as Text).data!);
+      expect(text, '65', reason: 'Should format with zero decimal places for wide ranges');
+    });
+  });
 }
