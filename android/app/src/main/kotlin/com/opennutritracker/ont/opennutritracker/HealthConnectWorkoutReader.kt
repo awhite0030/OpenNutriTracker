@@ -55,6 +55,48 @@ object HealthConnectWorkoutReader {
      * back a token, and stopping at the first page would silently drop the
      * older half of a long catch-up import.
      */
+    /**
+     * Calorie records that START inside `[from, to)`. Same paging approach
+     * as [readExerciseSessions].
+     */
+    suspend fun readTotalCaloriesBurned(
+        context: Context,
+        fromMillis: Long,
+        toMillis: Long,
+    ): List<Map<String, Any?>> {
+        val client = HealthConnectClient.getOrCreate(context)
+        val timeRange = TimeRangeFilter.between(
+            Instant.ofEpochMilli(fromMillis),
+            Instant.ofEpochMilli(toMillis),
+        )
+
+        val energyRecords = mutableListOf<Map<String, Any?>>()
+        var pageToken: String? = null
+        do {
+            val response = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = TotalCaloriesBurnedRecord::class,
+                    timeRangeFilter = timeRange,
+                    pageToken = pageToken,
+                ),
+            )
+            for (record in response.records) {
+                energyRecords.add(
+                    mapOf(
+                        "uuid" to record.metadata.id,
+                        "startMillis" to record.startTime.toEpochMilli(),
+                        "endMillis" to record.endTime.toEpochMilli(),
+                        "sourceName" to record.metadata.dataOrigin.packageName,
+                        "energy" to record.energy.inKilocalories,
+                    ),
+                )
+            }
+            pageToken = response.pageToken
+        } while (pageToken != null)
+
+        return energyRecords
+    }
+
     suspend fun readExerciseSessions(
         context: Context,
         fromMillis: Long,

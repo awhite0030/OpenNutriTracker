@@ -20,19 +20,13 @@ class _FakeHealth extends Fake implements Health {
   List<HealthDataPoint> dataPoints = const [];
 
   @override
-  Future<bool> requestAuthorization(
-    List<HealthDataType> types, {
-    List<HealthDataAccess>? permissions,
-  }) async {
+  Future<bool> requestAuthorization(List<HealthDataType> types, {List<HealthDataAccess>? permissions}) async {
     requestedTypes = types;
     return authorizationGranted;
   }
 
   @override
-  Future<bool?> hasPermissions(
-    List<HealthDataType> types, {
-    List<HealthDataAccess>? permissions,
-  }) async {
+  Future<bool?> hasPermissions(List<HealthDataType> types, {List<HealthDataAccess>? permissions}) async {
     recheckedTypes = types;
     return workoutPermissions;
   }
@@ -53,6 +47,7 @@ class _FakeHealth extends Fake implements Health {
 /// The Health Connect session read, without a method channel.
 class _FakeWorkoutReader extends Fake implements HealthConnectWorkoutReader {
   List<ExternalWorkout> sessions = const [];
+  List<HealthDataPoint> calories = const [];
   int calls = 0;
   bool permissionsHeld = true;
   Object? permissionsError;
@@ -67,12 +62,14 @@ class _FakeWorkoutReader extends Fake implements HealthConnectWorkoutReader {
   }
 
   @override
-  Future<List<ExternalWorkout>> readExerciseSessions({
-    required DateTime from,
-    required DateTime to,
-  }) async {
+  Future<List<ExternalWorkout>> readExerciseSessions({required DateTime from, required DateTime to}) async {
     calls++;
     return sessions;
+  }
+
+  @override
+  Future<List<HealthDataPoint>> readTotalCaloriesBurned({required DateTime from, required DateTime to}) async {
+    return calories;
   }
 }
 
@@ -103,15 +100,13 @@ void main() {
   final start = DateTime(2026, 8, 13, 18, 0);
   final end = DateTime(2026, 8, 13, 19, 0);
 
-  double? energy({
-    String sourceName = 'com.hevy.app',
-    required List<HealthDataPoint> calorieRecords,
-  }) => HealthPackageService.androidWorkoutEnergyKcal(
-    start: start,
-    end: end,
-    sourceName: sourceName,
-    calorieRecords: calorieRecords,
-  );
+  double? energy({String sourceName = 'com.hevy.app', required List<HealthDataPoint> calorieRecords}) =>
+      HealthPackageService.androidWorkoutEnergyKcal(
+        start: start,
+        end: end,
+        sourceName: sourceName,
+        calorieRecords: calorieRecords,
+      );
 
   group('HealthPackageService.androidWorkoutEnergyKcal', () {
     test('sums only the session writer\'s records, not other sources\' '
@@ -123,11 +118,7 @@ void main() {
       final records = [
         _calories(source: 'com.hevy.app', start: start, kcal: 430.3),
         _calories(source: 'com.fitbit.FitbitMobile', start: start, kcal: 170),
-        _calories(
-          source: 'com.fitbit.FitbitMobile',
-          start: start.add(const Duration(minutes: 15)),
-          kcal: 150,
-        ),
+        _calories(source: 'com.fitbit.FitbitMobile', start: start.add(const Duration(minutes: 15)), kcal: 150),
       ];
 
       expect(energy(calorieRecords: records), closeTo(430.3, 0.001));
@@ -136,11 +127,7 @@ void main() {
     test('multiple records from the session writer are summed', () {
       final records = [
         _calories(source: 'com.hevy.app', start: start, kcal: 200),
-        _calories(
-          source: 'com.hevy.app',
-          start: start.add(const Duration(minutes: 30)),
-          kcal: 100.5,
-        ),
+        _calories(source: 'com.hevy.app', start: start.add(const Duration(minutes: 30)), kcal: 100.5),
       ];
 
       expect(energy(calorieRecords: records), closeTo(300.5, 0.001));
@@ -150,11 +137,7 @@ void main() {
       final records = [
         // Starts a second early: overlaps the session but Health Connect's
         // startTime-based between() would not have counted it either.
-        _calories(
-          source: 'com.hevy.app',
-          start: start.subtract(const Duration(seconds: 1)),
-          kcal: 98,
-        ),
+        _calories(source: 'com.hevy.app', start: start.subtract(const Duration(seconds: 1)), kcal: 98),
         // Starts exactly at the session start: counted.
         _calories(source: 'com.hevy.app', start: start, kcal: 197.6),
         // Starts exactly at the session end: the window is half-open.
@@ -171,16 +154,8 @@ void main() {
       // sources together would double-count again.
       final records = [
         _calories(source: 'com.fitbit.FitbitMobile', start: start, kcal: 197.6),
-        _calories(
-          source: 'com.fitbit.FitbitMobile',
-          start: start.add(const Duration(minutes: 15)),
-          kcal: 48,
-        ),
-        _calories(
-          source: 'com.google.android.apps.fitness',
-          start: start,
-          kcal: 120,
-        ),
+        _calories(source: 'com.fitbit.FitbitMobile', start: start.add(const Duration(minutes: 15)), kcal: 48),
+        _calories(source: 'com.google.android.apps.fitness', start: start, kcal: 120),
       ];
 
       expect(energy(calorieRecords: records), closeTo(245.6, 0.001));
@@ -190,13 +165,7 @@ void main() {
       expect(energy(calorieRecords: const []), isNull);
       expect(
         energy(
-          calorieRecords: [
-            _calories(
-              source: 'com.hevy.app',
-              start: end.add(const Duration(hours: 1)),
-              kcal: 300,
-            ),
-          ],
+          calorieRecords: [_calories(source: 'com.hevy.app', start: end.add(const Duration(hours: 1)), kcal: 300)],
         ),
         isNull,
       );
@@ -247,34 +216,22 @@ void main() {
       expect(await service.requestPermissions(), isTrue);
     });
 
-    test(
-      'a platform that will not report read grants is not a refusal',
-      () async {
-        // iOS never answers hasPermissions for reads.
-        health.workoutPermissions = null;
+    test('a platform that will not report read grants is not a refusal', () async {
+      // iOS never answers hasPermissions for reads.
+      health.workoutPermissions = null;
 
-        expect(await service.requestPermissions(), isTrue);
-      },
-    );
+      expect(await service.requestPermissions(), isTrue);
+    });
 
     test('on iOS body fat is asked for, but never re-checked', () async {
       final iosHealth = _FakeHealth()..workoutPermissions = true;
-      final iosService = HealthPackageService(
-        iosHealth,
-        platform: HealthTargetPlatform.ios,
-      );
+      final iosService = HealthPackageService(iosHealth, platform: HealthTargetPlatform.ios);
 
       await iosService.requestPermissions();
 
-      expect(
-        iosHealth.requestedTypes,
-        contains(HealthDataType.BODY_FAT_PERCENTAGE),
-      );
+      expect(iosHealth.requestedTypes, contains(HealthDataType.BODY_FAT_PERCENTAGE));
       expect(iosHealth.recheckedTypes, contains(HealthDataType.WORKOUT));
-      expect(
-        iosHealth.recheckedTypes,
-        isNot(contains(HealthDataType.BODY_FAT_PERCENTAGE)),
-      );
+      expect(iosHealth.recheckedTypes, isNot(contains(HealthDataType.BODY_FAT_PERCENTAGE)));
     });
   });
 
@@ -299,10 +256,7 @@ void main() {
         'nothing else', () async {
       await service.requestPermissions();
 
-      expect(health.requestedTypes, [
-        HealthDataType.WORKOUT,
-        HealthDataType.TOTAL_CALORIES_BURNED,
-      ]);
+      expect(health.requestedTypes, [HealthDataType.WORKOUT, HealthDataType.TOTAL_CALORIES_BURNED]);
     });
 
     test('the three refused types are never requested', () async {
@@ -311,19 +265,12 @@ void main() {
       expect(
         health.requestedTypes,
         isNot(
-          anyElement(
-            isIn([
-              HealthDataType.BODY_FAT_PERCENTAGE,
-              HealthDataType.DISTANCE_DELTA,
-              HealthDataType.STEPS,
-            ]),
-          ),
+          anyElement(isIn([HealthDataType.BODY_FAT_PERCENTAGE, HealthDataType.DISTANCE_DELTA, HealthDataType.STEPS])),
         ),
       );
     });
 
-    test('body fat is not read, and answers null rather than throwing',
-        () async {
+    test('body fat is not read, and answers null rather than throwing', () async {
       expect(await service.readLatestBodyFatPercent(), isNull);
       expect(health.queriedTypes, isEmpty);
     });
@@ -342,11 +289,7 @@ void main() {
     setUp(() {
       health = _FakeHealth()..workoutPermissions = true;
       reader = _FakeWorkoutReader();
-      service = HealthPackageService(
-        health,
-        workoutReader: reader,
-        platform: HealthTargetPlatform.android,
-      );
+      service = HealthPackageService(health, workoutReader: reader, platform: HealthTargetPlatform.android);
     });
 
     test('sessions come from Health Connect directly, never from the '
@@ -364,14 +307,11 @@ void main() {
       await service.readWorkouts(from: from, to: to);
 
       expect(reader.calls, 1);
-      // The only plugin read left is the calorie one.
-      expect(health.queriedTypes, [
-        [HealthDataType.TOTAL_CALORIES_BURNED],
-      ]);
+      // Calorie reads are now also done outside the plugin.
+      expect(health.queriedTypes, isEmpty);
     });
 
-    test('energy is attributed to the session from the calorie records',
-        () async {
+    test('energy is attributed to the session from the calorie records', () async {
       reader.sessions = [
         ExternalWorkout(
           id: 'session-1',
@@ -381,13 +321,9 @@ void main() {
           sourceAppName: 'com.hevy.app',
         ),
       ];
-      health.dataPoints = [
+      reader.calories = [
         _calories(source: 'com.hevy.app', start: sessionStart, kcal: 430.3),
-        _calories(
-          source: 'com.fitbit.FitbitMobile',
-          start: sessionStart,
-          kcal: 170,
-        ),
+        _calories(source: 'com.fitbit.FitbitMobile', start: sessionStart, kcal: 170),
       ];
 
       final workouts = await service.readWorkouts(from: from, to: to);
@@ -403,16 +339,13 @@ void main() {
       reader.sessions = const [];
 
       expect(await service.readWorkouts(from: from, to: to), isEmpty);
-      expect(health.queriedTypes, isEmpty);
+      expect(health.queriedTypes, isEmpty); // No plugin queries should happen
     });
 
     test('a definite refusal still aborts before any read', () async {
       reader.permissionsHeld = false;
 
-      expect(
-        () => service.readWorkouts(from: from, to: to),
-        throwsStateError,
-      );
+      expect(() => service.readWorkouts(from: from, to: to), throwsStateError);
       expect(reader.calls, 0);
     });
 
@@ -429,19 +362,13 @@ void main() {
     });
 
     test('a failing grant check surfaces as an error, not a read', () async {
-      reader.permissionsError = PlatformException(
-        code: HealthConnectWorkoutReader.rateLimitedCode,
-      );
+      reader.permissionsError = PlatformException(code: HealthConnectWorkoutReader.rateLimitedCode);
 
-      await expectLater(
-        service.readWorkouts(from: from, to: to),
-        throwsA(isA<PlatformException>()),
-      );
+      await expectLater(service.readWorkouts(from: from, to: to), throwsA(isA<PlatformException>()));
       expect(reader.calls, 0);
     });
 
-    test('requestPermissions re-checks the grants through the same path',
-        () async {
+    test('requestPermissions re-checks the grants through the same path', () async {
       reader.permissionsHeld = false;
 
       expect(await service.requestPermissions(), isFalse);
