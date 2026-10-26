@@ -87,12 +87,9 @@ class HealthPackageService implements HealthService {
   final HealthConnectWorkoutReader _workoutReader;
   final HealthTargetPlatform _platform;
 
-  HealthPackageService(
-    this._health, {
-    HealthConnectWorkoutReader? workoutReader,
-    HealthTargetPlatform? platform,
-  }) : _workoutReader = workoutReader ?? HealthConnectWorkoutReader(),
-       _platform = platform ?? HealthTargetPlatform.current;
+  HealthPackageService(this._health, {HealthConnectWorkoutReader? workoutReader, HealthTargetPlatform? platform})
+    : _workoutReader = workoutReader ?? HealthConnectWorkoutReader(),
+      _platform = platform ?? HealthTargetPlatform.current;
 
   /// Builds a configured service. [Health.configure] resolves the device id
   /// and has to run before any query, so it happens here rather than lazily
@@ -144,10 +141,7 @@ class HealthPackageService implements HealthService {
   }
 
   @override
-  Future<List<ExternalWorkout>> readWorkouts({
-    required DateTime from,
-    required DateTime to,
-  }) async {
+  Future<List<ExternalWorkout>> readWorkouts({required DateTime from, required DateTime to}) async {
     // The plugin swallows a SecurityException from a partially-revoked grant
     // and answers with an empty list, which upstream would file as "nothing
     // new" and advance the watermark. Check first and fail loudly instead.
@@ -163,11 +157,7 @@ class HealthPackageService implements HealthService {
     if (_platform == HealthTargetPlatform.android) {
       return await _readAndroidWorkouts(from: from, to: to);
     }
-    final points = await _health.getHealthDataFromTypes(
-      types: const [_workoutType],
-      startTime: from,
-      endTime: to,
-    );
+    final points = await _health.getHealthDataFromTypes(types: const [_workoutType], startTime: from, endTime: to);
     final workouts = <ExternalWorkout>[];
     for (final point in points) {
       final value = point.value;
@@ -187,10 +177,7 @@ class HealthPackageService implements HealthService {
           end: point.dateTo,
           activityTypeName: value.workoutActivityType.name,
           // A HealthKit workout carries its own total.
-          energyBurnedKcal: _energyInKcal(
-            value.totalEnergyBurned,
-            value.totalEnergyBurnedUnit,
-          ),
+          energyBurnedKcal: _energyInKcal(value.totalEnergyBurned, value.totalEnergyBurnedUnit),
           sourceAppName: point.sourceName,
         ),
       );
@@ -204,20 +191,10 @@ class HealthPackageService implements HealthService {
   /// window are read once and attributed per workout by
   /// [androidWorkoutEnergyKcal] — which is also why the plugin's own totals
   /// were never used here even when they were available.
-  Future<List<ExternalWorkout>> _readAndroidWorkouts({
-    required DateTime from,
-    required DateTime to,
-  }) async {
-    final sessions = await _workoutReader.readExerciseSessions(
-      from: from,
-      to: to,
-    );
+  Future<List<ExternalWorkout>> _readAndroidWorkouts({required DateTime from, required DateTime to}) async {
+    final sessions = await _workoutReader.readExerciseSessions(from: from, to: to);
     if (sessions.isEmpty) return const <ExternalWorkout>[];
-    final calorieRecords = await _health.getHealthDataFromTypes(
-      types: const [_androidEnergyType],
-      startTime: from,
-      endTime: to,
-    );
+    final calorieRecords = await _workoutReader.readTotalCaloriesBurned(from: from, to: to);
     return [
       for (final session in sessions)
         ExternalWorkout(
@@ -270,11 +247,7 @@ class HealthPackageService implements HealthService {
       if (value is! NumericHealthValue) continue;
       final kcal = _energyInKcal(value.numericValue, record.unit);
       if (kcal == null) continue;
-      kcalBySource.update(
-        record.sourceName,
-        (sum) => sum + kcal,
-        ifAbsent: () => kcal,
-      );
+      kcalBySource.update(record.sourceName, (sum) => sum + kcal, ifAbsent: () => kcal);
     }
     final ownKcal = kcalBySource[sourceName] ?? 0;
     if (ownKcal > 0) return ownKcal;

@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:health/health.dart';
 import 'package:logging/logging.dart';
 import 'package:opennutritracker/core/data/data_source/health/external_workout.dart';
 
@@ -20,8 +21,7 @@ class HealthConnectWorkoutReader {
 
   final MethodChannel _methodChannel;
 
-  HealthConnectWorkoutReader({MethodChannel? channel})
-    : _methodChannel = channel ?? _channel;
+  HealthConnectWorkoutReader({MethodChannel? channel}) : _methodChannel = channel ?? _channel;
 
   /// The [PlatformException.code] Health Connect's request quota answers
   /// with ("Rate limited request quota has been exceeded"). The quota
@@ -29,8 +29,7 @@ class HealthConnectWorkoutReader {
   static const rateLimitedCode = 'health_connect_rate_limited';
 
   /// Whether [error] is Health Connect refusing a call for quota reasons.
-  static bool isRateLimited(Object error) =>
-      error is PlatformException && error.code == rateLimitedCode;
+  static bool isRateLimited(Object error) => error is PlatformException && error.code == rateLimitedCode;
 
   /// Whether the exercise and calorie read grants a workout import needs are
   /// both still held.
@@ -43,8 +42,7 @@ class HealthConnectWorkoutReader {
   ///
   /// Throws like [readExerciseSessions].
   Future<bool> hasWorkoutReadPermissions() async =>
-      await _methodChannel.invokeMethod<bool>('hasWorkoutReadPermissions') ??
-      false;
+      await _methodChannel.invokeMethod<bool>('hasWorkoutReadPermissions') ?? false;
 
   /// Sessions starting within `[from, to)`.
   ///
@@ -53,17 +51,11 @@ class HealthConnectWorkoutReader {
   /// request quota is spent, `health_connect_unavailable` for anything else.
   /// Callers treat all of them as a failed read rather than an empty one, so
   /// a refusal never advances the import watermark.
-  Future<List<ExternalWorkout>> readExerciseSessions({
-    required DateTime from,
-    required DateTime to,
-  }) async {
-    final sessions = await _methodChannel.invokeListMethod<dynamic>(
-      'readExerciseSessions',
-      <String, dynamic>{
-        'fromMillis': from.millisecondsSinceEpoch,
-        'toMillis': to.millisecondsSinceEpoch,
-      },
-    );
+  Future<List<ExternalWorkout>> readExerciseSessions({required DateTime from, required DateTime to}) async {
+    final sessions = await _methodChannel.invokeListMethod<dynamic>('readExerciseSessions', <String, dynamic>{
+      'fromMillis': from.millisecondsSinceEpoch,
+      'toMillis': to.millisecondsSinceEpoch,
+    });
     if (sessions == null) return const <ExternalWorkout>[];
 
     final workouts = <ExternalWorkout>[];
@@ -77,6 +69,49 @@ class HealthConnectWorkoutReader {
   /// One channel entry as an [ExternalWorkout], or null when it is missing
   /// something the import cannot do without. A single unreadable record is
   /// worth a log line, not a failed import of every other workout.
+  /// Calorie records starting within `[from, to)`.
+  ///
+  /// Throws [PlatformException] under the same conditions as [readExerciseSessions].
+  Future<List<HealthDataPoint>> readTotalCaloriesBurned({required DateTime from, required DateTime to}) async {
+    final records = await _methodChannel.invokeListMethod<dynamic>('readTotalCaloriesBurned', <String, dynamic>{
+      'fromMillis': from.millisecondsSinceEpoch,
+      'toMillis': to.millisecondsSinceEpoch,
+    });
+    if (records == null) return const <HealthDataPoint>[];
+
+    final points = <HealthDataPoint>[];
+    for (final record in records) {
+      if (record is! Map) {
+        _log.warning('Skipping health calorie record: expected a map, got $record');
+        continue;
+      }
+      final id = record['uuid'];
+      final start = record['startMillis'];
+      final end = record['endMillis'];
+      final energy = record['energy'];
+      if (id is! String || start is! int || end is! int || energy is! num) {
+        _log.warning('Skipping malformed health calorie record: $record');
+        continue;
+      }
+      final sourceName = record['sourceName'];
+      points.add(
+        HealthDataPoint(
+          uuid: id,
+          value: NumericHealthValue(numericValue: energy),
+          type: HealthDataType.TOTAL_CALORIES_BURNED,
+          unit: HealthDataUnit.KILOCALORIE,
+          dateFrom: DateTime.fromMillisecondsSinceEpoch(start),
+          dateTo: DateTime.fromMillisecondsSinceEpoch(end),
+          sourcePlatform: HealthPlatformType.googleHealthConnect,
+          sourceDeviceId: '',
+          sourceId: '',
+          sourceName: sourceName is String ? sourceName : '',
+        ),
+      );
+    }
+    return points;
+  }
+
   ExternalWorkout? _toWorkout(dynamic session) {
     if (session is! Map) {
       _log.warning('Skipping health session: expected a map, got $session');
@@ -86,10 +121,7 @@ class HealthConnectWorkoutReader {
     final start = session['startMillis'];
     final end = session['endMillis'];
     final activityTypeName = session['activityTypeName'];
-    if (id is! String ||
-        start is! int ||
-        end is! int ||
-        activityTypeName is! String) {
+    if (id is! String || start is! int || end is! int || activityTypeName is! String) {
       _log.warning('Skipping malformed health session: $session');
       return null;
     }
