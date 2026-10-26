@@ -1759,7 +1759,5 @@
         "type": "int"
       }
     }
-  },
-  "onboardingProgressSemantic": "Page {currentPage} of {totalPages}",
-  "@onboardingProgressSemantic": {"description": "Semantic label for the onboarding progress indicator", "placeholders": {"currentPage": {"type": "int"}, "totalPages": {"type": "int"}}}
+  }
 }
