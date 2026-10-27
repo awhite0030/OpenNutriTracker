@@ -1231,7 +1231,7 @@
   "bulkAddTitle": "Mehrere Einträge hinzufügen",
   "bulkAddInputHint": "2 Eier, 100g Toast, schwarzer Kaffee",
   "bulkAddParseLabel": "Lebensmittel suchen",
-  "bulkAddSubmitLabel": "{count} Einträge speichern",
+  "bulkAddSubmitLabel": "{count, plural, =1{1 Eintrag speichern} other{{count} Einträge speichern}}",
   "bulkAddNoMatchLabel": "Kein Treffer für diesen Eintrag",
   "bulkAddUncertainLabel": "Treffer prüfen",
   "bulkAddSkipLabel": "Überspringen",
@@ -1356,4 +1356,6 @@
   "healthSyncUnavailableLabel": "Gesundheitsdaten sind auf diesem Gerät nicht verfügbar. Der Trainingsimport benötigt Health Connect unter Android oder Apple Health unter iOS.",
   "sourcesEnergyCompensationTitle": "Anrechnung von Trainingskalorien",
   "sourcesEnergyCompensationDescription": "Importierte Trainings werden mit weniger Energie angerechnet, als dein Gerät meldet. Menschen gleichen Sport aus, indem sie den Rest des Tages weniger Kalorien verbrennen – im Mittel etwa 28 %, bei höherem Körperfettanteil mehr. Der Vorschlag stammt aus dieser Forschung und lässt sich unter Einstellungen → Gesundheitsdaten-Sync ändern. Die Energie selbst meldet die App oder das Gerät, das das Training aufgezeichnet hat; sie wird nicht mit der MET-Formel der App berechnet."
+  ,"bulkAddToListLabel": "{count, plural, =1{1 Eintrag hinzufügen} other{{count} Einträge hinzufügen}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

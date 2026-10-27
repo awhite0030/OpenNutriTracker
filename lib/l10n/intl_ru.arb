@@ -1399,7 +1399,7 @@
   "bulkAddTitle": "Добавить несколько пунктов",
   "bulkAddInputHint": "2 яйца, 100 г тостов, черный кофе",
   "bulkAddParseLabel": "Найти продукты",
-  "bulkAddSubmitLabel": "Записать {count} позиций",
+  "bulkAddSubmitLabel": "{count, plural, =1{Записать 1 позицию} other{Записать {count} позиций}}",
   "@bulkAddSubmitLabel": {
     "placeholders": {
       "count": {
@@ -1678,7 +1678,7 @@
     }
   },
   "bulkAddReviewTitle": "Просмотреть элементы",
-  "bulkAddToListLabel": "Добавить {count} элементов",
+  "bulkAddToListLabel": "{count, plural, =1{Добавить 1 элемент} other{Добавить {count} элементов}}",
   "@bulkAddToListLabel": {
     "placeholders": {
       "count": {

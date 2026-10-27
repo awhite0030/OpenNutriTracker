@@ -422,4 +422,6 @@
   "nutritionalStatusRiskSevere": "Hoog",
   "nutritionalStatusRiskVerySevere": "Zeer hoog",
   "nutritionalStatusUnderweight": "Ondergewicht"
+  ,"bulkAddToListLabel": "{count, plural, =1{1 item toevoegen} other{{count} items toevoegen}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

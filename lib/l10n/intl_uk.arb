@@ -1200,7 +1200,7 @@
   "bulkAddTitle": "Додати кілька позицій",
   "bulkAddInputHint": "2 яйця, 100g тост, чорна кава",
   "bulkAddParseLabel": "Знайти продукти",
-  "bulkAddSubmitLabel": "Записати {count} позицій",
+  "bulkAddSubmitLabel": "{count, plural, =1{Записати 1 позицію} other{Записати {count} позицій}}",
   "bulkAddNoMatchLabel": "Не вдалося знайти відповідник",
   "bulkAddUncertainLabel": "Перевірте відповідник",
   "bulkAddSkipLabel": "Пропустити",
@@ -1325,4 +1325,6 @@
   "healthSyncUnavailableLabel": "Дані про здоров’я недоступні на цьому пристрої. Для імпорту тренувань потрібен Health Connect на Android або Apple Health на iOS.",
   "sourcesEnergyCompensationTitle": "Зарахування калорій за тренування",
   "sourcesEnergyCompensationDescription": "Імпортовані тренування зараховуються з меншою енергією, ніж повідомляє пристрій. Люди компенсують навантаження, спалюючи менше калорій протягом решти дня — у середньому близько 28%, а за вищого відсотка жиру більше. Рекомендоване значення походить із цього дослідження, і його можна змінити в Налаштуваннях → Синхронізація зі здоров’ям. Саму енергію повідомляє застосунок або пристрій, який записав тренування; вона не обчислюється формулою MET у застосунку."
+  ,"bulkAddToListLabel": "{count, plural, =1{Додати 1 позицію} other{Додати {count} позицій}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

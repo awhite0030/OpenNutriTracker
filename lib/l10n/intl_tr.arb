@@ -1231,7 +1231,7 @@
   "bulkAddTitle": "Birden fazla öğe ekle",
   "bulkAddInputHint": "2 yumurta, 100g tost, sade kahve",
   "bulkAddParseLabel": "Yiyecekleri bul",
-  "bulkAddSubmitLabel": "{count} öğeyi kaydet",
+  "bulkAddSubmitLabel": "{count, plural, =1{1 öğeyi kaydet} other{{count} öğeyi kaydet}}",
   "bulkAddNoMatchLabel": "Bu öğe için eşleşme bulunamadı",
   "bulkAddUncertainLabel": "Bu eşleşmeyi kontrol edin",
   "bulkAddSkipLabel": "Atla",
@@ -1356,4 +1356,6 @@
   "healthSyncUnavailableLabel": "Bu cihazda sağlık verileri kullanılamıyor. Antrenman içe aktarma, Android’de Health Connect veya iOS’ta Apple Health gerektirir.",
   "sourcesEnergyCompensationTitle": "Antrenman kalori payı",
   "sourcesEnergyCompensationDescription": "İçe aktarılan antrenmanlar, cihazın bildirdiği enerjinin tamamından daha azıyla sayılır. İnsanlar egzersizi, günün geri kalanında daha az kalori yakarak dengeler; ortalama olarak yaklaşık %28, vücut yağ oranı yüksek olanlarda daha fazla. Önerilen pay bu araştırmadan gelir ve Ayarlar → Sağlık senkronizasyonu bölümünden değiştirebilirsin. Enerjinin kendisi antrenmanı kaydeden uygulama veya cihaz tarafından bildirilir; uygulamadaki MET formülüyle hesaplanmaz."
+  ,"bulkAddToListLabel": "{count, plural, =1{1 öğe ekle} other{{count} öğe ekle}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }
