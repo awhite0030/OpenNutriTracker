@@ -6,6 +6,7 @@ import 'package:opennutritracker/core/styles/dimens.dart';
 import 'package:opennutritracker/core/utils/calc/unit_calc.dart';
 import 'package:opennutritracker/core/utils/energy_unit_provider.dart';
 import 'package:opennutritracker/features/settings/presentation/widgets/kcal_goal_info_screen.dart';
+import 'package:opennutritracker/core/utils/energy_display.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:opennutritracker/generated/l10n.dart';
 import 'package:provider/provider.dart';
@@ -42,11 +43,7 @@ class DashboardWidget extends StatefulWidget {
 
 class _DashboardWidgetState extends State<DashboardWidget> {
   void _openKcalGoalInfoScreen() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const KcalGoalInfoScreen(),
-      ),
-    );
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const KcalGoalInfoScreen()));
   }
 
   @override
@@ -69,16 +66,11 @@ class _DashboardWidgetState extends State<DashboardWidget> {
           : S.of(context).kcalTooMuchLabel;
     } else {
       kcalValue = widget.totalKcalLeft;
-      gaugeValue =
-          (widget.totalKcalDaily - widget.totalKcalLeft) / widget.totalKcalDaily;
+      gaugeValue = (widget.totalKcalDaily - widget.totalKcalLeft) / widget.totalKcalDaily;
     }
     final displayValue = usesKilojoules ? UnitCalc.kcalToKj(kcalValue) : kcalValue;
-    final displaySupplied = usesKilojoules
-        ? UnitCalc.kcalToKj(widget.totalKcalSupplied)
-        : widget.totalKcalSupplied;
-    final displayBurned = usesKilojoules
-        ? UnitCalc.kcalToKj(widget.totalKcalBurned)
-        : widget.totalKcalBurned;
+    final displaySupplied = usesKilojoules ? UnitCalc.kcalToKj(widget.totalKcalSupplied) : widget.totalKcalSupplied;
+    final displayBurned = usesKilojoules ? UnitCalc.kcalToKj(widget.totalKcalBurned) : widget.totalKcalBurned;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = isDark ? AppPalette.dark : AppPalette.light;
@@ -104,7 +96,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                     Expanded(
                       child: _MiniStat(
                         icon: Icons.arrow_downward_rounded,
-                        value: '${displaySupplied.round()}',
+                        value: '${EnergyDisplay.displayValue(context, widget.totalKcalSupplied)}',
                         label: S.of(context).suppliedLabel,
                         color: palette.proteinColor,
                       ),
@@ -112,7 +104,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                     Expanded(
                       child: _MiniStat(
                         icon: Icons.local_fire_department_rounded,
-                        value: '${displayBurned.round()}',
+                        value: '${EnergyDisplay.displayValue(context, widget.totalKcalBurned)}',
                         label: S.of(context).burnedLabel,
                         color: palette.carbsColor,
                         trailing: true,
@@ -123,7 +115,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                 const SizedBox(height: Dimens.spacing16),
                 Semantics(
                   identifier: 'home-kcal-gauge',
-                  label: '${displayValue.round()} $kcalLabelText',
+                  label: '${EnergyDisplay.displayValue(context, kcalValue)} $kcalLabelText',
                   hint: S.of(context).settingsKcalGoalInfoLabel,
                   button: true,
                   excludeSemantics: true,
@@ -165,7 +157,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
                             AnimatedFlipCounter(
                               duration: const Duration(milliseconds: 800),
                               curve: AppMotion.emphasized,
-                              value: displayValue.round(),
+                              value: EnergyDisplay.displayValue(context, kcalValue),
                               textStyle: textTheme.displaySmall?.copyWith(height: 1),
                             ),
                             const SizedBox(height: 2),
@@ -246,10 +238,8 @@ class _MiniStat extends StatelessWidget {
           child: Icon(icon, color: color, size: 20),
         ),
         const SizedBox(height: 6),
-        Text(value,
-            maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleMedium),
-        Text(label,
-            maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.labelSmall),
+        Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleMedium),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.labelSmall),
       ],
     );
   }
@@ -282,7 +272,11 @@ class _MacroTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(width: 9, height: 9, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
               const SizedBox(width: 6),
               Flexible(child: Text(label, style: textTheme.labelMedium)),
             ],
