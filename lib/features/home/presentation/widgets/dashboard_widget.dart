@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:opennutritracker/core/presentation/widgets/app_card.dart';
 import 'package:opennutritracker/core/styles/app_palette.dart';
 import 'package:opennutritracker/core/styles/dimens.dart';
-import 'package:opennutritracker/core/utils/calc/unit_calc.dart';
 import 'package:opennutritracker/core/utils/energy_unit_provider.dart';
 import 'package:opennutritracker/features/settings/presentation/widgets/kcal_goal_info_screen.dart';
 import 'package:opennutritracker/core/utils/energy_display.dart';
@@ -68,10 +67,6 @@ class _DashboardWidgetState extends State<DashboardWidget> {
       kcalValue = widget.totalKcalLeft;
       gaugeValue = (widget.totalKcalDaily - widget.totalKcalLeft) / widget.totalKcalDaily;
     }
-    final displayValue = usesKilojoules ? UnitCalc.kcalToKj(kcalValue) : kcalValue;
-    final displaySupplied = usesKilojoules ? UnitCalc.kcalToKj(widget.totalKcalSupplied) : widget.totalKcalSupplied;
-    final displayBurned = usesKilojoules ? UnitCalc.kcalToKj(widget.totalKcalBurned) : widget.totalKcalBurned;
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = isDark ? AppPalette.dark : AppPalette.light;
     final textTheme = Theme.of(context).textTheme;
