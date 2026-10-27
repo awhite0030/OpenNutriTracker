@@ -1201,7 +1201,7 @@
   "bulkAddTitle": "批量添加",
   "bulkAddInputHint": "100g 吐司，250ml 牛奶，黑咖啡",
   "bulkAddParseLabel": "查找食物",
-  "bulkAddSubmitLabel": "记录 {count} 项",
+  "bulkAddSubmitLabel": "{count, plural, =1{记录 1 项} other{记录 {count} 项}}",
   "bulkAddNoMatchLabel": "未找到匹配的食物",
   "bulkAddUncertainLabel": "请核对此匹配",
   "bulkAddSkipLabel": "跳过",
@@ -1326,4 +1326,6 @@
   "healthSyncUnavailableLabel": "此设备上无法使用健康数据。导入锻炼需要 Android 上的 Health Connect 或 iOS 上的 Apple Health。",
   "sourcesEnergyCompensationTitle": "锻炼热量计入比例",
   "sourcesEnergyCompensationDescription": "导入的锻炼计入的热量少于设备报告的数值。人体会在一天中的其余时间少消耗热量来补偿运动，平均约为 28%，体脂率越高补偿越多。建议值来自该研究，你可以在设置 → 健康同步中修改。热量数值由记录该锻炼的应用或设备提供，并非由应用内的 MET 公式计算。"
+  ,"bulkAddToListLabel": "{count, plural, =1{添加 1 项} other{添加 {count} 项}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

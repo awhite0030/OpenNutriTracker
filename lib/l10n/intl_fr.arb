@@ -1270,4 +1270,6 @@
   "quickAddActivityNameLabel": "Nom (facultatif)",
   "scannerLockOrientationTooltip": "Verrouiller en mode portrait",
   "scannerUnlockOrientationTooltip": "Autoriser la rotation"
+  ,"bulkAddToListLabel": "{count, plural, =1{Ajouter 1 élément} other{Ajouter {count} éléments}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

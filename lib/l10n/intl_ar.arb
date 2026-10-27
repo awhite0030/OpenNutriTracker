@@ -151,4 +151,6 @@
   "buttonYesLabel": "نعم",
   "calciumLabel": "الكالسيوم",
   "calculationsMacronutrientsDistributionLabel": "توزيع المغذيات الكبرى"
+  ,"bulkAddToListLabel": "{count, plural, =1{إضافة عنصر 1} other{إضافة {count} عناصر}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

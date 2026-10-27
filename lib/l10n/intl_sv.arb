@@ -1360,7 +1360,7 @@
   "bulkAddTitle": "Lägg till flera livsmedel",
   "bulkAddInputHint": "2 ägg, 100 g rostat bröd, svart kaffe",
   "bulkAddParseLabel": "Hitta livsmedel",
-  "bulkAddSubmitLabel": "Registrera {count} livsmedel",
+  "bulkAddSubmitLabel": "{count, plural, =1{Registrera 1 livsmedel} other{Registrera {count} livsmedel}}",
   "@bulkAddSubmitLabel": {
     "placeholders": {
       "count": {
@@ -1656,4 +1656,6 @@
   "healthSyncUnavailableLabel": "Hälsodata är inte tillgängliga på den här enheten. Import av träningspass kräver Health Connect på Android eller Apple Health på iOS.",
   "sourcesEnergyCompensationTitle": "Tillgodoräknade träningskalorier",
   "sourcesEnergyCompensationDescription": "För importerade träningspass räknas en mindre energimängd till godo än den som enheten anger. Människor kompenserar för träning genom att förbruka färre kalorier under resten av dagen – ungefär 28 % i genomsnitt, och mer vid högre kroppsfettprocent. Den föreslagna andelen bygger på denna forskning och kan ändras under Inställningar → Hälsosynkronisering. Själva energiförbrukningen anges av appen eller enheten som registrerade träningspasset och beräknas inte med appens MET-formel."
+  ,"bulkAddToListLabel": "{count, plural, =1{Lägg till 1 livsmedel} other{Lägg till {count} livsmedel}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

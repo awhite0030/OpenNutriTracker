@@ -1358,7 +1358,7 @@
   "bulkAddTitle": "Agregar varios elementos",
   "bulkAddInputHint": "2 huevos, 100 g de tostada, café solo",
   "bulkAddParseLabel": "Buscar alimentos",
-  "bulkAddSubmitLabel": "Registrar {count} elementos",
+  "bulkAddSubmitLabel": "{count, plural, =1{Registrar 1 elemento} other{Registrar {count} elementos}}",
   "@bulkAddSubmitLabel": {
     "placeholders": {
       "count": {
@@ -1654,4 +1654,6 @@
   "healthSyncUnavailableLabel": "Los datos de salud no están disponibles en este dispositivo. La importación de entrenamientos necesita Health Connect en Android o Apple Health en iOS.",
   "sourcesEnergyCompensationTitle": "Crédito calórico de entrenamiento",
   "sourcesEnergyCompensationDescription": "Los entrenamientos importados se acreditan con menos energía de la que reporta tu dispositivo. Las personas compensan el ejercicio quemando menos calorías el resto del día — aproximadamente un 28 % de media, y más con un porcentaje de grasa corporal elevado. La sugerencia proviene de esa investigación y puedes modificarla en Ajustes → Sincronización de salud. La energía la reporta la aplicación o el dispositivo que registró el entrenamiento, no se calcula con la fórmula MET de la aplicación."
+  ,"bulkAddToListLabel": "{count, plural, =1{Añadir 1 elemento} other{Añadir {count} elementos}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

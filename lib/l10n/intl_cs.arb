@@ -1200,7 +1200,7 @@
   "bulkAddTitle": "Přidat více položek",
   "bulkAddInputHint": "2 vejce, 100g toustový chléb, černá káva",
   "bulkAddParseLabel": "Najít potraviny",
-  "bulkAddSubmitLabel": "Zaznamenat {count} položek",
+  "bulkAddSubmitLabel": "{count, plural, =1{Zaznamenat 1 položku} other{Zaznamenat {count} položek}}",
   "bulkAddNoMatchLabel": "Pro tuto položku nebyla nalezena shoda",
   "bulkAddUncertainLabel": "Zkontrolujte shodu",
   "bulkAddSkipLabel": "Přeskočit",
@@ -1325,4 +1325,6 @@
   "healthSyncUnavailableLabel": "Zdravotní data nejsou na tomto zařízení dostupná. Import tréninků vyžaduje Health Connect v Androidu nebo Apple Health v iOS.",
   "sourcesEnergyCompensationTitle": "Započítání kalorií z tréninku",
   "sourcesEnergyCompensationDescription": "Importované tréninky se započítávají s nižší energií, než jakou hlásí zařízení. Lidé cvičení kompenzují tím, že po zbytek dne spálí méně kalorií – v průměru asi 28 %, při vyšším podílu tělesného tuku více. Doporučená hodnota vychází z tohoto výzkumu a lze ji změnit v Nastavení → Synchronizace zdravotních dat. Samotnou energii hlásí aplikace nebo zařízení, které trénink zaznamenalo; nepočítá se vzorcem MET v aplikaci."
+  ,"bulkAddToListLabel": "{count, plural, =1{Přidat 1 položku} other{Přidat {count} položek}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }

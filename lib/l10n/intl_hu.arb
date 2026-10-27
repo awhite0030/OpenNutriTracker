@@ -1342,7 +1342,7 @@
   "bulkAddTitle": "Több elem hozzáadása",
   "bulkAddInputHint": "2 tojás, 100 g pirítós, feketekávé",
   "bulkAddParseLabel": "Élelmiszerek keresése",
-  "bulkAddSubmitLabel": "{count} elem naplózása",
+  "bulkAddSubmitLabel": "{count, plural, =1{1 elem naplózása} other{{count} elem naplózása}}",
   "@bulkAddSubmitLabel": {
     "placeholders": {
       "count": {
@@ -1673,4 +1673,6 @@
   "recipeTotalWeightManualHelper": "Kézzel lett megadva, így az összetevők módosítása nem változtat rajta.",
   "recipeTotalWeightUseIngredientTotalButton": "Az összes hozzávaló felhasználása",
   "settingsKjAdjustmentLabel": "Napi kJ-kiigazítás"
+  ,"bulkAddToListLabel": "{count, plural, =1{1 elem hozzáadása} other{{count} elem hozzáadása}}"
+  ,"@bulkAddToListLabel": {"placeholders": {"count": {"type": "int"}}}
 }
