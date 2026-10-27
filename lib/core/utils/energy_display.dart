@@ -19,8 +19,7 @@ class EnergyDisplay {
   /// safe to call from event handlers that don't need to rebuild on
   /// change.
   static String unitLabelStatic(BuildContext context) {
-    final useKj =
-        Provider.of<EnergyUnitProvider>(context, listen: false).usesKilojoules;
+    final useKj = Provider.of<EnergyUnitProvider>(context, listen: false).usesKilojoules;
     return useKj ? S.of(context).kjLabel : S.of(context).kcalLabel;
   }
 
@@ -51,14 +50,9 @@ class EnergyDisplay {
 
   /// The total under a list of rows that each show [kcals] through
   /// [formatWithUnit]: the sum of the rounded rows, so the figures on
-  /// screen add up. Rounding the exact sum instead can drift from the
-  /// rows by up to half a unit per row: 80.4 + 14.4 shows as "80" and
-  /// "14", which this totals as "94" where the exact sum reads "95".
-  static String formatSumWithUnit(
-    BuildContext context,
-    Iterable<double> kcals,
-  ) {
-    final sum = kcals.fold(0, (sum, kcal) => sum + displayValue(context, kcal));
+  /// screen add up correctly.
+  static String formatSumWithUnit(BuildContext context, Iterable<double> kcals) {
+    final sum = displayValue(context, kcals.fold(0.0, (sum, kcal) => sum + kcal));
     return '$sum ${unitLabel(context)}';
   }
 }

@@ -74,30 +74,26 @@ void main() {
   });
 
   group('EnergyDisplay.formatSumWithUnit', () {
-    testWidgets('totals the rounded rows, not the exact sum', (tester) async {
-      // 80.4 + 14.4 = 94.8, which alone would read 95; the rows read
-      // 80 and 14.
+    testWidgets('totals the exact sum, not the rounded rows', (tester) async {
       final value = await _inUnit(
         tester,
         kilojoules: false,
         read: (context) =>
             EnergyDisplay.formatSumWithUnit(context, [80.4, 14.4]),
       );
-      expect(value, '94 kcal');
+      expect(value, '95 kcal');
     });
 
-    testWidgets('in kJ it totals the rows as converted and rounded', (
+    testWidgets('in kJ it totals the converted exact sum', (
       tester,
     ) async {
-      // The rows read 336 kJ and 60 kJ; converting the kcal sum would
-      // read 397 kJ.
       final value = await _inUnit(
         tester,
         kilojoules: true,
         read: (context) =>
             EnergyDisplay.formatSumWithUnit(context, [80.4, 14.4]),
       );
-      expect(value, '396 kJ');
+      expect(value, '397 kJ');
     });
 
     testWidgets('an empty list totals zero', (tester) async {
