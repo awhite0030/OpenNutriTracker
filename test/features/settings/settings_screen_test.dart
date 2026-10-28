@@ -405,4 +405,24 @@ void main() {
 
     expect(diaryBloc.added, contains(isA<LoadDiaryYearEvent>()));
   });
+
+  testWidgets('opened for the dialog, the route pops when the dialog cancels (#1471)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      _app(arguments: const SettingsScreenArguments(openAiAssist: true)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AiAssistDialog), findsOneWidget);
+
+    await tester.tap(find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.identifier == 'ai-assist-cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsScreen), findsNothing);
+  });
 }
