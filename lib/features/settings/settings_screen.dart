@@ -146,7 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// when Settings was first expanded (#1368). `isCurrentOf` makes this run
   /// again whenever the route stops or starts being the top one.
   void _reloadOnReturn() {
-    final isCurrent = ModalRoute.isCurrentOf(context) ?? true;
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
     if (isCurrent && _wasCovered) _settingsBloc.add(LoadSettingsEvent());
     _wasCovered = !isCurrent;
   }
@@ -187,7 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// the meantime is not this method's to close.
   Future<void> _hostAiAssistDialog() async {
     await _openAiAssistDialog(context);
-    if (!mounted || !(ModalRoute.isCurrentOf(context) ?? false)) return;
+    if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
     Navigator.of(context).pop();
   }
 
