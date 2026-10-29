@@ -16,7 +16,7 @@ part 'favourite_meal_dbo.g.dart';
 /// Stored under [keyFor] of its meal, so starring the same food twice — from
 /// a search result and again from its detail page — keeps one entry.
 @HiveType(typeId: 23)
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class FavouriteMealDBO extends HiveObject {
   @HiveField(0)
   final MealDBO meal;
@@ -43,10 +43,7 @@ class FavouriteMealDBO extends HiveObject {
   static String keyFor(MealSourceDBO source, String? code, String? name) {
     final identity = '${source.name}:${code ?? name ?? ''}';
     if (utf8.encode(identity).length <= maxKeyBytes) return identity;
-    final hash = IdGenerator.uuid.v5(
-      Namespace.url.value,
-      'opennutritracker-favourite:$identity',
-    );
+    final hash = IdGenerator.uuid.v5(Namespace.url.value, 'opennutritracker-favourite:$identity');
     return '${source.name}#$hash';
   }
 
@@ -55,8 +52,7 @@ class FavouriteMealDBO extends HiveObject {
 
   String get mealKey => keyFor(meal.source, meal.code, meal.name);
 
-  factory FavouriteMealDBO.fromJson(Map<String, dynamic> json) =>
-      _$FavouriteMealDBOFromJson(json);
+  factory FavouriteMealDBO.fromJson(Map<String, dynamic> json) => _$FavouriteMealDBOFromJson(json);
 
   Map<String, dynamic> toJson() => _$FavouriteMealDBOToJson(this);
 }

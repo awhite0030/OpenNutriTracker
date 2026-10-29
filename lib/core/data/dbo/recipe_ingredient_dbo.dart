@@ -5,7 +5,7 @@ import 'package:opennutritracker/core/data/dbo/meal_dbo.dart';
 part 'recipe_ingredient_dbo.g.dart';
 
 @HiveType(typeId: 17)
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class RecipeIngredientDBO extends HiveObject {
   @HiveField(0)
   final MealDBO snapshotMeal;
@@ -28,8 +28,7 @@ class RecipeIngredientDBO extends HiveObject {
     required this.convertedAmountG,
   });
 
-  factory RecipeIngredientDBO.fromJson(Map<String, dynamic> json) =>
-      _$RecipeIngredientDBOFromJson(json);
+  factory RecipeIngredientDBO.fromJson(Map<String, dynamic> json) => _$RecipeIngredientDBOFromJson(json);
 
   Map<String, dynamic> toJson() => _$RecipeIngredientDBOToJson(this);
 }
