@@ -7,7 +7,7 @@ import 'package:opennutritracker/core/domain/entity/intake_entity.dart';
 part 'intake_dbo.g.dart';
 
 @HiveType(typeId: 0)
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class IntakeDBO extends HiveObject {
   @HiveField(0)
   String id;
@@ -44,8 +44,7 @@ class IntakeDBO extends HiveObject {
     );
   }
 
-  factory IntakeDBO.fromJson(Map<String, dynamic> json) =>
-      _$IntakeDBOFromJson(json);
+  factory IntakeDBO.fromJson(Map<String, dynamic> json) => _$IntakeDBOFromJson(json);
 
   Map<String, dynamic> toJson() => _$IntakeDBOToJson(this);
 }

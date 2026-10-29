@@ -55,6 +55,6 @@ FavouriteMealDBO _$FavouriteMealDBOFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$FavouriteMealDBOToJson(FavouriteMealDBO instance) =>
     <String, dynamic>{
-      'meal': instance.meal,
+      'meal': instance.meal.toJson(),
       'addedAt': instance.addedAt.toIso8601String(),
     };

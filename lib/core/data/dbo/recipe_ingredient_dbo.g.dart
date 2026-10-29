@@ -66,7 +66,7 @@ RecipeIngredientDBO _$RecipeIngredientDBOFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$RecipeIngredientDBOToJson(
   RecipeIngredientDBO instance,
 ) => <String, dynamic>{
-  'snapshotMeal': instance.snapshotMeal,
+  'snapshotMeal': instance.snapshotMeal.toJson(),
   'amount': instance.amount,
   'unit': instance.unit,
   'convertedAmountG': instance.convertedAmountG,

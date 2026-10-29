@@ -73,7 +73,7 @@ Map<String, dynamic> _$IntakeDBOToJson(IntakeDBO instance) => <String, dynamic>{
   'unit': instance.unit,
   'amount': instance.amount,
   'type': _$IntakeTypeDBOEnumMap[instance.type]!,
-  'meal': instance.meal,
+  'meal': instance.meal.toJson(),
   'dateTime': instance.dateTime.toIso8601String(),
 };
 
