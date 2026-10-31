@@ -23,8 +23,14 @@ void main() {
     // The production helper is private to _EditMealScreenState. The
     // contract is stable enough to mirror here — anything that returns
     // a non-empty string for a non-empty input and "0" for empty / ws.
-    String simpleFieldOrZero(String text) =>
-        text.trim().isEmpty ? '0' : text;
+    String? simpleFieldOrZero(String? text) {
+      if (text == null) return null;
+      return text.trim().isEmpty ? '0' : text;
+    }
+
+    test('null returns null', () {
+      expect(simpleFieldOrZero(null), null);
+    });
 
     test('empty string returns "0"', () {
       expect(simpleFieldOrZero(''), '0');

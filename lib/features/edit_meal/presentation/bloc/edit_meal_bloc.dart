@@ -53,9 +53,8 @@ String? codeAfterEdit(
   final oldCode = oldMealEntity.code;
   if (barcodeOverride == null) return oldCode;
   if (barcodeOverride.isNotEmpty) return barcodeOverride;
-  final hadBarcode = oldMealEntity.source == MealSourceEntity.custom &&
-      oldCode != null &&
-      isBarcodeFormatValid(oldCode);
+  final hadBarcode =
+      oldMealEntity.source == MealSourceEntity.custom && oldCode != null && isBarcodeFormatValid(oldCode);
   return hadBarcode ? newId() : oldCode;
 }
 
@@ -98,13 +97,8 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       emit(EditMealLoadingState());
 
       final config = await _getConfigUsecase.getConfig();
-      final mode = CustomMealFormMode.fromString(
-        await _configRepository.getCustomMealFormMode(),
-      );
-      emit(EditMealLoadedState(
-        usesImperialUnits: config.usesImperialFoodUnits,
-        formMode: mode,
-      ));
+      final mode = CustomMealFormMode.fromString(await _configRepository.getCustomMealFormMode());
+      emit(EditMealLoadedState(usesImperialUnits: config.usesImperialFoodUnits, formMode: mode));
     });
   }
 
@@ -118,14 +112,14 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
     MealEntity oldMealEntity,
     String nameText,
     String brandsText,
-    String mealQuantityText,
-    String servingQuantityText,
-    String baseQuantity,
+    String? mealQuantityText,
+    String? servingQuantityText,
+    String? baseQuantity,
     String? unitText,
-    String kcalText,
-    String carbsText,
-    String fatText,
-    String proteinText, {
+    String? kcalText,
+    String? carbsText,
+    String? fatText,
+    String? proteinText, {
     String? fiberText,
     String? saturatedFatText,
     String? sugarsText,
@@ -140,30 +134,30 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
     String? localImagePathOverride,
     bool clearLocalImagePath = false,
   }) {
-    final double factorTo100g = factorTo100gFromBase(baseQuantity);
+    final double factorTo100g = factorTo100gFromBase(baseQuantity ?? "100");
 
-    double? multiplyIfNotNull(double? nutrimentValue) {
-      return nutrimentValue != null ? nutrimentValue * factorTo100g : null;
+    double? parseNutriment(String? text, double? oldValue) {
+      if (text == null) return oldValue;
+      if (text.trim().isEmpty) return null;
+      final parsed = text.toDoubleOrNull();
+      return parsed != null ? parsed * factorTo100g : null;
     }
 
-    double? fromTextOrOld(String? text, double? oldValue) =>
-        multiplyIfNotNull(text?.toDoubleOrNull() ?? oldValue);
-
     final newMealNutriments = MealNutrimentsEntity(
-      energyKcal100: multiplyIfNotNull(kcalText.toDoubleOrNull()),
-      carbohydrates100: multiplyIfNotNull(carbsText.toDoubleOrNull()),
-      fat100: multiplyIfNotNull(fatText.toDoubleOrNull()),
-      proteins100: multiplyIfNotNull(proteinText.toDoubleOrNull()),
-      sugars100: fromTextOrOld(sugarsText, oldMealEntity.nutriments.sugars100),
-      saturatedFat100: fromTextOrOld(saturatedFatText, oldMealEntity.nutriments.saturatedFat100),
-      fiber100: fromTextOrOld(fiberText, oldMealEntity.nutriments.fiber100),
-      sodium100: fromTextOrOld(sodiumText, oldMealEntity.nutriments.sodium100),
-      calcium100: fromTextOrOld(calciumText, oldMealEntity.nutriments.calcium100),
-      iron100: fromTextOrOld(ironText, oldMealEntity.nutriments.iron100),
-      potassium100: fromTextOrOld(potassiumText, oldMealEntity.nutriments.potassium100),
-      magnesium100: fromTextOrOld(magnesiumText, oldMealEntity.nutriments.magnesium100),
-      vitaminD100: fromTextOrOld(vitaminDText, oldMealEntity.nutriments.vitaminD100),
-      vitaminB12100: fromTextOrOld(vitaminB12Text, oldMealEntity.nutriments.vitaminB12100),
+      energyKcal100: parseNutriment(kcalText, oldMealEntity.nutriments.energyKcal100),
+      carbohydrates100: parseNutriment(carbsText, oldMealEntity.nutriments.carbohydrates100),
+      fat100: parseNutriment(fatText, oldMealEntity.nutriments.fat100),
+      proteins100: parseNutriment(proteinText, oldMealEntity.nutriments.proteins100),
+      sugars100: parseNutriment(sugarsText, oldMealEntity.nutriments.sugars100),
+      saturatedFat100: parseNutriment(saturatedFatText, oldMealEntity.nutriments.saturatedFat100),
+      fiber100: parseNutriment(fiberText, oldMealEntity.nutriments.fiber100),
+      sodium100: parseNutriment(sodiumText, oldMealEntity.nutriments.sodium100),
+      calcium100: parseNutriment(calciumText, oldMealEntity.nutriments.calcium100),
+      iron100: parseNutriment(ironText, oldMealEntity.nutriments.iron100),
+      potassium100: parseNutriment(potassiumText, oldMealEntity.nutriments.potassium100),
+      magnesium100: parseNutriment(magnesiumText, oldMealEntity.nutriments.magnesium100),
+      vitaminD100: parseNutriment(vitaminDText, oldMealEntity.nutriments.vitaminD100),
+      vitaminB12100: parseNutriment(vitaminB12Text, oldMealEntity.nutriments.vitaminB12100),
     );
 
     return MealEntity(
@@ -171,19 +165,17 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       // from the originating OFF/FDC record, but only when the override
       // was actually supplied. Empty-string is treated as "clear" so a
       // user can erase a stored code by blanking the field.
-      code: codeAfterEdit(
-        oldMealEntity,
-        barcodeOverride,
-        newId: () => _clearedBarcodeId ??= IdGenerator.getUniqueID(),
-      ),
+      code: codeAfterEdit(oldMealEntity, barcodeOverride, newId: () => _clearedBarcodeId ??= IdGenerator.getUniqueID()),
       name: nameText.toStringOrNull(),
       brands: brandsText.toStringOrNull(),
       url: oldMealEntity.url,
       thumbnailImageUrl: oldMealEntity.thumbnailImageUrl,
       mainImageUrl: oldMealEntity.mainImageUrl,
-      mealQuantity: mealQuantityText.toStringOrNull(),
+      mealQuantity: mealQuantityText == null ? oldMealEntity.mealQuantity : mealQuantityText.toStringOrNull(),
       mealUnit: unitText,
-      servingQuantity: servingQuantityText.toDoubleOrNull(),
+      servingQuantity: servingQuantityText == null
+          ? oldMealEntity.servingQuantity
+          : servingQuantityText.toDoubleOrNull(),
       // The custom-meal form has a single unit selector shared by the meal
       // size and the serving size, so the serving unit is that selected unit
       // — not the serving *quantity* text, which used to land here and made
@@ -196,9 +188,7 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       // #64 follow-up: a freshly-picked local photo wins over what was
       // on the old entity; a clear flag means the user removed the
       // photo and the slug should be wiped from the saved meal.
-      localImagePath: clearLocalImagePath
-          ? null
-          : (localImagePathOverride ?? oldMealEntity.localImagePath),
+      localImagePath: clearLocalImagePath ? null : (localImagePathOverride ?? oldMealEntity.localImagePath),
     );
   }
 
@@ -230,10 +220,7 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
   /// mid-way. Not tied to the profile the edit began on: the library is
   /// shared and the moves cover every profile, so a switch queued behind it
   /// just waits rather than dropping the user's save.
-  Future<void> saveCustomMeal(
-    MealEntity mealEntity, {
-    MealEntity? previous,
-  }) async {
+  Future<void> saveCustomMeal(MealEntity mealEntity, {MealEntity? previous}) async {
     final saved = MealDBO.fromMealEntity(mealEntity);
     final before = previous == null ? null : MealDBO.fromMealEntity(previous);
     await withTrackedDayLock(() async {
@@ -242,13 +229,8 @@ class EditMealBloc extends Bloc<EditMealEvent, EditMealState> {
       if (fromKey != null &&
           toKey != null &&
           fromKey != toKey &&
-          _customMealDataSource.getAllCustomMeals().any(
-            (meal) => (meal.code ?? meal.name) == fromKey,
-          )) {
-        await _intakeRepository.moveCustomMealInEveryProfile(
-          fromMealKey: fromKey,
-          toMeal: saved,
-        );
+          _customMealDataSource.getAllCustomMeals().any((meal) => (meal.code ?? meal.name) == fromKey)) {
+        await _intakeRepository.moveCustomMealInEveryProfile(fromMealKey: fromKey, toMeal: saved);
       }
       await _customMealDataSource.saveCustomMeal(saved, previous: before);
       if (previous != null) {
