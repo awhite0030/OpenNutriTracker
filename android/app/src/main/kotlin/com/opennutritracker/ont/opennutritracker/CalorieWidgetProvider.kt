@@ -7,7 +7,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
@@ -90,11 +92,12 @@ private class WidgetView private constructor(
 
     fun render(
         context: Context,
-        views: RemoteViews,
         manager: AppWidgetManager,
         appWidgetId: Int,
-        minWidthDp: Int,
-    ) {
+        minWidthDp: Float,
+        heightDp: Float,
+    ): RemoteViews {
+        val views = RemoteViews(context.packageName, R.layout.calorie_widget)
         views.setOnClickPendingIntent(
             R.id.calorie_widget_root,
             PendingIntent.getActivity(
@@ -107,11 +110,11 @@ private class WidgetView private constructor(
         )
 
         if (isCurrent) {
-            showContent(context, views, wide = minWidthDp >= WIDE_MIN_DP)
+            showContent(context, views, wide = minWidthDp >= WIDE_MIN_DP, heightDp = heightDp)
         } else {
-            showPlaceholder(views)
+            showPlaceholder(views, heightDp)
         }
-        manager.updateAppWidget(appWidgetId, views)
+        return views
     }
 
     /** Asks for one more update when the snapshot's logical day ends, so
@@ -164,14 +167,15 @@ private class WidgetView private constructor(
             .toEpochMilli()
     }
 
-    private fun showPlaceholder(views: RemoteViews) {
+    private fun showPlaceholder(views: RemoteViews, heightDp: Float) {
         val title = label("title", FALLBACK_TITLE)
-        views.setViewVisibility(R.id.calorie_widget_title, View.VISIBLE)
+        views.setViewVisibility(R.id.calorie_widget_title, if (heightDp < 160f) View.GONE else View.VISIBLE)
         views.setTextViewText(R.id.calorie_widget_title, title)
         views.setViewVisibility(R.id.calorie_widget_body_wide, View.GONE)
         views.setViewVisibility(R.id.calorie_widget_body_narrow, View.GONE)
         views.setViewVisibility(R.id.calorie_widget_placeholder, View.VISIBLE)
         views.setTextViewText(R.id.calorie_widget_placeholder_title, title)
+        views.setViewVisibility(R.id.calorie_widget_placeholder_hint, if (heightDp < 130f) View.GONE else View.VISIBLE)
         views.setTextViewText(
             R.id.calorie_widget_placeholder_hint,
             label("openApp", FALLBACK_HINT),
@@ -186,19 +190,33 @@ private class WidgetView private constructor(
         context: Context,
         views: RemoteViews,
         wide: Boolean,
+        heightDp: Float,
     ) {
+        val hideTitle = heightDp < 160f
+        val shortWide = wide && heightDp < 135f
+        val hideNarrowCaption = !wide && heightDp < 160f
+
         val title = label("title", FALLBACK_TITLE)
         val unit = label("unit", FALLBACK_UNIT)
         // The narrow body has no room to spare; the goal caption under the
         // ring already says what a title would.
-        views.setViewVisibility(R.id.calorie_widget_title, if (wide) View.VISIBLE else View.GONE)
+        views.setViewVisibility(R.id.calorie_widget_title, if (wide && !hideTitle) View.VISIBLE else View.GONE)
         views.setTextViewText(R.id.calorie_widget_title, "$title ($unit)")
         views.setViewVisibility(R.id.calorie_widget_placeholder, View.GONE)
         views.setViewVisibility(R.id.calorie_widget_body_wide, if (wide) View.VISIBLE else View.GONE)
         views.setViewVisibility(R.id.calorie_widget_body_narrow, if (wide) View.GONE else View.VISIBLE)
-        val ringId = if (wide) R.id.calorie_widget_ring_wide else R.id.calorie_widget_ring_narrow
-        val consumedId = if (wide) R.id.calorie_widget_consumed_wide else R.id.calorie_widget_consumed_narrow
-        val unitId = if (wide) R.id.calorie_widget_unit_wide else R.id.calorie_widget_unit_narrow
+        views.setViewVisibility(R.id.calorie_widget_ring_container_wide, if (shortWide) View.GONE else View.VISIBLE)
+        views.setViewVisibility(R.id.calorie_widget_ring_container_wide_short, if (shortWide) View.VISIBLE else View.GONE)
+
+        val ringId = if (wide) {
+            if (shortWide) R.id.calorie_widget_ring_wide_short else R.id.calorie_widget_ring_wide
+        } else R.id.calorie_widget_ring_narrow
+        val consumedId = if (wide) {
+            if (shortWide) R.id.calorie_widget_consumed_wide_short else R.id.calorie_widget_consumed_wide
+        } else R.id.calorie_widget_consumed_narrow
+        val unitId = if (wide) {
+            if (shortWide) R.id.calorie_widget_unit_wide_short else R.id.calorie_widget_unit_wide
+        } else R.id.calorie_widget_unit_narrow
 
         val progress = if (goalKcal > 0) {
             (consumedKcal.toDouble() / goalKcal * RING_MAX).toInt().coerceIn(0, RING_MAX)
@@ -211,6 +229,7 @@ private class WidgetView private constructor(
         // what is on screen, in the app's language.
         val goalId = if (wide) R.id.calorie_widget_goal_wide else R.id.calorie_widget_goal_caption
         views.setTextViewText(goalId, figureLabel("goal", "/ $goalKcal"))
+        views.setViewVisibility(R.id.calorie_widget_goal_caption, if (hideNarrowCaption) View.GONE else View.VISIBLE)
 
         // Replaces the placeholder's "Open the app": a launcher may reapply
         // these views to the hierarchy that showed the placeholder.
@@ -338,17 +357,33 @@ private class WidgetView private constructor(
             appWidgetId: Int,
             minWidth: Int,
         ) {
-            val minWidthDp = if (minWidth > 0) minWidth
-            else appWidgetManager.getAppWidgetOptions(appWidgetId)
-                .getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+            val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+            val minWidthDp = if (minWidth > 0) minWidth else options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
             val view = build(context)
-            view.render(
-                context,
-                RemoteViews(context.packageName, R.layout.calorie_widget),
-                appWidgetManager,
-                appWidgetId,
-                minWidthDp,
-            )
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
+                if (sizes != null && sizes.isNotEmpty()) {
+                    val map = sizes.associateWith { size ->
+                        view.render(context, appWidgetManager, appWidgetId, size.width, size.height)
+                    }
+                    appWidgetManager.updateAppWidget(appWidgetId, RemoteViews(map))
+                } else {
+                    appWidgetManager.updateAppWidget(
+                        appWidgetId,
+                        view.render(context, appWidgetManager, appWidgetId, minWidthDp.toFloat(), options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0).toFloat())
+                    )
+                }
+            } else {
+                val minW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0).toFloat()
+                val minH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0).toFloat()
+                val maxW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0).toFloat()
+                val maxH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0).toFloat()
+
+                val portrait = view.render(context, appWidgetManager, appWidgetId, minW, maxH)
+                val landscape = view.render(context, appWidgetManager, appWidgetId, maxW, minH)
+                appWidgetManager.updateAppWidget(appWidgetId, RemoteViews(landscape, portrait))
+            }
             view.scheduleDayEnd(context, appWidgetManager)
         }
 
