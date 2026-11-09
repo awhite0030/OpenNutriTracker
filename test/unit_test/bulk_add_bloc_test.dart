@@ -47,15 +47,9 @@ class _FakeSearch implements SearchProductsUseCase {
   _FakeSearch(this.results, {this.throws = false, this.fullRecords = const {}});
 
   @override
-  Future<SearchProductsResult> searchOFFProductsByString(
-    String searchString, {
-    bool skipRemote = false,
-  }) async {
+  Future<SearchProductsResult> searchOFFProductsByString(String searchString, {bool skipRemote = false}) async {
     if (throws) throw StateError('down');
-    return SearchProductsResult(
-      meals: results[searchString] ?? const [],
-      remoteSourceEmpty: false,
-    );
+    return SearchProductsResult(meals: results[searchString] ?? const [], remoteSourceEmpty: false);
   }
 
   @override
@@ -66,8 +60,7 @@ class _FakeSearch implements SearchProductsUseCase {
   }) async => const SearchProductsResult(meals: [], remoteSourceEmpty: false);
 
   @override
-  Future<MealEntity?> fetchFullOffRecord(MealEntity meal) async =>
-      fullRecords[meal.code];
+  Future<MealEntity?> fetchFullOffRecord(MealEntity meal) async => fullRecords[meal.code];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -92,12 +85,7 @@ ReadMealPhotoUseCase photoReaderWithoutKey() => ReadMealPhotoUseCase(
 /// happens when that path fails.
 ReadMealTextUseCase readerFailingWith(MealInterpreterException failure) {
   return ReadMealTextUseCase(
-    AiCredentialStorage(
-      _MapStorage({
-        'AiApiKeyTag.anthropic': 'sk-test',
-        'AiAssistEnabledTag': 'true',
-      }),
-    ),
+    AiCredentialStorage(_MapStorage({'AiApiKeyTag.anthropic': 'sk-test', 'AiAssistEnabledTag': 'true'})),
     (_) => _AlwaysFailsInterpreter(failure),
   );
 }
@@ -108,23 +96,16 @@ class _AlwaysFailsInterpreter implements MealTextInterpreter {
   _AlwaysFailsInterpreter(this.failure);
 
   @override
-  Future<MealTextParseResult> interpret(String input, {String? localeCode}) =>
-      throw failure;
+  Future<MealTextParseResult> interpret(String input, {String? localeCode}) => throw failure;
 }
 
 /// A model that answers with exactly these items. The sibling of
 /// [readerFailingWith]: a key is stored, so the use case really takes the
 /// model path rather than falling back to the parser.
-ReadMealTextUseCase readerReturning(List<ParsedMealItem> items) =>
-    ReadMealTextUseCase(
-      AiCredentialStorage(
-        _MapStorage({
-          'AiApiKeyTag.anthropic': 'sk-test',
-          'AiAssistEnabledTag': 'true',
-        }),
-      ),
-      (_) => _FixedInterpreter(items),
-    );
+ReadMealTextUseCase readerReturning(List<ParsedMealItem> items) => ReadMealTextUseCase(
+  AiCredentialStorage(_MapStorage({'AiApiKeyTag.anthropic': 'sk-test', 'AiAssistEnabledTag': 'true'})),
+  (_) => _FixedInterpreter(items),
+);
 
 class _FixedInterpreter implements MealTextInterpreter {
   final List<ParsedMealItem> items;
@@ -136,14 +117,8 @@ class _FixedInterpreter implements MealTextInterpreter {
       MealTextParseResult(items: items, errors: const []);
 }
 
-BulkAddBloc blocWithModelReply(
-  Map<String, List<MealEntity>> results,
-  List<ParsedMealItem> items,
-) => BulkAddBloc(
-  ResolveParsedMealsUseCase(_FakeSearch(results)),
-  readerReturning(items),
-  photoReaderWithoutKey(),
-);
+BulkAddBloc blocWithModelReply(Map<String, List<MealEntity>> results, List<ParsedMealItem> items) =>
+    BulkAddBloc(ResolveParsedMealsUseCase(_FakeSearch(results)), readerReturning(items), photoReaderWithoutKey());
 
 /// [blocWithModelReply] whose search also answers the full Open Food Facts
 /// record behind a thin hit, by code (#1472).
@@ -157,19 +132,10 @@ BulkAddBloc blocWithFullRecords(
   photoReaderWithoutKey(),
 );
 
-BulkAddBloc blocWithFailingReader(
-  Map<String, List<MealEntity>> results,
-  MealInterpreterException failure,
-) => BulkAddBloc(
-  ResolveParsedMealsUseCase(_FakeSearch(results)),
-  readerFailingWith(failure),
-  photoReaderWithoutKey(),
-);
+BulkAddBloc blocWithFailingReader(Map<String, List<MealEntity>> results, MealInterpreterException failure) =>
+    BulkAddBloc(ResolveParsedMealsUseCase(_FakeSearch(results)), readerFailingWith(failure), photoReaderWithoutKey());
 
-BulkAddBloc blocWith(
-  Map<String, List<MealEntity>> results, {
-  ReadMealPhotoUseCase? photoReader,
-}) => BulkAddBloc(
+BulkAddBloc blocWith(Map<String, List<MealEntity>> results, {ReadMealPhotoUseCase? photoReader}) => BulkAddBloc(
   ResolveParsedMealsUseCase(_FakeSearch(results)),
   parserOnlyReader(),
   photoReader ?? photoReaderWithoutKey(),
@@ -177,17 +143,11 @@ BulkAddBloc blocWith(
 
 /// Candidates come back ranked, not in the order they were faked, so tests
 /// that switch candidates have to look the wanted one up by name.
-int _indexOf(BulkAddRow row, String name) =>
-    row.resolved.candidates.indexWhere((c) => c.name == name);
+int _indexOf(BulkAddRow row, String name) => row.resolved.candidates.indexWhere((c) => c.name == name);
 
-Future<BulkAddLoadedState> parse(
-  BulkAddBloc bloc,
-  String text, {
-  bool imperial = false,
-}) async {
+Future<BulkAddLoadedState> parse(BulkAddBloc bloc, String text, {bool imperial = false}) async {
   bloc.add(ParseBulkTextEvent(text: text, usesImperialUnits: imperial));
-  return await bloc.stream.firstWhere((s) => s is BulkAddLoadedState)
-      as BulkAddLoadedState;
+  return await bloc.stream.firstWhere((s) => s is BulkAddLoadedState) as BulkAddLoadedState;
 }
 
 void main() {
@@ -206,19 +166,16 @@ void main() {
     expect(state.rows[1].amountText, '2');
   });
 
-  test(
-    'an item with no stated quantity falls back to the metric default',
-    () async {
-      final bloc = blocWith({
-        'black coffee': [meal('Black coffee')],
-      });
+  test('an item with no stated quantity falls back to the metric default', () async {
+    final bloc = blocWith({
+      'black coffee': [meal('Black coffee')],
+    });
 
-      final state = await parse(bloc, 'black coffee');
+    final state = await parse(bloc, 'black coffee');
 
-      expect(state.rows.single.amountText, '100');
-      expect(state.rows.single.unit, 'g/ml');
-    },
-  );
+    expect(state.rows.single.amountText, '100');
+    expect(state.rows.single.unit, 'g/ml');
+  });
 
   test('the imperial default is used when the profile is imperial', () async {
     final bloc = blocWith({
@@ -251,21 +208,18 @@ void main() {
   // claims to speak for says something else.
   final fieldPattern = bulkAddQuantityPattern;
 
-  test(
-    'a pound quantity is prefilled at a precision the field accepts',
-    () async {
-      final bloc = blocWith({
-        'mince': [meal('Mince')],
-      });
+  test('a pound quantity is prefilled at a precision the field accepts', () async {
+    final bloc = blocWith({
+      'mince': [meal('Mince')],
+    });
 
-      // 1 lb is 453.59237 g. Prefilled verbatim it was unloggable.
-      final state = await parse(bloc, '1 lb mince');
+    // 1 lb is 453.59237 g. Prefilled verbatim it was unloggable.
+    final state = await parse(bloc, '1 lb mince');
 
-      expect(state.rows.single.amountText, '453.59');
-      expect(state.rows.single.unit, 'g');
-      expect(fieldPattern.hasMatch(state.rows.single.amountText), isTrue);
-    },
-  );
+    expect(state.rows.single.amountText, '453.59');
+    expect(state.rows.single.unit, 'g');
+    expect(fieldPattern.hasMatch(state.rows.single.amountText), isTrue);
+  });
 
   test('one refused row no longer blocks the rows beside it', () async {
     final bloc = blocWith({
@@ -280,7 +234,8 @@ void main() {
       expect(
         fieldPattern.hasMatch(row.amountText),
         isTrue,
-        reason: '${row.meal?.name}: "${row.amountText}" fails the submit '
+        reason:
+            '${row.meal?.name}: "${row.amountText}" fails the submit '
             'check, and that check refuses the entire batch',
       );
     }
@@ -288,9 +243,7 @@ void main() {
 
   test('a serving weight carrying more decimals is rounded too', () async {
     final bloc = blocWith({
-      'almonds': [
-        meal('Almonds', servingQuantity: 226.796185, servingUnit: 'g'),
-      ],
+      'almonds': [meal('Almonds', servingQuantity: 226.796185, servingUnit: 'g')],
     });
 
     final state = await parse(bloc, 'almonds');
@@ -299,28 +252,22 @@ void main() {
     expect(fieldPattern.hasMatch(state.rows.single.amountText), isTrue);
   });
 
-  test(
-    'a positive quantity below the rounding floor does not become zero',
-    () async {
-      final bloc = blocWith({
-        'saffron': [meal('Saffron', servingQuantity: 0.004, servingUnit: 'g')],
-      });
+  test('a positive quantity below the rounding floor does not become zero', () async {
+    final bloc = blocWith({
+      'saffron': [meal('Saffron', servingQuantity: 0.004, servingUnit: 'g')],
+    });
 
-      final state = await parse(bloc, 'saffron');
+    final state = await parse(bloc, 'saffron');
 
-      // Rounding alone gives "0.00", which the submit check rejects for
-      // being non-positive — the same dead end by the other route.
-      expect(state.rows.single.amountText, '0.01');
-      expect(fieldPattern.hasMatch(state.rows.single.amountText), isTrue);
-    },
-  );
+    // Rounding alone gives "0.00", which the submit check rejects for
+    // being non-positive — the same dead end by the other route.
+    expect(state.rows.single.amountText, '0.01');
+    expect(fieldPattern.hasMatch(state.rows.single.amountText), isTrue);
+  });
 
   test('changing candidates falls back from unsupported units', () async {
     final bloc = blocWith({
-      'drink': [
-        meal('Drink', servingQuantity: 330, servingUnit: 'ml'),
-        meal('Alternative'),
-      ],
+      'drink': [meal('Drink', servingQuantity: 330, servingUnit: 'ml'), meal('Alternative')],
     });
     await parse(bloc, 'drink');
 
@@ -363,8 +310,7 @@ void main() {
       expect(state.loggableCount, 1);
     });
 
-    test('a corrected recipe count clears the flag, a still-too-big one not',
-        () async {
+    test('a corrected recipe count clears the flag, a still-too-big one not', () async {
       // The flag asks the user to settle the count, and typing a count the
       // batch makes is the answer: "14 pelmeni" corrected to 5 servings of a
       // 6-serving batch is logged. 9 servings would still be past the batch.
@@ -383,18 +329,15 @@ void main() {
       final bloc = blocWith({
         'pelmeni': [pelmeni],
       });
-      expect((await parse(bloc, '14 pelmeni')).rows.single.amountNeedsCheck,
-          isTrue);
+      expect((await parse(bloc, '14 pelmeni')).rows.single.amountNeedsCheck, isTrue);
 
       bloc.add(const ChangeRowAmountEvent(0, '9'));
-      final tooMany =
-          (await bloc.stream.first as BulkAddLoadedState).rows.single;
+      final tooMany = (await bloc.stream.first as BulkAddLoadedState).rows.single;
       expect(tooMany.amountNeedsCheck, isTrue);
       expect(tooMany.willBeLogged, isFalse);
 
       bloc.add(const ChangeRowAmountEvent(0, '5'));
-      final corrected =
-          (await bloc.stream.first as BulkAddLoadedState).rows.single;
+      final corrected = (await bloc.stream.first as BulkAddLoadedState).rows.single;
       expect(corrected.unit, 'serving');
       expect(corrected.amountNeedsCheck, isFalse);
       expect(corrected.willBeLogged, isTrue);
@@ -443,16 +386,8 @@ void main() {
       final row = state.rows.single;
       expect(row.effectiveUnit, 'g/ml');
       expect(row.amountText, '200');
-      expect(
-        row.amountNeedsCheck,
-        isTrue,
-        reason: 'the swap is still worth pointing at',
-      );
-      expect(
-        row.amountWouldBeWrong,
-        isFalse,
-        reason: 'but it does not move the number',
-      );
+      expect(row.amountNeedsCheck, isTrue, reason: 'the swap is still worth pointing at');
+      expect(row.amountWouldBeWrong, isFalse, reason: 'but it does not move the number');
       expect(state.loggableCount, 1);
     });
 
@@ -579,11 +514,7 @@ void main() {
       // model produces.
       final modelRow = BulkAddRow(
         resolved: ResolvedMealItem(
-          parsed: const ParsedMealItem(
-            query: 'bread',
-            quantity: 3,
-            unit: 'serving',
-          ),
+          parsed: const ParsedMealItem(query: 'bread', quantity: 3, unit: 'serving'),
           candidates: row.resolved.candidates,
           selectedIndex: 0,
           confidence: 0.9,
@@ -605,11 +536,7 @@ void main() {
 
       final modelRow = BulkAddRow(
         resolved: ResolvedMealItem(
-          parsed: const ParsedMealItem(
-            query: 'bread',
-            quantity: 3,
-            unit: 'serving',
-          ),
+          parsed: const ParsedMealItem(query: 'bread', quantity: 3, unit: 'serving'),
           candidates: base.resolved.candidates,
           selectedIndex: 0,
           confidence: 0.9,
@@ -688,27 +615,23 @@ void main() {
       expect(after.amountNeedsCheck, isTrue);
     });
 
-    test(
-      'switching candidates re-derives the unit, not just the flag',
-      () async {
-        // Found on a Pixel 6: clearing the warning while the row kept the
-        // previous candidate's weight unit left "2 chicken breasts" reading
-        // 2 oz with no warning — #622 again, minus the signal.
-        final bloc = blocWith({
-          'eggs': [meal('Eggs'), meal('Eggs boxed', servingQuantity: 60)],
-        });
-        final before = (await parse(bloc, '2 eggs')).rows.single;
-        expect(before.unit, isNot('serving'));
+    test('switching candidates re-derives the unit, not just the flag', () async {
+      // Found on a Pixel 6: clearing the warning while the row kept the
+      // previous candidate's weight unit left "2 chicken breasts" reading
+      // 2 oz with no warning — #622 again, minus the signal.
+      final bloc = blocWith({
+        'eggs': [meal('Eggs'), meal('Eggs boxed', servingQuantity: 60)],
+      });
+      final before = (await parse(bloc, '2 eggs')).rows.single;
+      expect(before.unit, isNot('serving'));
 
-        bloc.add(ChangeRowCandidateEvent(0, _indexOf(before, 'Eggs boxed')));
-        final after =
-            (await bloc.stream.first as BulkAddLoadedState).rows.single;
+      bloc.add(ChangeRowCandidateEvent(0, _indexOf(before, 'Eggs boxed')));
+      final after = (await bloc.stream.first as BulkAddLoadedState).rows.single;
 
-        expect(after.unit, 'serving');
-        expect(after.amountText, '2');
-        expect(after.amountNeedsCheck, isFalse);
-      },
-    );
+      expect(after.unit, 'serving');
+      expect(after.amountText, '2');
+      expect(after.amountNeedsCheck, isFalse);
+    });
 
     test('a hand-typed amount is never reinterpreted as a count', () async {
       // The dangerous case: re-deriving the unit under an amount the user
@@ -790,23 +713,20 @@ void main() {
     expect(state.loggableCount, 0);
   });
 
-  test(
-    'skipping a row removes it from the loggable set but keeps it visible',
-    () async {
-      final bloc = blocWith({
-        'toast': [meal('Toast')],
-        'eggs': [meal('Egg')],
-      });
-      await parse(bloc, 'toast, eggs');
+  test('skipping a row removes it from the loggable set but keeps it visible', () async {
+    final bloc = blocWith({
+      'toast': [meal('Toast')],
+      'eggs': [meal('Egg')],
+    });
+    await parse(bloc, 'toast, eggs');
 
-      bloc.add(const ToggleRowSkippedEvent(0));
-      final state = await bloc.stream.first as BulkAddLoadedState;
+    bloc.add(const ToggleRowSkippedEvent(0));
+    final state = await bloc.stream.first as BulkAddLoadedState;
 
-      expect(state.rows, hasLength(2));
-      expect(state.rows[0].skipped, isTrue);
-      expect(state.loggableCount, 1);
-    },
-  );
+    expect(state.rows, hasLength(2));
+    expect(state.rows[0].skipped, isTrue);
+    expect(state.loggableCount, 1);
+  });
 
   test('editing an amount does not disturb the other rows', () async {
     final bloc = blocWith({
@@ -827,10 +747,7 @@ void main() {
     // resolver's own choice is flagged. Once the user picks for themselves
     // the machine's doubt is no longer relevant.
     final bloc = blocWith({
-      'eggs': [
-        meal('Cadbury Creme Eggs Multipack 5 Pack'),
-        meal('Egg salad sandwich'),
-      ],
+      'eggs': [meal('Cadbury Creme Eggs Multipack 5 Pack'), meal('Egg salad sandwich')],
     });
     final initial = await parse(bloc, 'eggs');
     expect(initial.rows.single.isLowConfidence, isTrue);
@@ -849,9 +766,7 @@ void main() {
     );
 
     bloc.add(const ParseBulkTextEvent(text: 'toast', usesImperialUnits: false));
-    final state = await bloc.stream.firstWhere(
-      (s) => s is BulkAddLoadedState || s is BulkAddErrorState,
-    );
+    final state = await bloc.stream.firstWhere((s) => s is BulkAddLoadedState || s is BulkAddErrorState);
 
     // The resolver swallows per-source failures, so this is an unresolved
     // row rather than an error — the batch still shows the user what
@@ -873,10 +788,7 @@ void main() {
   });
 
   group('reading a photo', () {
-    Future<BulkAddState> readPhoto(
-      Map<String, List<MealEntity>> results,
-      MealPhotoReadResult reading,
-    ) async {
+    Future<BulkAddState> readPhoto(Map<String, List<MealEntity>> results, MealPhotoReadResult reading) async {
       final bloc = blocWith(results, photoReader: _StubPhotoReader(reading));
       bloc.add(ReadMealPhotoEvent(photo: _photo, usesImperialUnits: false));
       return bloc.stream.firstWhere((s) => s is! BulkAddLoadingState);
@@ -932,32 +844,20 @@ void main() {
       // the user is told the better reader never ran.
       final bloc = blocWithFailingReader({
         'toast': [meal('Toast')],
-      }, const MealInterpreterException(
-        'unauthorized',
-        failure: MealInterpreterFailure.auth,
-        statusCode: 401,
-      ));
+      }, const MealInterpreterException('unauthorized', failure: MealInterpreterFailure.auth, statusCode: 401));
       addTearDown(bloc.close);
 
       final state = await parse(bloc, '100g toast');
 
       expect(state.modelFailure, MealTextModelFailure.auth);
       expect(state.source, BulkAddReadSource.parser);
-      expect(
-        state.rows,
-        isNotEmpty,
-        reason: 'reporting the failure must not cost the user their rows',
-      );
+      expect(state.rows, isNotEmpty, reason: 'reporting the failure must not cost the user their rows');
     });
 
     test('a model nothing can serve reaches the state', () async {
       final bloc = blocWithFailingReader({
         'toast': [meal('Toast')],
-      }, const MealInterpreterException(
-        'no endpoints',
-        failure: MealInterpreterFailure.unsupported,
-        statusCode: 404,
-      ));
+      }, const MealInterpreterException('no endpoints', failure: MealInterpreterFailure.unsupported, statusCode: 404));
       addTearDown(bloc.close);
 
       final state = await parse(bloc, '100g toast');
@@ -972,11 +872,7 @@ void main() {
       // it has for the failures that never fix themselves.
       final bloc = blocWithFailingReader({
         'toast': [meal('Toast')],
-      }, const MealInterpreterException(
-        'rate limited',
-        failure: MealInterpreterFailure.transient,
-        statusCode: 429,
-      ));
+      }, const MealInterpreterException('rate limited', failure: MealInterpreterFailure.transient, statusCode: 429));
       addTearDown(bloc.close);
 
       final state = await parse(bloc, '100g toast');
@@ -985,75 +881,42 @@ void main() {
       expect(state.rows, isNotEmpty);
     });
 
-    test(
-      'a photo with no food lands on the empty state, not an error',
-      () async {
-        final state = await readPhoto(
-          {},
-          const MealPhotoRead(MealTextParseResult(items: [], errors: [])),
-        );
+    test('a photo with no food lands on the empty state, not an error', () async {
+      final state = await readPhoto({}, const MealPhotoRead(MealTextParseResult(items: [], errors: [])));
 
-        expect(state, isA<BulkAddLoadedState>());
-        expect((state as BulkAddLoadedState).rows, isEmpty);
-      },
-    );
+      expect(state, isA<BulkAddLoadedState>());
+      expect((state as BulkAddLoadedState).rows, isEmpty);
+    });
 
-    test(
-      'the feature being off is its own error, not a generic failure',
-      () async {
-        final state = await readPhoto({}, const MealPhotoUnavailable());
+    test('the feature being off is its own error, not a generic failure', () async {
+      final state = await readPhoto({}, const MealPhotoUnavailable());
 
-        expect(state, isA<BulkAddPhotoErrorState>());
-        expect(
-          (state as BulkAddPhotoErrorState).error,
-          BulkAddPhotoError.unavailable,
-        );
-      },
-    );
+      expect(state, isA<BulkAddPhotoErrorState>());
+      expect((state as BulkAddPhotoErrorState).error, BulkAddPhotoError.unavailable);
+    });
 
     test('a rejected key says so rather than "try again"', () async {
-      final state = await readPhoto(
-        {},
-        const MealPhotoFailed(MealPhotoFailure.auth),
-      );
+      final state = await readPhoto({}, const MealPhotoFailed(MealPhotoFailure.auth));
 
       expect((state as BulkAddPhotoErrorState).error, BulkAddPhotoError.auth);
     });
 
     test('exhausted credit is not offered as retryable or an auth fix', () async {
-      final state = await readPhoto(
-        {},
-        const MealPhotoFailed(MealPhotoFailure.billing),
-      );
+      final state = await readPhoto({}, const MealPhotoFailed(MealPhotoFailure.billing));
 
-      expect(
-        (state as BulkAddPhotoErrorState).error,
-        BulkAddPhotoError.billing,
-      );
+      expect((state as BulkAddPhotoErrorState).error, BulkAddPhotoError.billing);
     });
 
     test('a transient failure is offered as retryable', () async {
-      final state = await readPhoto(
-        {},
-        const MealPhotoFailed(MealPhotoFailure.transient),
-      );
+      final state = await readPhoto({}, const MealPhotoFailed(MealPhotoFailure.transient));
 
-      expect(
-        (state as BulkAddPhotoErrorState).error,
-        BulkAddPhotoError.transient,
-      );
+      expect((state as BulkAddPhotoErrorState).error, BulkAddPhotoError.transient);
     });
 
     test('a refused plaintext photo points at the address, not the model', () async {
-      final state = await readPhoto(
-        {},
-        const MealPhotoFailed(MealPhotoFailure.insecureDestination),
-      );
+      final state = await readPhoto({}, const MealPhotoFailed(MealPhotoFailure.insecureDestination));
 
-      expect(
-        (state as BulkAddPhotoErrorState).error,
-        BulkAddPhotoError.insecureDestination,
-      );
+      expect((state as BulkAddPhotoErrorState).error, BulkAddPhotoError.insecureDestination);
     });
 
     test('a photo that never encoded reaches the same error surface', () async {
@@ -1062,19 +925,12 @@ void main() {
 
       final state = await bloc.stream.first;
 
-      expect(
-        (state as BulkAddPhotoErrorState).error,
-        BulkAddPhotoError.unreadable,
-      );
+      expect((state as BulkAddPhotoErrorState).error, BulkAddPhotoError.unreadable);
     });
   });
 
   group('a defaulted amount says so (#864)', () {
-    BulkAddRow rowFor(
-      MealEntity food, {
-      double? statedQuantity,
-      bool amountEdited = false,
-    }) => BulkAddRow(
+    BulkAddRow rowFor(MealEntity food, {double? statedQuantity, bool amountEdited = false}) => BulkAddRow(
       resolved: ResolvedMealItem(
         parsed: ParsedMealItem(query: food.name!, quantity: statedQuantity),
         candidates: [food],
@@ -1148,29 +1004,18 @@ void main() {
     test('the two flags never fire together', () {
       // The screen renders them in one exclusive chain, so an overlap would
       // silently hide the louder of the two rather than show both.
-      for (final food in [
-        meal('toast'),
-        meal('bread', servingQuantity: 38),
-        meal('egg', servingSize: '1 egg'),
-      ]) {
+      for (final food in [meal('toast'), meal('bread', servingQuantity: 38), meal('egg', servingSize: '1 egg')]) {
         for (final stated in [null, 2.0]) {
           final row = rowFor(food, statedQuantity: stated);
-          expect(
-            row.amountIsProvisional && row.amountNeedsCheck,
-            isFalse,
-            reason: '${food.name} stated=$stated',
-          );
+          expect(row.amountIsProvisional && row.amountNeedsCheck, isFalse, reason: '${food.name} stated=$stated');
         }
       }
     });
   });
 
-
   group('the typed word picks the portion (#864)', () {
-    const cup = MealPortionEntity(
-        label: '1 cup', gramWeight: 244, localized: false);
-    const slice = MealPortionEntity(
-        label: '1 slice', gramWeight: 38, localized: false);
+    const cup = MealPortionEntity(label: '1 cup', gramWeight: 244, localized: false);
+    const slice = MealPortionEntity(label: '1 slice', gramWeight: 38, localized: false);
 
     test('"3 slices of bread" preselects the slice, not the cup', () async {
       // The whole point. Without this the row takes the first portion and
@@ -1187,12 +1032,13 @@ void main() {
       expect(row.amountText, '3');
     });
 
-    test('naming no portion leaves the preselection exactly as it was',
-        () async {
+    test('naming no portion leaves the preselection exactly as it was', () async {
       // Decision 7: this only ever narrows. A bare count with no word still
       // means the default portion, which is what the row did before.
       final bloc = blocWith({
-        'bread': [meal('Bread', servingQuantity: 244, portions: [cup, slice])],
+        'bread': [
+          meal('Bread', servingQuantity: 244, portions: [cup, slice]),
+        ],
       });
 
       final row = (await parse(bloc, '3 bread')).rows.single;
@@ -1237,7 +1083,11 @@ void main() {
       // thing that can name a slice on that path. Driven here through the
       // text interpreter, which is the same ParsedMealItem either way.
       final bloc = blocWithModelReply(
-        {'bread': [meal('Bread', servingQuantity: 244, portions: [cup, slice])]},
+        {
+          'bread': [
+            meal('Bread', servingQuantity: 244, portions: [cup, slice]),
+          ],
+        },
         const [ParsedMealItem(query: 'bread', quantity: 3, portion: 'slice')],
       );
 
@@ -1250,7 +1100,11 @@ void main() {
       // The weak failure this design chose: an unusable key is ignored, and
       // the row keeps the preselection it would have had.
       final bloc = blocWithModelReply(
-        {'bread': [meal('Bread', servingQuantity: 244, portions: [cup, slice])]},
+        {
+          'bread': [
+            meal('Bread', servingQuantity: 244, portions: [cup, slice]),
+          ],
+        },
         const [ParsedMealItem(query: 'bread', quantity: 3, portion: 'thimble')],
       );
 
@@ -1275,12 +1129,7 @@ void main() {
     // rows matched a text-search hit with no serving fields. The products
     // behind them are looked up in full, and the one that declares a
     // serving is the one the row counts on.
-    MealEntity product(
-      String name,
-      String brand, {
-      double? serving,
-      bool detailed = false,
-    }) => MealEntity(
+    MealEntity product(String name, String brand, {double? serving, bool detailed = false}) => MealEntity(
       code: brand,
       name: name,
       brands: brand,
@@ -1300,10 +1149,7 @@ void main() {
 
     final results = {
       'Eier': [thin('Eier', 'lidl'), thin('Eier', 'aldi')],
-      'Vollkornbrot': [
-        thin('Vollkornbrot', 'kaufland'),
-        thin('Vollkornbrot', 'jacquet'),
-      ],
+      'Vollkornbrot': [thin('Vollkornbrot', 'kaufland'), thin('Vollkornbrot', 'jacquet')],
     };
     const items = [
       ParsedMealItem(query: 'Eier', quantity: 2),
@@ -1323,8 +1169,12 @@ void main() {
       expect([for (final r in state.rows) r.meal!.brands], ['aldi', 'jacquet']);
       expect([for (final r in state.rows) r.unit], ['serving', 'serving']);
       expect([for (final r in state.rows) r.amountText], ['2', '1']);
-      expect(state.rows.any((r) => r.amountNeedsCheck), isFalse);
-      expect(state.loggableCount, 2);
+
+      // With #1596, a named portion ("slice") on a food without portion rows
+      // raises `amountNeedsCheck`. The second row is flagged.
+      expect(state.rows[0].amountNeedsCheck, isFalse);
+      expect(state.rows[1].amountNeedsCheck, isTrue);
+      expect(state.loggableCount, 1);
     });
 
     test('a count nothing can honour is still held back (#973)', () async {
@@ -1342,49 +1192,32 @@ void main() {
 
   group('a named portion the food cannot honour is marked (#1159)', () {
     // Almonds, as the backend serves them: one row, and "handful" is not it.
-    const nut = MealPortionEntity(
-      label: '1 nut',
-      gramWeight: 1.2,
-      localized: false,
-    );
-    const cup = MealPortionEntity(
-      label: '1 cup',
-      gramWeight: 244,
-      localized: false,
-    );
-    const slice = MealPortionEntity(
-      label: '1 slice',
-      gramWeight: 38,
-      localized: false,
-    );
+    const nut = MealPortionEntity(label: '1 nut', gramWeight: 1.2, localized: false);
+    const cup = MealPortionEntity(label: '1 cup', gramWeight: 244, localized: false);
+    const slice = MealPortionEntity(label: '1 slice', gramWeight: 38, localized: false);
 
-    test(
-      'the case this exists for: "a handful of almonds" logs 1 nut',
-      () async {
-        // The key misses, `_initialUnit` falls to the bare-count rule, and the
-        // row reads `1 serving` = 1.2 g with nothing to say it is not what was
-        // asked. The user's word was discarded and a default took its place
-        // looking settled — the case `amountNeedsCheck` exists for, and the
-        // dropdown holds the answer.
-        final bloc = blocWithModelReply(
-          {
-            'almonds': [
-              meal('Almonds', servingQuantity: 1.2, portions: [nut]),
-            ],
-          },
-          const [
-            ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful'),
+    test('the case this exists for: "a handful of almonds" logs 1 nut', () async {
+      // The key misses, `_initialUnit` falls to the bare-count rule, and the
+      // row reads `1 serving` = 1.2 g with nothing to say it is not what was
+      // asked. The user's word was discarded and a default took its place
+      // looking settled — the case `amountNeedsCheck` exists for, and the
+      // dropdown holds the answer.
+      final bloc = blocWithModelReply(
+        {
+          'almonds': [
+            meal('Almonds', servingQuantity: 1.2, portions: [nut]),
           ],
-        );
+        },
+        const [ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful')],
+      );
 
-        final row = (await parse(bloc, 'a handful of almonds')).rows.single;
+      final row = (await parse(bloc, 'a handful of almonds')).rows.single;
 
-        expect(row.unit, 'serving');
-        expect(row.portionKeyMissed, isTrue);
-        expect(row.amountNeedsCheck, isTrue);
-        expect(row.willBeLogged, isFalse);
-      },
-    );
+      expect(row.unit, 'serving');
+      expect(row.portionKeyMissed, isTrue);
+      expect(row.amountNeedsCheck, isTrue);
+      expect(row.willBeLogged, isFalse);
+    });
 
     test('a key that matched is unmarked', () async {
       // The row shows the user's own word back; nothing to warn about.
@@ -1414,13 +1247,7 @@ void main() {
             meal('Bread', servingQuantity: 244, portions: [cup, slice]),
           ],
         },
-        const [
-          ParsedMealItem(
-            query: 'slices of bread',
-            quantity: 3,
-            portion: 'thimble',
-          ),
-        ],
+        const [ParsedMealItem(query: 'slices of bread', quantity: 3, portion: 'thimble')],
       );
 
       final row = (await parse(bloc, '3 slices of bread')).rows.single;
@@ -1430,27 +1257,22 @@ void main() {
       expect(row.amountNeedsCheck, isFalse);
     });
 
-    test('a food with no portion rows stays quiet', () async {
-      // The addendum's gate. Measured over 999 live calls, the ungated
-      // clause fired on 40 of 48 German rows because the record had no
-      // portion rows at all — and on such a row the dropdown offers `g`,
-      // `oz`, `g/ml` and nothing that means *a slice*, so the warning would
-      // point at a control that cannot answer it (#973). A wrong record is
-      // #1164's and #1165's to fix, not a missed word.
+    test('a food with no portion rows is flagged', () async {
+      // Reverts the addendum's gate (previously #1164/#1165, now #1596).
+      // If a food has no portion rows, a named portion still means the
+      // amount is not settled.
       final bloc = blocWithModelReply(
         {
           'almonds': [meal('Almonds', servingQuantity: 1.2)],
         },
-        const [
-          ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful'),
-        ],
+        const [ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful')],
       );
 
       final row = (await parse(bloc, 'a handful of almonds')).rows.single;
 
-      expect(row.portionKeyMissed, isFalse);
-      expect(row.amountNeedsCheck, isFalse);
-      expect(row.willBeLogged, isTrue);
+      expect(row.portionKeyMissed, isTrue);
+      expect(row.amountNeedsCheck, isTrue);
+      expect(row.willBeLogged, isFalse);
     });
 
     test('an unavailable portion lookup stays quiet too', () async {
@@ -1459,13 +1281,9 @@ void main() {
       // the flag here would mark a row the next search would clear.
       final bloc = blocWithModelReply(
         {
-          'almonds': [
-            meal('Almonds', servingQuantity: 1.2).withPortionsUnavailable(),
-          ],
+          'almonds': [meal('Almonds', servingQuantity: 1.2).withPortionsUnavailable()],
         },
-        const [
-          ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful'),
-        ],
+        const [ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful')],
       );
 
       final row = (await parse(bloc, 'a handful of almonds')).rows.single;
@@ -1481,11 +1299,7 @@ void main() {
       // above would not catch it.
       final stale = BulkAddRow(
         resolved: ResolvedMealItem(
-          parsed: const ParsedMealItem(
-            query: 'almonds',
-            quantity: 1,
-            portion: 'handful',
-          ),
+          parsed: const ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful'),
           candidates: [
             MealEntity(
               code: 'almonds',
@@ -1526,16 +1340,8 @@ void main() {
               'Banana',
               servingQuantity: 126,
               portions: const [
-                MealPortionEntity(
-                  label: '1 small',
-                  gramWeight: 101,
-                  localized: false,
-                ),
-                MealPortionEntity(
-                  label: '1 cup, sliced',
-                  gramWeight: 150,
-                  localized: false,
-                ),
+                MealPortionEntity(label: '1 small', gramWeight: 101, localized: false),
+                MealPortionEntity(label: '1 cup, sliced', gramWeight: 150, localized: false),
               ],
             ),
           ],
@@ -1543,18 +1349,14 @@ void main() {
         photoReader: _StubPhotoReader(
           const MealPhotoRead(
             MealTextParseResult(
-              items: [
-                ParsedMealItem(query: 'banana', quantity: 1, portion: 'large'),
-              ],
+              items: [ParsedMealItem(query: 'banana', quantity: 1, portion: 'large')],
               errors: [],
             ),
           ),
         ),
       );
       bloc.add(ReadMealPhotoEvent(photo: _photo, usesImperialUnits: false));
-      final state =
-          await bloc.stream.firstWhere((s) => s is BulkAddLoadedState)
-              as BulkAddLoadedState;
+      final state = await bloc.stream.firstWhere((s) => s is BulkAddLoadedState) as BulkAddLoadedState;
 
       final row = state.rows.single;
       expect(state.source, BulkAddReadSource.photo);
@@ -1569,8 +1371,7 @@ void main() {
       // moment the user touched the amount. Read straight after the load,
       // the assertions above cannot tell.
       bloc.add(const ChangeRowAmountEvent(0, '2'));
-      final edited =
-          (await bloc.stream.first as BulkAddLoadedState).rows.single;
+      final edited = (await bloc.stream.first as BulkAddLoadedState).rows.single;
       expect(edited.amountText, '2');
       expect(edited.fromPhoto, isTrue);
       expect(edited.portionKeyMissed, isFalse);
@@ -1586,9 +1387,7 @@ void main() {
             meal('Almonds', servingQuantity: 1.2, portions: [nut]),
           ],
         },
-        const [
-          ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful'),
-        ],
+        const [ParsedMealItem(query: 'almonds', quantity: 1, portion: 'handful')],
       );
       await parse(bloc, 'a handful of almonds');
 
@@ -1725,10 +1524,7 @@ void main() {
   });
 }
 
-final _photo = MealPhoto(
-  bytes: Uint8List.fromList([1, 2, 3]),
-  mediaType: 'image/webp',
-);
+final _photo = MealPhoto(bytes: Uint8List.fromList([1, 2, 3]), mediaType: 'image/webp');
 
 /// Returns a fixed reading without touching a credential or a network.
 class _StubPhotoReader implements ReadMealPhotoUseCase {
@@ -1737,10 +1533,7 @@ class _StubPhotoReader implements ReadMealPhotoUseCase {
   _StubPhotoReader(this.reading);
 
   @override
-  Future<MealPhotoReadResult> read(
-    MealPhoto photo, {
-    String? localeCode,
-  }) async => reading;
+  Future<MealPhotoReadResult> read(MealPhoto photo, {String? localeCode}) async => reading;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -1758,8 +1551,7 @@ class _MapStorage implements FlutterSecureStorage {
   /// A stored credential is only usable once the user has agreed to what
   /// leaves the device (#836), so a map holding a key and no agreement is a
   /// state the app cannot reach.
-  _MapStorage(Map<String, String> values)
-    : values = {'AiTermsAcceptedTag': 'true', ...values};
+  _MapStorage(Map<String, String> values) : values = {'AiTermsAcceptedTag': 'true', ...values};
 
   @override
   Future<String?> read({

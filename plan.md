@@ -1,0 +1,4 @@
+1. Edit `lib/features/add_meal/presentation/bloc/bulk_add_bloc.dart` to modify the `portionKeyMissed` getter. Remove the `if (food.portionsUnavailable || food.portions.isEmpty) return false;` condition so that if a portion is specified but the food does not have portions, it correctly flags the row.
+2. Edit `test/unit_test/bulk_add_bloc_test.dart` to update the test for `a food with no portion rows stays quiet`. This test expects the row to stay quiet, but with this fix, we expect it to set `portionKeyMissed` and `amountNeedsCheck` to `true`.
+3. Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+4. Run validation commands: `./validate.sh` (or `fvm flutter test`, `fvm flutter analyze`, `fvm dart run build_runner build --delete-conflicting-outputs`, etc.).
