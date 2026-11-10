@@ -109,11 +109,9 @@ class BulkAddRow extends Equatable {
   /// Only meaningful for the resolver's own first choice — once the user
   /// picks a candidate themselves, the machine's doubt is no longer
   /// relevant and the flag clears.
-  bool get isLowConfidence =>
-      resolved.isLowConfidence && selectedIndex == resolved.selectedIndex;
+  bool get isLowConfidence => resolved.isLowConfidence && selectedIndex == resolved.selectedIndex;
 
-  MealEntity? get meal =>
-      isResolved ? resolved.candidates[selectedIndex] : null;
+  MealEntity? get meal => isResolved ? resolved.candidates[selectedIndex] : null;
 
   /// The row's amount cannot be trusted to mean what the user typed, for
   /// any of three reasons.
@@ -184,9 +182,7 @@ class BulkAddRow extends Equatable {
   /// The count [countExceedsRecipe] checks: the amount the user typed once
   /// they edited it (half-typed text falls back), else the parsed count.
   double get _servingsCount {
-    final typed = amountEditedByUser
-        ? double.tryParse(amountText.trim().replaceAll(',', '.'))
-        : null;
+    final typed = amountEditedByUser ? double.tryParse(amountText.trim().replaceAll(',', '.')) : null;
     return typed ?? resolved.parsed.quantity!;
   }
 
@@ -220,7 +216,7 @@ class BulkAddRow extends Equatable {
     final food = meal;
     if (key == null || food == null || fromPhoto) return false;
     if (resolved.parsed.quantity == null) return false;
-    if (food.portionsUnavailable || food.portions.isEmpty) return false;
+    if (food.portionsUnavailable) return false;
     return matchPortionToKey(key, food.portions) == null &&
         matchPortionToQuery(resolved.parsed.query, food.portions) == null;
   }
@@ -254,10 +250,7 @@ class BulkAddRow extends Equatable {
   /// `hasServingValues` is not consulted either — it is true whenever
   /// `servingQuantity` is, so pairing them only looks like a stricter test.
   bool get amountIsProvisional =>
-      !amountEditedByUser &&
-      isResolved &&
-      resolved.parsed.quantity == null &&
-      meal?.servingQuantity == null;
+      !amountEditedByUser && isResolved && resolved.parsed.quantity == null && meal?.servingQuantity == null;
 
   List<String> get allowedUnits => [
     // One entry per portion the food actually has — cup, slice, ounce —
@@ -275,14 +268,8 @@ class BulkAddRow extends Equatable {
     // relabels the row, clears the warning and logs the same wrong number.
     else if (meal?.servingQuantity != null)
       UnitDropdownItem.serving.toString(),
-    if (meal?.isSolid ?? false) ...[
-      UnitDropdownItem.g.toString(),
-      UnitDropdownItem.oz.toString(),
-    ],
-    if (meal?.isLiquid ?? false) ...[
-      UnitDropdownItem.ml.toString(),
-      UnitDropdownItem.flOz.toString(),
-    ],
+    if (meal?.isSolid ?? false) ...[UnitDropdownItem.g.toString(), UnitDropdownItem.oz.toString()],
+    if (meal?.isLiquid ?? false) ...[UnitDropdownItem.ml.toString(), UnitDropdownItem.flOz.toString()],
     if (!(meal?.isSolid ?? false) && !(meal?.isLiquid ?? false)) ...[
       UnitDropdownItem.g.toString(),
       UnitDropdownItem.oz.toString(),
@@ -292,8 +279,7 @@ class BulkAddRow extends Equatable {
     UnitDropdownItem.gml.toString(),
   ];
 
-  String get effectiveUnit =>
-      allowedUnits.contains(unit) ? unit : UnitDropdownItem.gml.toString();
+  String get effectiveUnit => allowedUnits.contains(unit) ? unit : UnitDropdownItem.gml.toString();
 
   /// True when the row's number would reach the diary meaning something
   /// other than what was asked for.
@@ -331,8 +317,7 @@ class BulkAddRow extends Equatable {
     final quantity = resolved.parsed.quantity;
     final food = meal;
     if (quantity == null || food == null) return true;
-    return convertQuantityToBaseUnit(quantity, unit, food) !=
-        convertQuantityToBaseUnit(quantity, effectiveUnit, food);
+    return convertQuantityToBaseUnit(quantity, unit, food) != convertQuantityToBaseUnit(quantity, effectiveUnit, food);
   }
 
   /// Rows that will actually be written when the user confirms.
@@ -415,16 +400,11 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
   /// True when [attempt] is no longer the read the screen is waiting on.
   bool _superseded(int attempt) => attempt != _attempt;
 
-  BulkAddBloc(
-    this._resolveParsedMealsUseCase,
-    this._readMealTextUseCase,
-    this._readMealPhotoUseCase,
-  ) : super(const BulkAddInitial()) {
+  BulkAddBloc(this._resolveParsedMealsUseCase, this._readMealTextUseCase, this._readMealPhotoUseCase)
+    : super(const BulkAddInitial()) {
     on<ParseBulkTextEvent>(_onParse);
     on<ReadMealPhotoEvent>(_onReadPhoto);
-    on<ReadMealPhotoFailedEvent>(
-      (event, emit) => emit(BulkAddPhotoErrorState(event.error)),
-    );
+    on<ReadMealPhotoFailedEvent>((event, emit) => emit(BulkAddPhotoErrorState(event.error)));
     on<CancelBulkReadEvent>(_onCancel);
     on<ChangeRowCandidateEvent>(_onChangeCandidate);
     on<ChangeRowAmountEvent>(_onChangeAmount);
@@ -432,20 +412,14 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
     on<ToggleRowSkippedEvent>(_onToggleSkipped);
   }
 
-  Future<void> _onParse(
-    ParseBulkTextEvent event,
-    Emitter<BulkAddState> emit,
-  ) async {
+  Future<void> _onParse(ParseBulkTextEvent event, Emitter<BulkAddState> emit) async {
     // Emitted before the read, not after: with a key configured this waits
     // on a network round trip, and a screen that does nothing for two
     // seconds reads as broken.
     final attempt = ++_attempt;
     emit(BulkAddLoadingState(attempt: attempt));
 
-    final reading = await _readMealTextUseCase.read(
-      event.text,
-      localeCode: event.localeCode,
-    );
+    final reading = await _readMealTextUseCase.read(event.text, localeCode: event.localeCode);
     if (emit.isDone || _superseded(attempt)) return;
 
     await _resolveAndEmit(
@@ -453,9 +427,7 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
       emit,
       attempt: attempt,
       usesImperialUnits: event.usesImperialUnits,
-      source: reading.usedModel
-          ? BulkAddReadSource.model
-          : BulkAddReadSource.parser,
+      source: reading.usedModel ? BulkAddReadSource.model : BulkAddReadSource.parser,
       modelFailure: reading.modelFailure,
     );
   }
@@ -464,17 +436,11 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
   /// path every failure here reaches the user. Saying "that did not work" is
   /// the honest outcome; quietly emitting no rows would leave the screen
   /// looking broken with nothing to act on.
-  Future<void> _onReadPhoto(
-    ReadMealPhotoEvent event,
-    Emitter<BulkAddState> emit,
-  ) async {
+  Future<void> _onReadPhoto(ReadMealPhotoEvent event, Emitter<BulkAddState> emit) async {
     final attempt = ++_attempt;
     emit(BulkAddLoadingState(attempt: attempt));
 
-    final reading = await _readMealPhotoUseCase.read(
-      event.photo,
-      localeCode: event.localeCode,
-    );
+    final reading = await _readMealPhotoUseCase.read(event.photo, localeCode: event.localeCode);
     if (emit.isDone || _superseded(attempt)) return;
 
     switch (reading) {
@@ -488,8 +454,7 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
             // on "try another photo" rather than on "try again".
             MealPhotoFailure.rejectedImage => BulkAddPhotoError.unreadable,
             MealPhotoFailure.unsupported => BulkAddPhotoError.unsupported,
-            MealPhotoFailure.insecureDestination =>
-              BulkAddPhotoError.insecureDestination,
+            MealPhotoFailure.insecureDestination => BulkAddPhotoError.insecureDestination,
             MealPhotoFailure.billing => BulkAddPhotoError.billing,
             MealPhotoFailure.transient => BulkAddPhotoError.transient,
           }),
@@ -562,16 +527,8 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
               BulkAddRow(
                 resolved: item,
                 selectedIndex: item.selectedIndex,
-                amountText: _initialAmount(
-                  item.parsed,
-                  item.selected,
-                  usesImperialUnits,
-                ),
-                unit: _initialUnit(
-                  item.parsed,
-                  item.selected,
-                  usesImperialUnits,
-                ),
+                amountText: _initialAmount(item.parsed, item.selected, usesImperialUnits),
+                unit: _initialUnit(item.parsed, item.selected, usesImperialUnits),
                 fromPhoto: source == BulkAddReadSource.photo,
               ),
           ],
@@ -591,11 +548,7 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
   /// The parser leaves quantity null when the user stated none. Fall back to
   /// the same defaults the meal-detail screen already applies, so a bulk row
   /// and a hand-added row of the same food start from the same number.
-  String _initialAmount(
-    ParsedMealItem parsed,
-    MealEntity? meal,
-    bool usesImperialUnits,
-  ) {
+  String _initialAmount(ParsedMealItem parsed, MealEntity? meal, bool usesImperialUnits) {
     final parsedQuantity = parsed.quantity;
     if (parsedQuantity != null) return _amountText(parsedQuantity);
 
@@ -606,17 +559,11 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
     return usesImperialUnits ? '1' : '100';
   }
 
-  String _initialUnit(
-    ParsedMealItem parsed,
-    MealEntity? meal,
-    bool usesImperialUnits,
-  ) {
+  String _initialUnit(ParsedMealItem parsed, MealEntity? meal, bool usesImperialUnits) {
     final parsedUnit = parsed.unit;
     if (parsedUnit != null) return parsedUnit;
 
-    final fallback = usesImperialUnits
-        ? UnitDropdownItem.oz.toString()
-        : UnitDropdownItem.gml.toString();
+    final fallback = usesImperialUnits ? UnitDropdownItem.oz.toString() : UnitDropdownItem.gml.toString();
     if (meal == null) return fallback;
 
     // The user named a portion, so their word decides which — "3 slices of
@@ -634,8 +581,7 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
       // the food. The key is English in every locale and goes against the
       // English label; the user's words go against the localized one.
       final named =
-          matchPortionToKey(parsed.portion, meal.portions) ??
-          matchPortionToQuery(parsed.query, meal.portions);
+          matchPortionToKey(parsed.portion, meal.portions) ?? matchPortionToQuery(parsed.query, meal.portions);
       if (named != null) return portionUnit(named);
     }
 
@@ -676,15 +622,10 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
   static String _amountText(double value) {
     final rounded = double.parse(value.toStringAsFixed(2));
     final quantity = rounded <= 0 && value > 0 ? 0.01 : rounded;
-    return quantity == quantity.roundToDouble()
-        ? quantity.toInt().toString()
-        : quantity.toString();
+    return quantity == quantity.roundToDouble() ? quantity.toInt().toString() : quantity.toString();
   }
 
-  void _onChangeCandidate(
-    ChangeRowCandidateEvent event,
-    Emitter<BulkAddState> emit,
-  ) {
+  void _onChangeCandidate(ChangeRowCandidateEvent event, Emitter<BulkAddState> emit) {
     final current = state;
     final imperial = current is BulkAddLoadedState && current.usesImperialUnits;
 
@@ -705,12 +646,7 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
   }
 
   void _onChangeAmount(ChangeRowAmountEvent event, Emitter<BulkAddState> emit) {
-    _updateRow(
-      event.rowIndex,
-      emit,
-      (row) =>
-          row.copyWith(amountText: event.amountText, amountEditedByUser: true),
-    );
+    _updateRow(event.rowIndex, emit, (row) => row.copyWith(amountText: event.amountText, amountEditedByUser: true));
   }
 
   void _onChangeUnit(ChangeRowUnitEvent event, Emitter<BulkAddState> emit) {
@@ -723,22 +659,11 @@ class BulkAddBloc extends Bloc<BulkAddEvent, BulkAddState> {
     );
   }
 
-  void _onToggleSkipped(
-    ToggleRowSkippedEvent event,
-    Emitter<BulkAddState> emit,
-  ) {
-    _updateRow(
-      event.rowIndex,
-      emit,
-      (row) => row.copyWith(skipped: !row.skipped),
-    );
+  void _onToggleSkipped(ToggleRowSkippedEvent event, Emitter<BulkAddState> emit) {
+    _updateRow(event.rowIndex, emit, (row) => row.copyWith(skipped: !row.skipped));
   }
 
-  void _updateRow(
-    int index,
-    Emitter<BulkAddState> emit,
-    BulkAddRow Function(BulkAddRow) change,
-  ) {
+  void _updateRow(int index, Emitter<BulkAddState> emit, BulkAddRow Function(BulkAddRow) change) {
     final current = state;
     if (current is! BulkAddLoadedState) return;
     if (index < 0 || index >= current.rows.length) return;
